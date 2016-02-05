@@ -62,6 +62,7 @@ target/
 .ipynb_checkpoints
 
 #Image files
-.jpg
-.jpeg
-.png
+*.jpg
+*.jpeg
+*.png
+*.PNG
