@@ -1,0 +1,30 @@
+input abstraction (IAL)
+
+one or more python modules implemented in C#
+
+takes in multiple video streams from the kinect (IR, depth?, colour, skeletal positioning, detected gestures and positions)
+
+	uses for streams:
+	IR - detect physical objects on whiteboard : post it notes - passed to CV classifiers
+	colour - detects writing/lines draw on whiteboard by users - passed to OCR
+	gestures/skeletal/hand locations - action modifiers, changing behavour of application when combined with skeletal movement coordinates	
+
+outputs data received from the kinect in a way that is usable by OpenCV (numpy arrays?)
+
+SDK sends two main types of data to the IAL: image streams and positional gesture data (future)
+
+
+target for phase 1?
+	show the sensor a whiteboard of post it notes and lines, and have it represent each note and line in memory.
+
+
+activity of the IAL:
+	always checking kinect sensors (and gestures in the future)
+	send an image of the specific data stream to the controller as requested
+	if the kinect detects a skeleton (generally - anything?) is blocking part of the whiteboard (detected by depth and IR?), then send image data to controller with metadata blacklisting occluded parts of the image
+		(controller will then process unoccluded parts and update virtual whiteboard state if deemed necessary)
+
+	maintain location of physical whiteboard in image streams
+
+	
+
