@@ -60,3 +60,9 @@ target/
 
 #Ipython Notebook
 .ipynb_checkpoints
+
+#Image files
+*.jpg
+*.jpeg
+*.png
+*.PNG
