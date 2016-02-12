@@ -63,3 +63,9 @@ target/
 
 #Pycharm specific
 .idea/*
+
+#Image files
+*.jpg
+*.jpeg
+*.png
+*.PNG
