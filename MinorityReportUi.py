@@ -3,32 +3,26 @@ from gi.repository import Gtk, GdkPixbuf
 import cv2
 import numpy
 
+print(cv2.__version__)
+
 class MyWindow(Gtk.Window):
 
   def __init__(self):
     Gtk.Window.__init__(self, title="Hello World")
     
-    # self.set_default_size(600, 600)
-    # self.set_geometry_hints(min_width=600, min_height=600, max_width=1920, max_height=1080)
+    self.set_default_size(600, 600)
 
     ### Layout Objects
 
     # Main Grid element
-    vbox = Gtk.VBox(False, 0)
-    self.add(vbox)
-
-    grid = Gtk.Grid()
-    # grid.set_row_spacing(5)
-    # Homogeneous sets all rows/columns to have the same height/width
-    grid.set_column_spacing(5)
-    grid.set_column_homogeneous(True)
-    vbox.pack_end(grid, True, True, 2)
+    mainvbox = Gtk.VBox(False, 0)
+    self.add(mainvbox)
 
     ### Components
 
     # Main Menu
     self.menuBar = Gtk.MenuBar()
-    vbox.pack_start(self.menuBar, False, False, 2)
+    mainvbox.pack_start(self.menuBar, False, False, 2)
 
     # Menu Bar Items
     self.fileMenuItem = Gtk.MenuItem("File")
@@ -52,31 +46,82 @@ class MyWindow(Gtk.Window):
     self.fileMenu.append(self.fileMenuExportButton)
     self.fileMenu.append(self.fileMenuQuitButton)
 
+
+    # Image Container
+    imageDividerHBox = Gtk.HBox(True, 0)
+    mainvbox.pack_end(imageDividerHBox, True, True, 2)
+
+    # Settings Container
+    settingsHBox = Gtk.HBox(True, 5)
+    mainvbox.pack_end(settingsHBox, False, False, 2)
+    settingsVBoxLeft = Gtk.VBox(False, 5)
+    settingsVBoxMiddle = Gtk.VBox(False, 5)
+    settingsVBoxRight = Gtk.VBox(False, 5)
+    settingsHBox.pack_start(settingsVBoxLeft, True, True, 2)
+    settingsHBox.pack_start(settingsVBoxMiddle, True, True, 2)
+    settingsHBox.pack_start(settingsVBoxRight, True, True, 2)
+
     # Saturation Slider and Label
-    self.saturationSlider = Gtk.Scale(orientation=Gtk.Orientation.HORIZONTAL, adjustment=Gtk.Adjustment(50, 0, 100, 1, 10, 0))
+    self.saturationSlider = Gtk.Scale(orientation=Gtk.Orientation.HORIZONTAL, adjustment=Gtk.Adjustment(value=50, lower=0, upper=100, step_incr=1, page_incr=10, page_size=0))
     saturationSliderLabel = Gtk.Label("Saturation")
-    grid.attach(saturationSliderLabel, left=0, top=0, width=1, height=1)
-    grid.attach(self.saturationSlider, left=0, top=1, width=2, height=1)
+    self.saturationSlider.set_draw_value(False)
+    settingsVBoxLeft.pack_end(self.saturationSlider, False, False, 2)
+    settingsVBoxLeft.pack_end(saturationSliderLabel, False, False, 2)
 
     # Contrast Slider and Label
-    self.contrastSlider = Gtk.Scale(orientation=Gtk.Orientation.HORIZONTAL, adjustment=Gtk.Adjustment(50, 0, 100, 1, 10, 0))
+    self.contrastSlider = Gtk.Scale(orientation=Gtk.Orientation.HORIZONTAL, adjustment=Gtk.Adjustment(value=50, lower=0, upper=100, step_incr=1, page_incr=10, page_size=0))
     contrastSliderLabel = Gtk.Label("Contrast")
-    grid.attach(contrastSliderLabel, left=0, top=2, width=1, height=1)
-    grid.attach(self.contrastSlider, left=0, top=3, width=2, height=1)
+    self.contrastSlider.set_draw_value(False)
+    settingsVBoxLeft.pack_end(self.contrastSlider, False, False, 2)
+    settingsVBoxLeft.pack_end(contrastSliderLabel, False, False, 2)
+
+    # Scale Image
+    self.scaleInputImage = Gtk.SpinButton(adjustment=Gtk.Adjustment(value=0.5, lower=0.0, upper=1.0, step_incr=0.05, page_incr=0.1, page_size=0), climb_rate=0, digits=2)
+    scaleInputImageLabel = Gtk.Label("Scale Factor")
+    settingsVBoxLeft.pack_end(self.scaleInputImage, False, False, 2)
+    settingsVBoxLeft.pack_end(scaleInputImageLabel, False, False, 2)
+
+    # Blur Kerneling
+    self.gBlurKernelSize = Gtk.SpinButton(adjustment=Gtk.Adjustment(value=7, lower=1, upper=11, step_incr=2, page_incr=4, page_size=0))
+    gBlurKernelSizeLabel = Gtk.Label("Gaussian Blur Kernel Size")
+    settingsVBoxLeft.pack_end(self.gBlurKernelSize, False, False, 2)
+    settingsVBoxLeft.pack_end(gBlurKernelSizeLabel, False, False, 2)
+
+    # Pix Neighborhood
+    self.pixNeighborhoodSlider = Gtk.Scale(orientation=Gtk.Orientation.HORIZONTAL, adjustment=Gtk.Adjustment(value=30, lower=0, upper=500, step_incr=10, page_incr=50, page_size=0))
+    pixNeighborhoodSliderLabel = Gtk.Label("Bilateral Pix Neighborhood")
+    settingsVBoxMiddle.pack_end(self.pixNeighborhoodSlider, False, False, 2)
+    settingsVBoxMiddle.pack_end(pixNeighborhoodSliderLabel, False, False, 2)
+
+    # Sigma Colour
+    self.sigmaColorSlider = Gtk.Scale(orientation=Gtk.Orientation.HORIZONTAL, adjustment=Gtk.Adjustment(value=150, lower=0, upper=500, step_incr=10, page_incr=50, page_size=0))
+    sigmaColorSliderLabel = Gtk.Label("Sigma Color")
+    settingsVBoxMiddle.pack_end(self.sigmaColorSlider, False, False, 2)
+    settingsVBoxMiddle.pack_end(sigmaColorSliderLabel, False, False, 2)
+
+    # Sigma Space
+    self.sigmaSpaceSlider = Gtk.Scale(orientation=Gtk.Orientation.HORIZONTAL, adjustment=Gtk.Adjustment(value=150, lower=0, upper=500, step_incr=10, page_incr=50, page_size=0))
+    sigmaSpaceSliderLabel = Gtk.Label("Sigma Space")
+    settingsVBoxMiddle.pack_end(self.sigmaSpaceSlider, False, False, 2)
+    settingsVBoxMiddle.pack_end(sigmaSpaceSliderLabel, False, False, 2)
 
     # Input Image
     self.inputImageWidget = Gtk.Image()
-    grid.attach(self.inputImageWidget, left=0, top=5, width=1, height=2)
-    # self.inputImageWidget.set_from_file("/tmp/in.png")
+    imageDividerHBox.pack_start(self.inputImageWidget, False, False, 2)
 
     # Output Image
     self.outputImageWidget = Gtk.Image()
-    grid.attach(self.outputImageWidget, left=1, top=7, width=1, height=1)
-    # self.outputImageWidget.set_from_file("/tmp/out.jpg")
+    imageDividerHBox.pack_start(self.outputImageWidget, False, False, 2)
 
     self.inputImageBuf = None
     ### Event Bindings
-    self.connect('check-resize', lambda w: adjustInputImage(None, self.inputImageBuf, self.inputImageWidget))
+
+    self.saturationSlider.connect("value-changed", self.adjustInputImage)
+    self.contrastSlider.connect("value-changed", self.adjustInputImage)
+    self.scaleInputImage.connect("value-changed", self.adjustInputImage)
+    self.sigmaSpaceSlider.connect("value-changed", self.adjustInputImage)
+    self.sigmaColorSlider.connect("value-changed", self.adjustInputImage)
+    self.pixNeighborhoodSlider.connect("value-changed", self.adjustInputImage)
 
 
   def onFileMenuImportClick(self, menuItem):
@@ -104,22 +149,45 @@ class MyWindow(Gtk.Window):
 
       print("Input Image " + self.inputImageFileName)
 
+
+      # By Default this will conver the image to RGB (removing alpha channels)
+      # FU Opencv! OpenCV returns images in BGR Format , we need to convert them to RGB for gtk
+      #
+      # http://docs.opencv.org/3.0-beta/doc/py_tutorials/py_gui/py_image_display/py_image_display.html
+      #
+      self.inputImage = cv2.imread(self.inputImageFileName)
+
+      self.adjustInputImage(None)
+
     importDialog.destroy()
 
+  def adjustInputImage(self, widget):
 
-    # By Default this will conver the image to RGB (removing alpha channels)
-    # FU Opencv! OpenCV returns images in BGR Format , we need to convert them to RGB for gtk
-    #
-    # http://docs.opencv.org/3.0-beta/doc/py_tutorials/py_gui/py_image_display/py_image_display.html
-    #
-    im = cv2.imread(self.inputImageFileName)
-    
-    b,g,r = cv2.split(im)                           # FFFFUUUUU!
-    self.inputImage = cv2.merge([r,g,b]) 
+    if self.inputImage is None:
+      return
 
-    height, width, channels = self.inputImage.shape
+    print("Adjust Image ")
 
-    self.inputImageBuf = GdkPixbuf.Pixbuf.new_from_data(self.inputImage.tobytes(),
+    saturation = int(self.saturationSlider.get_value())
+    contrast = int(self.contrastSlider.get_value())
+    scaleFactor = self.scaleInputImage.get_value()
+    gBlurKernelSize = int(self.gBlurKernelSize.get_value())
+    sigmaSpace = int(self.sigmaSpaceSlider.get_value())
+    sigmaColor = int(self.sigmaColorSlider.get_value())
+    pixNeighbor = int(self.pixNeighborhoodSlider.get_value())
+
+    # Scale down
+    inputResizedColour = cv2.resize(self.inputImage,
+      dsize=(0,0),
+      fx=scaleFactor,
+      fy=scaleFactor,
+      interpolation=cv2.INTER_AREA)
+
+    height, width, channels = inputResizedColour.shape
+
+    rgbInputImage = cv2.cvtColor(inputResizedColour, cv2.COLOR_BGR2RGB)
+
+    inputImageBuf = GdkPixbuf.Pixbuf().new_from_data(inputResizedColour.tobytes(),
       GdkPixbuf.Colorspace.RGB,
       False,
       8, # HACK, cant find out how to get this from the image
@@ -127,15 +195,93 @@ class MyWindow(Gtk.Window):
       height,
       width * channels)
 
-    adjustInputImage(None, self.inputImageBuf, self.inputImageWidget)
+    self.inputImageWidget.set_from_pixbuf(inputImageBuf)
 
-def adjustInputImage(widget, pixbuf, imageWidget):
-  
-  if pixbuf is not None:
-    print("adjustInputImage")
-    bounds = imageWidget.get_allocation()
+    # # Gaussian Blur (to remove text in the post-its)
+    # blurredColour = cv2.GaussianBlur(inputResizedColour,
+    #   ksize=(gBlurKernelSize, gBlurKernelSize),
+    #   sigmaX=0)
 
-    imageWidget.set_from_pixbuf(pixbuf.scale_simple(bounds.width, bounds.height, GdkPixbuf.InterpType.BILINEAR))
+    # # Bilateral filtering
+    # blurredColour = cv2.bilateralFilter(blurredColour,
+    #   d=pixNeighbor,
+    #   sigmaColor=sigmaColor,
+    #   sigmaSpace=sigmaSpace)
+
+    # # Histogram equalization
+    # outputImage = equalizeColour(blurredColour)
+
+    # segmentation(outputImage)
+
+    # outputImageBuf = GdkPixbuf.Pixbuf.new_from_data(rgbInputImage.tobytes(),
+    #   GdkPixbuf.Colorspace.RGB,
+    #   False,
+    #   8, # HACK, cant find out how to get this from the image
+    #   width,
+    #   height,
+    #   width * channels)
+
+    # self.outputImageWidget.set_from_pixbuf(outputImageBuf)
+
+
+def equalizeColour(inputColour):
+    # BRG to YCrCb
+    YCrCb = cv2.cvtColor(inputColour, cv2.COLOR_BGR2YCrCb)
+    [YChannel, CrChannel, CbChannel] = cv2.split(YCrCb)
+    # Equalize luminance channel
+    clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(20,20))
+    YChannel = clahe.apply(YChannel)
+    YChannel = cv2.equalizeHist(YChannel)
+    # Convert back to BRG
+    YCrCb = cv2.merge([YChannel, CrChannel, CbChannel])
+    output = cv2.cvtColor(YCrCb, cv2.COLOR_YCrCb2BGR)
+    return output
+
+def segmentation(inputColour):
+    # BGR to Gray
+    inputGray = cv2.cvtColor(inputColour, cv2.COLOR_BGR2GRAY)
+    [B, G, R] = cv2.split(inputColour)
+    # Adaptative gaussian thresholding
+    threshB = cv2.adaptiveThreshold(B, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY_INV, 11, 0)
+    threshG = cv2.adaptiveThreshold(G, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY_INV, 11, 0)
+    threshR = cv2.adaptiveThreshold(R, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY_INV, 11, 0)
+    # Remove noise
+    kernel = numpy.ones((3,3),numpy.uint8)
+    threshB = cv2.morphologyEx(src=threshB, op=cv2.MORPH_OPEN, kernel=kernel, iterations=1)
+    threshG = cv2.morphologyEx(src=threshG, op=cv2.MORPH_OPEN, kernel=kernel, iterations=1)
+    threshR = cv2.morphologyEx(src=threshR, op=cv2.MORPH_OPEN, kernel=kernel, iterations=1)
+    kernel = numpy.ones((5,5),numpy.uint8)
+    threshB = cv2.morphologyEx(src=threshB, op=cv2.MORPH_CLOSE, kernel=kernel, iterations=2)
+    threshG = cv2.morphologyEx(src=threshG, op=cv2.MORPH_CLOSE, kernel=kernel, iterations=2)
+    threshR = cv2.morphologyEx(src=threshR, op=cv2.MORPH_CLOSE, kernel=kernel, iterations=2)
+    # cv2.imshow("Debug1", threshB)
+    # cv2.imshow("Debug0", threshG)
+    # cv2.imshow("Debug2", threshR)
+    sure_bg = thresholdTotal = cv2.bitwise_or(cv2.bitwise_or(threshB, threshG),threshR)
+    # cv2.imshow("Debug3", thresholdTotal)
+    # Find foreground mask
+    dist_transform = cv2.distanceTransform(src=thresholdTotal, distanceType=cv2.DIST_L2, maskSize=3)
+    ret, sure_fg = cv2.threshold(dist_transform,0.2*dist_transform.max(),255,0)
+    # Clean the mask
+    kernel = numpy.ones((9,9),numpy.uint8)
+    sure_fg = cv2.morphologyEx(src=sure_fg, op=cv2.MORPH_OPEN, kernel=kernel, iterations=2)
+    # cv2.imshow("Debug4", dist_transform)
+    # cv2.imshow("Debug5", sure_fg)
+    
+    # Finding unknown region
+    sure_fg = numpy.uint8(sure_fg)
+    unknown = cv2.subtract(sure_bg,sure_fg)
+
+    # Markers labeling
+    ret, markers = cv2.connectedComponents(sure_fg)
+    # Add one to all labels so that sure background is not 0, but 1
+    markers = markers+1
+    # Now, mark the region of unknown with zero
+    markers[unknown==255] = 0
+
+    markers = cv2.watershed(inputColour,markers)
+    inputColour[markers == -1] = [255,0,0]
+    # cv2.imshow("Debug6", inputColour)
 
 win = MyWindow()
 win.connect("delete-event", Gtk.main_quit)
