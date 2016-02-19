@@ -50,7 +50,7 @@ class PostitExtract:
         
         foundPostits = []
 
-        canvasPos = self.findCanvas(self.image)
+        canvasPos = self.findCanvas()
         self.image[canvasPos[1]:(canvasPos[1]+canvasPos[3]), canvasPos[0]:(canvasPos[0]+canvasPos[2])]
         v = np.median(self.image)
         lower = int(max(0, (1.0 - sigma) * v))
@@ -75,7 +75,7 @@ class PostitExtract:
             rTotal = gTotal = bTotal = 0
             count = 0
             print(postit.shape)
-            (width, height, depth) = postit.shape;
+            (width, height, depth) = postit.shape
             for y in range(height):
                 for x in range(width):
                     if minColourThresh < gray[x,y] < maxColourThresh:
@@ -124,7 +124,10 @@ class PostitExtract:
         (__, board) = cv2.threshold(self.image,200,255,cv2.THRESH_TOZERO)
         grayBoard = cv2.cvtColor(board, cv2.COLOR_RGB2GRAY)
         (__, boardContours, __) = cv2.findContours(grayBoard, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-        canvasBounds = cv2.boundingRect(boardContours)
+        areas = [cv2.contourArea(c) for c in boardContours]
+        max_index = np.argmax(areas)
+        canvasContour=boardContours[max_index]
+        canvasBounds = cv2.boundingRect(canvasContour)
         return canvasBounds
 
 
