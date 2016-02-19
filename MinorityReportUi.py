@@ -4,7 +4,9 @@ import cv2
 import numpy
 from src.PostitExtract import PostitExtract as PostitExtractor
 
-print(cv2.__version__)
+print("CV2 Version:   " + str(cv2.__version__))
+# print("Gtk Version:   " + str(Gtk.gtk_version))
+# print("PyGtk Version: " + str(Gtk.pygtk_version))
 
 class MyWindow(Gtk.Window):
 
@@ -129,6 +131,17 @@ class MyWindow(Gtk.Window):
       #
       self.inputImage = cv2.imread(self.inputImageFileName)
 
+      self.rgbInputImage = cv2.cvtColor(self.inputImage, cv2.COLOR_BGR2RGB)
+
+      (width, height, depth) = self.rgbInputImage.shape
+
+      inputImageBuf = GdkPixbuf.Pixbuf().new_from_data(self.rgbInputImage.tobytes(),
+      GdkPixbuf.Colorspace.RGB,
+      False,
+      8, # HACK, cant find out how to get this from the image
+      width,
+      height,
+      width * depth)
       self.postitExtractor = PostitExtractor(self.inputImage)
 
       self.adjustInputImage(None)
@@ -155,65 +168,6 @@ class MyWindow(Gtk.Window):
 
     for postit in postits:
       cv2.imshow("foo" + str(postit), postit["image"])
-
-def equalizeColour(inputColour):
-    # BRG to YCrCb
-    YCrCb = cv2.cvtColor(inputColour, cv2.COLOR_BGR2YCrCb)
-    [YChannel, CrChannel, CbChannel] = cv2.split(YCrCb)
-    # Equalize luminance channel
-    clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(20,20))
-    YChannel = clahe.apply(YChannel)
-    YChannel = cv2.equalizeHist(YChannel)
-    # Convert back to BRG
-    YCrCb = cv2.merge([YChannel, CrChannel, CbChannel])
-    output = cv2.cvtColor(YCrCb, cv2.COLOR_YCrCb2BGR)
-    return output
-
-def segmentation(inputColour):
-    # BGR to Gray
-    inputGray = cv2.cvtColor(inputColour, cv2.COLOR_BGR2GRAY)
-    [B, G, R] = cv2.split(inputColour)
-    # Adaptative gaussian thresholding
-    threshB = cv2.adaptiveThreshold(B, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY_INV, 11, 0)
-    threshG = cv2.adaptiveThreshold(G, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY_INV, 11, 0)
-    threshR = cv2.adaptiveThreshold(R, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY_INV, 11, 0)
-    # Remove noise
-    kernel = numpy.ones((3,3),numpy.uint8)
-    threshB = cv2.morphologyEx(src=threshB, op=cv2.MORPH_OPEN, kernel=kernel, iterations=1)
-    threshG = cv2.morphologyEx(src=threshG, op=cv2.MORPH_OPEN, kernel=kernel, iterations=1)
-    threshR = cv2.morphologyEx(src=threshR, op=cv2.MORPH_OPEN, kernel=kernel, iterations=1)
-    kernel = numpy.ones((5,5),numpy.uint8)
-    threshB = cv2.morphologyEx(src=threshB, op=cv2.MORPH_CLOSE, kernel=kernel, iterations=2)
-    threshG = cv2.morphologyEx(src=threshG, op=cv2.MORPH_CLOSE, kernel=kernel, iterations=2)
-    threshR = cv2.morphologyEx(src=threshR, op=cv2.MORPH_CLOSE, kernel=kernel, iterations=2)
-    # cv2.imshow("Debug1", threshB)
-    # cv2.imshow("Debug0", threshG)
-    # cv2.imshow("Debug2", threshR)
-    sure_bg = thresholdTotal = cv2.bitwise_or(cv2.bitwise_or(threshB, threshG),threshR)
-    # cv2.imshow("Debug3", thresholdTotal)
-    # Find foreground mask
-    dist_transform = cv2.distanceTransform(src=thresholdTotal, distanceType=cv2.DIST_L2, maskSize=3)
-    ret, sure_fg = cv2.threshold(dist_transform,0.2*dist_transform.max(),255,0)
-    # Clean the mask
-    kernel = numpy.ones((9,9),numpy.uint8)
-    sure_fg = cv2.morphologyEx(src=sure_fg, op=cv2.MORPH_OPEN, kernel=kernel, iterations=2)
-    # cv2.imshow("Debug4", dist_transform)
-    # cv2.imshow("Debug5", sure_fg)
-    
-    # Finding unknown region
-    sure_fg = numpy.uint8(sure_fg)
-    unknown = cv2.subtract(sure_bg,sure_fg)
-
-    # Markers labeling
-    ret, markers = cv2.connectedComponents(sure_fg)
-    # Add one to all labels so that sure background is not 0, but 1
-    markers = markers+1
-    # Now, mark the region of unknown with zero
-    markers[unknown==255] = 0
-
-    markers = cv2.watershed(inputColour,markers)
-    inputColour[markers == -1] = [255,0,0]
-    # cv2.imshow("Debug6", inputColour)
 
 win = MyWindow()
 win.connect("delete-event", Gtk.main_quit)

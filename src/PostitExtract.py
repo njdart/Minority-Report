@@ -51,7 +51,9 @@ class PostitExtract:
         foundPostits = []
 
         canvasPos = self.findCanvas()
-        self.image[canvasPos[1]:(canvasPos[1]+canvasPos[3]), canvasPos[0]:(canvasPos[0]+canvasPos[2])]
+        self.image = self.image[canvasPos[1]:(canvasPos[1]+canvasPos[3]), canvasPos[0]:(canvasPos[0]+canvasPos[2])]
+
+        cv2.imshow("Canvas", self.image)
         v = np.median(self.image)
         lower = int(max(0, (1.0 - sigma) * v))
         upper = int(min(255, (1.0 + sigma) * v))
@@ -121,13 +123,26 @@ class PostitExtract:
         return None
 
     def findCanvas(self):
+        # cv2.imshow("Origonal", self.image)
+
         (__, board) = cv2.threshold(self.image,200,255,cv2.THRESH_TOZERO)
         grayBoard = cv2.cvtColor(board, cv2.COLOR_RGB2GRAY)
+        
+        # cv2.imshow("Gray Board", grayBoard)
+
         (__, boardContours, __) = cv2.findContours(grayBoard, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
         areas = [cv2.contourArea(c) for c in boardContours]
+
         max_index = np.argmax(areas)
         canvasContour=boardContours[max_index]
         canvasBounds = cv2.boundingRect(canvasContour)
+
+        # temp = self.image.copy()
+
+        # cv2.rectangle(temp,(canvasBounds[0],canvasBounds[1]),(canvasBounds[0]+canvasBounds[2],canvasBounds[1]+canvasBounds[3]),(0,255,0),2)
+
+        # cv2.imshow("Canbas Bounds", temp)
+
         return canvasBounds
 
 
