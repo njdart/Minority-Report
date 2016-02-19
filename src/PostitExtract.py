@@ -50,7 +50,7 @@ class PostitExtract:
         
         foundPostits = []
 
-        canvasPos = self.findCanvas(self.image)
+        canvasPos = self.findCanvas()
         self.image[canvasPos[1]:(canvasPos[1]+canvasPos[3]), canvasPos[0]:(canvasPos[0]+canvasPos[2])]
         v = np.median(self.image)
         lower = int(max(0, (1.0 - sigma) * v))
