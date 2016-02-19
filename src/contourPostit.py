@@ -1,5 +1,6 @@
 import cv2
 import numpy as np
+import math
 
 DEBUG_PLOT = True
 # => Bilateral filter params
@@ -8,7 +9,7 @@ BILATERAL_SIGMA_COLOR = 1
 BILATERAL_SIGMA_SPACE = 1
 
 if __name__ == "__main__":
-
+    postitPos = []
     image = cv2.imread("whiteboard-postit.jpg")
     ratio = image.shape[0] / 300.0
     orig = image.copy()
@@ -38,10 +39,16 @@ if __name__ == "__main__":
         # if our approximated contour has four points, then
         # we can assume that we have found our screen
         #if cv2.arcLength(c,False) > 300:
-        if (cv2.arcLength(c,False) > 300) and (cv2.arcLength(c,False) < 1000)and (cv2.contourArea(box) > 3000) and (cv2.contourArea(box) <20000) :
-
-            cv2.drawContours(image, [box], 0, (0, 255, 0), 3)
-            print(cv2.contourArea(box))
+        #if (cv2.arcLength(c,False) > 300) and (cv2.arcLength(c,False) < 1000)and (cv2.contourArea(box) > 3000) and (cv2.contourArea(box) <20000) :
+        if ((cv2.contourArea(box) > 3000) and (cv2.contourArea(box) <20000)):
+            length = math.hypot(box[0,0]-box[1,0], box[0,1]-box[1,1])
+            height = math.hypot(box[2,0]-box[1,0], box[2,1]-box[1,1])
+            if (length*1.85 < length+height < length*2.15):
+                Rectangle = cv2.boundingRect(c)
+                postitPos.append(Rectangle)
+                cropped = orig[Rectangle[1]:(Rectangle[1]+Rectangle[3]), Rectangle[0]:(Rectangle[0]+Rectangle[2])]
+                cv2.drawContours(image, [box], 0, (0, 255, 0), 3)
+            #print(cv2.contourArea(box))
 
         if len(approx) ==4:
             screenCnt = approx
@@ -51,8 +58,18 @@ if __name__ == "__main__":
 #cv2.drawContours(image, [screenCnt], -1, (0, 255, 0), 3)
 screenCnt
 # DEBUG PLOT
+
+
+
 if DEBUG_PLOT:
     #cv2.imshow("gray",gray)
     cv2.imshow("edged",edged)
     cv2.imshow("CannyFiltered", image)
 cv2.waitKey(0)
+
+
+for bounds in postitPos:
+    cropped = orig[bounds[1]:(bounds[1]+bounds[3]), bounds[0]:(bounds[0]+bounds[2])]
+    cv2.imshow("Cropped", cropped)
+    cv2.waitKey(0)
+
