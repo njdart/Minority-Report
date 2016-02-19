@@ -47,6 +47,9 @@ class PostitExtract:
         }
 
     def extractPostits(self, sigma=0.8, minPostitArea = 3000, maxPostitArea = 20000, lenTolerence = 0.15, minColourThresh = 64, maxColourThresh = 200):
+        
+        foundPostits = []
+
         v = np.median(self.image)
         lower = int(max(0, (1.0 - sigma) * v))
         upper = int(min(255, (1.0 + sigma) * v))
@@ -59,31 +62,43 @@ class PostitExtract:
             if ((cv2.contourArea(box) > minPostitArea) and (cv2.contourArea(box) < maxPostitArea)):
                 length = math.hypot(box[0,0]-box[1,0], box[0,1]-box[1,1])
                 height = math.hypot(box[2,0]-box[1,0], box[2,1]-box[1,1])
-                if (length*2-lenTolerence < length+height < length*2+lenTolerence):
+                if (length*(2-lenTolerence) < length+height < length*(2+lenTolerence)):
                     Rectangle = cv2.boundingRect(c)
                     self.postitPos.append(Rectangle)
                     self.postitImage.append(self.image[Rectangle[1]:(Rectangle[1]+Rectangle[3]), Rectangle[0]:(Rectangle[0]+Rectangle[2])])
+
         for postit in self.postitImage:
+
             gray = cv2.cvtColor(postit, cv2.COLOR_BGR2GRAY)
             rTotal = gTotal = bTotal = 0
             count = 0
-            for y in range(postit.height):
-                for x in range(postit.width):
+            print(postit.shape)
+            (width, height, depth) = postit.shape;
+            for y in range(height):
+                for x in range(width):
                     if minColourThresh < gray[x,y] < maxColourThresh:
                         b, g, r = postit[x,y]
                         rTotal += r
                         gTotal += g
                         bTotal += b
 
-            count = postit.width * postit.height
+            count = width * height
 
             rAvg = rTotal / count
             gAvg = gTotal / count
             bAvg = bTotal / count
-        self.postitColour.append(self.guess_colour(rAvg, gAvg, bAvg))
 
+            guessedColour = self.guess_colour(rAvg, gAvg, bAvg)
+            self.postitColour.append(guessedColour)
 
+            foundPostit = {
+                "image": postit,
+                "colour": guessedColour
+            }
 
+            foundPostits.append(foundPostit)
+
+        return foundPostits
 
     def guess_colour(self, r, g, b):
         r = int(r)

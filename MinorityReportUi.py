@@ -2,6 +2,7 @@
 from gi.repository import Gtk, GdkPixbuf
 import cv2
 import numpy
+from src.PostitExtract import PostitExtract as PostitExtractor
 
 print(cv2.__version__)
 
@@ -46,7 +47,6 @@ class MyWindow(Gtk.Window):
     self.fileMenu.append(self.fileMenuExportButton)
     self.fileMenu.append(self.fileMenuQuitButton)
 
-
     # Image Container
     imageDividerHBox = Gtk.HBox(True, 0)
     mainvbox.pack_end(imageDividerHBox, True, True, 2)
@@ -81,48 +81,20 @@ class MyWindow(Gtk.Window):
     settingsVBoxLeft.pack_end(self.scaleInputImage, False, False, 2)
     settingsVBoxLeft.pack_end(scaleInputImageLabel, False, False, 2)
 
-    # Blur Kerneling
-    self.gBlurKernelSize = Gtk.SpinButton(adjustment=Gtk.Adjustment(value=7, lower=1, upper=11, step_incr=2, page_incr=4, page_size=0))
-    gBlurKernelSizeLabel = Gtk.Label("Gaussian Blur Kernel Size")
-    settingsVBoxLeft.pack_end(self.gBlurKernelSize, False, False, 2)
-    settingsVBoxLeft.pack_end(gBlurKernelSizeLabel, False, False, 2)
-
-    # Pix Neighborhood
-    self.pixNeighborhoodSlider = Gtk.Scale(orientation=Gtk.Orientation.HORIZONTAL, adjustment=Gtk.Adjustment(value=30, lower=0, upper=500, step_incr=10, page_incr=50, page_size=0))
-    pixNeighborhoodSliderLabel = Gtk.Label("Bilateral Pix Neighborhood")
-    settingsVBoxMiddle.pack_end(self.pixNeighborhoodSlider, False, False, 2)
-    settingsVBoxMiddle.pack_end(pixNeighborhoodSliderLabel, False, False, 2)
-
-    # Sigma Colour
-    self.sigmaColorSlider = Gtk.Scale(orientation=Gtk.Orientation.HORIZONTAL, adjustment=Gtk.Adjustment(value=150, lower=0, upper=500, step_incr=10, page_incr=50, page_size=0))
-    sigmaColorSliderLabel = Gtk.Label("Sigma Color")
-    settingsVBoxMiddle.pack_end(self.sigmaColorSlider, False, False, 2)
-    settingsVBoxMiddle.pack_end(sigmaColorSliderLabel, False, False, 2)
-
-    # Sigma Space
-    self.sigmaSpaceSlider = Gtk.Scale(orientation=Gtk.Orientation.HORIZONTAL, adjustment=Gtk.Adjustment(value=150, lower=0, upper=500, step_incr=10, page_incr=50, page_size=0))
-    sigmaSpaceSliderLabel = Gtk.Label("Sigma Space")
-    settingsVBoxMiddle.pack_end(self.sigmaSpaceSlider, False, False, 2)
-    settingsVBoxMiddle.pack_end(sigmaSpaceSliderLabel, False, False, 2)
+    # Output Image
+    self.outputImageWidget = Gtk.Image()
+    imageDividerHBox.pack_start(self.outputImageWidget, False, False, 2)
 
     # Input Image
     self.inputImageWidget = Gtk.Image()
     imageDividerHBox.pack_start(self.inputImageWidget, False, False, 2)
 
-    # Output Image
-    self.outputImageWidget = Gtk.Image()
-    imageDividerHBox.pack_start(self.outputImageWidget, False, False, 2)
-
     self.inputImageBuf = None
+
     ### Event Bindings
 
     self.saturationSlider.connect("value-changed", self.adjustInputImage)
     self.contrastSlider.connect("value-changed", self.adjustInputImage)
-    self.scaleInputImage.connect("value-changed", self.adjustInputImage)
-    self.sigmaSpaceSlider.connect("value-changed", self.adjustInputImage)
-    self.sigmaColorSlider.connect("value-changed", self.adjustInputImage)
-    self.pixNeighborhoodSlider.connect("value-changed", self.adjustInputImage)
-
 
   def onFileMenuImportClick(self, menuItem):
     importDialog = Gtk.FileChooserDialog(title="Open Input Image",
@@ -157,72 +129,32 @@ class MyWindow(Gtk.Window):
       #
       self.inputImage = cv2.imread(self.inputImageFileName)
 
+      self.postitExtractor = PostitExtractor(self.inputImage)
+
       self.adjustInputImage(None)
 
     importDialog.destroy()
 
   def adjustInputImage(self, widget):
 
-    if self.inputImage is None:
+    if self.postitExtractor is None:
       return
 
     print("Adjust Image ")
 
     saturation = int(self.saturationSlider.get_value())
     contrast = int(self.contrastSlider.get_value())
-    scaleFactor = self.scaleInputImage.get_value()
-    gBlurKernelSize = int(self.gBlurKernelSize.get_value())
-    sigmaSpace = int(self.sigmaSpaceSlider.get_value())
-    sigmaColor = int(self.sigmaColorSlider.get_value())
-    pixNeighbor = int(self.pixNeighborhoodSlider.get_value())
 
-    # Scale down
-    inputResizedColour = cv2.resize(self.inputImage,
-      dsize=(0,0),
-      fx=scaleFactor,
-      fy=scaleFactor,
-      interpolation=cv2.INTER_AREA)
+    # TODO: Saturation and contrast
 
-    height, width, channels = inputResizedColour.shape
+    postits = self.postitExtractor.extractPostits()
 
-    rgbInputImage = cv2.cvtColor(inputResizedColour, cv2.COLOR_BGR2RGB)
+    print(len(postits))
 
-    inputImageBuf = GdkPixbuf.Pixbuf().new_from_data(inputResizedColour.tobytes(),
-      GdkPixbuf.Colorspace.RGB,
-      False,
-      8, # HACK, cant find out how to get this from the image
-      width,
-      height,
-      width * channels)
+    print(postits)
 
-    self.inputImageWidget.set_from_pixbuf(inputImageBuf)
-
-    # # Gaussian Blur (to remove text in the post-its)
-    # blurredColour = cv2.GaussianBlur(inputResizedColour,
-    #   ksize=(gBlurKernelSize, gBlurKernelSize),
-    #   sigmaX=0)
-
-    # # Bilateral filtering
-    # blurredColour = cv2.bilateralFilter(blurredColour,
-    #   d=pixNeighbor,
-    #   sigmaColor=sigmaColor,
-    #   sigmaSpace=sigmaSpace)
-
-    # # Histogram equalization
-    # outputImage = equalizeColour(blurredColour)
-
-    # segmentation(outputImage)
-
-    # outputImageBuf = GdkPixbuf.Pixbuf.new_from_data(rgbInputImage.tobytes(),
-    #   GdkPixbuf.Colorspace.RGB,
-    #   False,
-    #   8, # HACK, cant find out how to get this from the image
-    #   width,
-    #   height,
-    #   width * channels)
-
-    # self.outputImageWidget.set_from_pixbuf(outputImageBuf)
-
+    for postit in postits:
+      cv2.imshow("foo" + str(postit), postit["image"])
 
 def equalizeColour(inputColour):
     # BRG to YCrCb
