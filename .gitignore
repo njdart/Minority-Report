@@ -72,3 +72,12 @@ target/
 
 # vim swp
 *.swp
+
+# Visual Studio
+.vs/*
+*.sdf
+bin/*
+obj/*
+Debug/*
+Release/*
+Win32/*
