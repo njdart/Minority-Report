@@ -46,14 +46,16 @@ class PostitExtract:
             },
         }
 
-    def extractPostits(self, sigma=0.8, minPostitArea = 3000, maxPostitArea = 20000, lenTolerence = 0.15, minColourThresh = 64, maxColourThresh = 200):
+    def extractPostits(self, showDebug=False, sigma=0.8, minPostitArea = 3000, maxPostitArea = 20000, lenTolerence = 0.15, minColourThresh = 64, maxColourThresh = 200):
         
         foundPostits = []
 
         canvasPos = self.findCanvas()
         self.image = self.image[canvasPos[1]:(canvasPos[1]+canvasPos[3]), canvasPos[0]:(canvasPos[0]+canvasPos[2])]
+        if showDebug:
+            cv2.imshow("Canvas Extracted", self.image)
+            cv2.waitKey(0)
 
-        cv2.imshow("Canvas", self.image)
         v = np.median(self.image)
         lower = int(max(0, (1.0 - sigma) * v))
         upper = int(min(255, (1.0 + sigma) * v))
@@ -68,15 +70,23 @@ class PostitExtract:
                 height = math.hypot(box[2,0]-box[1,0], box[2,1]-box[1,1])
                 if (length*(2-lenTolerence) < length+height < length*(2+lenTolerence)):
                     Rectangle = cv2.boundingRect(c)
+                    if showDebug:
+                        print(cv2.contourArea(box))
+                        cv2.drawContours(self.image, [box], 0, (0, 255, 0), 3)
                     self.postitPos.append(Rectangle)
                     self.postitImage.append(self.image[Rectangle[1]:(Rectangle[1]+Rectangle[3]), Rectangle[0]:(Rectangle[0]+Rectangle[2])])
+        if showDebug:
+            edged
+            cv2.imshow("Canny edge detection", edged)
+            cv2.imshow("Canvas Extracted", self.image)
+            cv2.waitKey(0)
 
-        for postit in self.postitImage:
+        for idx, postit in enumerate(self.postitImage):
 
             gray = cv2.cvtColor(postit, cv2.COLOR_BGR2GRAY)
             rTotal = gTotal = bTotal = 0
             count = 0
-            print(postit.shape)
+            #print(postit.shape)
             (width, height, depth) = postit.shape
             for y in range(height):
                 for x in range(width):
@@ -97,7 +107,9 @@ class PostitExtract:
 
             foundPostit = {
                 "image": postit,
-                "colour": guessedColour
+                "colour": guessedColour,
+                "position": self.postitPos[idx]
+
             }
 
             foundPostits.append(foundPostit)
@@ -144,5 +156,18 @@ class PostitExtract:
         # cv2.imshow("Canbas Bounds", temp)
 
         return canvasBounds
+
+if __name__ == "__main__":
+    image = cv2.imread("ks1.png")
+    extractor = PostitExtract(image)
+    postits = extractor.extractPostits(showDebug=False, minPostitArea = 800, maxPostitArea = 2000000, lenTolerence = 0.6)
+    print(len(postits))
+    num = 0
+    for postit in postits:
+        cv2.imshow("Postit %d" %(num),postit["image"])
+        print(postit["colour"])
+        print(postit["position"])
+        num += 1
+    cv2.waitKey(0)
 
 
