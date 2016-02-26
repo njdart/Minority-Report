@@ -2,14 +2,16 @@ import cv2
 import numpy as np
 import math
 
-class PostitExtract:
+class GraphExtractor:
     """Get postits from a board image"""
     def __init__(self, image):
         self.DEBUG_PLOT = False
+        self.rawImage = image
         self.image = image
         self.postitPos = []
         self.postitImage = []
         self.postitColour = []
+        self.lineEnds = []
 
         self.ColourThresholds = {
             "ORANGE": {
@@ -46,20 +48,24 @@ class PostitExtract:
             },
         }
 
+    def extractGraph(self, showDebug=False, sigma=0.8, minPostitArea = 3000, maxPostitArea = 20000, lenTolerence = 0.15, minColourThresh = 64, maxColourThresh = 200):
+        postits = self.extractPostits(showDebug, sigma, minPostitArea, maxPostitArea, lenTolerence, minColourThresh, maxColourThresh)
+        lines =  self.extractLines(showDebug, sigma)
+        graph = {
+                "postits": postits,
+                "lines": lines
+            }
+        return graph
+
     def extractPostits(self, showDebug=False, sigma=0.8, minPostitArea = 3000, maxPostitArea = 20000, lenTolerence = 0.15, minColourThresh = 64, maxColourThresh = 200):
-        
+
         foundPostits = []
+        img = self.image
 
-        canvasPos = self.findCanvas()
-        self.image = self.image[canvasPos[1]:(canvasPos[1]+canvasPos[3]), canvasPos[0]:(canvasPos[0]+canvasPos[2])]
-        if showDebug:
-            cv2.imshow("Canvas Extracted", self.image)
-            cv2.waitKey(0)
-
-        v = np.median(self.image)
+        v = np.median(img)
         lower = int(max(0, (1.0 - sigma) * v))
         upper = int(min(255, (1.0 + sigma) * v))
-        edged = cv2.Canny(self.image, lower, upper)
+        edged = cv2.Canny(img, lower, upper)
 
         (_,cnts, _) = cv2.findContours(edged.copy(), cv2.RETR_TREE, cv2.CHAIN_APPROX_TC89_KCOS)
         for c in cnts:
@@ -72,13 +78,13 @@ class PostitExtract:
                     Rectangle = cv2.boundingRect(c)
                     if showDebug:
                         print(cv2.contourArea(box))
-                        cv2.drawContours(self.image, [box], 0, (0, 255, 0), 3)
+                        cv2.drawContours(img, [box], 0, (0, 255, 0), 3)
                     self.postitPos.append(Rectangle)
-                    self.postitImage.append(self.image[Rectangle[1]:(Rectangle[1]+Rectangle[3]), Rectangle[0]:(Rectangle[0]+Rectangle[2])])
+                    self.postitImage.append(img[Rectangle[1]:(Rectangle[1]+Rectangle[3]), Rectangle[0]:(Rectangle[0]+Rectangle[2])])
         if showDebug:
             edged
             cv2.imshow("Canny edge detection", edged)
-            cv2.imshow("Canvas Extracted", self.image)
+            cv2.imshow("Canvas Extracted", img)
             cv2.waitKey(0)
 
         for idx, postit in enumerate(self.postitImage):
@@ -134,40 +140,67 @@ class PostitExtract:
 
         return None
 
-    def findCanvas(self):
-        # cv2.imshow("Origonal", self.image)
+    def extractLines(self, showDebug=True, sigma=0.8):
+        foundLines = []
+        img = self.image
 
-        (__, board) = cv2.threshold(self.image,200,255,cv2.THRESH_TOZERO)
-        grayBoard = cv2.cvtColor(board, cv2.COLOR_RGB2GRAY)
-        
-        # cv2.imshow("Gray Board", grayBoard)
+        gray = cv2.cvtColor(img,cv2.COLOR_BGR2GRAY)
+        v = np.median(img)
+        lower = int(max(0, (1.0 - sigma) * v))
+        upper = int(min(255, (1.0 + sigma) * v))
+        edged = cv2.Canny(img, lower, upper)
+        minLineLength = 100
+        maxLineGap = 10
+        lines = cv2.HoughLinesP(edged,1,np.pi/180,10,minLineLength,maxLineGap)
+        if lines.any():
+            for x1,y1,x2,y2 in lines[0]:
+                cv2.line(img,(x1,y1),(x2,y2),(0,255,0),2)
+            if showDebug:
+                cv2.imshow("Lines Extracted", img)
+                cv2.waitKey(0)
 
-        (__, boardContours, __) = cv2.findContours(grayBoard, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-        areas = [cv2.contourArea(c) for c in boardContours]
 
-        max_index = np.argmax(areas)
-        canvasContour=boardContours[max_index]
-        canvasBounds = cv2.boundingRect(canvasContour)
+        return foundLines
 
-        # temp = self.image.copy()
 
-        # cv2.rectangle(temp,(canvasBounds[0],canvasBounds[1]),(canvasBounds[0]+canvasBounds[2],canvasBounds[1]+canvasBounds[3]),(0,255,0),2)
+def findCanvas(image, showDebug=False):
+    (__, board) = cv2.threshold(image,200,255,cv2.THRESH_TOZERO)
+    grayBoard = cv2.cvtColor(board, cv2.COLOR_RGB2GRAY)
 
-        # cv2.imshow("Canbas Bounds", temp)
+    (__, boardContours, __) = cv2.findContours(grayBoard, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+    areas = [cv2.contourArea(c) for c in boardContours]
 
-        return canvasBounds
+    max_index = np.argmax(areas)
+    canvasContour=boardContours[max_index]
+    canvasBounds = cv2.boundingRect(canvasContour)
+
+    if showDebug:
+        boundedImage = image[canvasBounds[1]:(canvasBounds[1]+canvasBounds[3]), canvasBounds[0]:(canvasBounds[0]+canvasBounds[2])]
+        cv2.imshow("Canvas Extracted", boundedImage)
+        cv2.waitKey(0)
+
+    return canvasBounds
+
 
 if __name__ == "__main__":
-    image = cv2.imread("ks1.png")
-    extractor = PostitExtract(image)
-    postits = extractor.extractPostits(showDebug=False, minPostitArea = 800, maxPostitArea = 2000000, lenTolerence = 0.6)
-    print(len(postits))
+    canvImg = cv2.imread("WIN_20160226_14_24_54_Pro.jpg")
+    canvArea = findCanvas(canvImg)
+    image = cv2.imread("WIN_20160226_14_25_06_Pro.jpg")
+    image = image[canvArea[1]:(canvArea[1]+canvArea[3]), canvArea[0]:(canvArea[0]+canvArea[2])]
+
+    extractor = GraphExtractor(image)
+    graph = extractor.extractGraph(minPostitArea = 800, maxPostitArea = 2000000, lenTolerence = 0.6)
+
+    print(len(graph))
     num = 0
-    for postit in postits:
+
+    for postit in graph["postits"]:
         cv2.imshow("Postit %d" %(num),postit["image"])
         print(postit["colour"])
         print(postit["position"])
         num += 1
     cv2.waitKey(0)
+    extractor.extractLines(showDebug=True)
+
 
 
