@@ -5,12 +5,12 @@ using System.Runtime.InteropServices;
 // General Information about an assembly is controlled through the following 
 // set of attributes. Change these attribute values to modify the information
 // associated with an assembly.
-[assembly: AssemblyTitle("Input Abstraction")]
+[assembly: AssemblyTitle("Display")]
 [assembly: AssemblyDescription("")]
 [assembly: AssemblyConfiguration("")]
-[assembly: AssemblyCompany("")]
-[assembly: AssemblyProduct("Input Abstraction")]
-[assembly: AssemblyCopyright("Copyright ©  2016")]
+[assembly: AssemblyCompany("Cambridge Consultants")]
+[assembly: AssemblyProduct("Display")]
+[assembly: AssemblyCopyright("Copyright © Cambridge Consultants 2016")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]
 
@@ -20,7 +20,7 @@ using System.Runtime.InteropServices;
 [assembly: ComVisible(false)]
 
 // The following GUID is for the ID of the typelib if this project is exposed to COM
-[assembly: Guid("4ddf7d06-227f-4e76-9455-f39967502cf7")]
+[assembly: Guid("a39a5aff-f819-46dc-b64b-fe34eb7d0498")]
 
 // Version information for an assembly consists of the following four values:
 //

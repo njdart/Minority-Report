@@ -4,9 +4,9 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Processing
+namespace Minority_Report
 {
-    public class Class1
+    interface IDisplay
     {
     }
 }

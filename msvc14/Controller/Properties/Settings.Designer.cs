@@ -8,7 +8,7 @@
 // </auto-generated>
 //------------------------------------------------------------------------------
 
-namespace MinorityReportApp.Properties
+namespace Minority_Report.Properties
 {
 
 

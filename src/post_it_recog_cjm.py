@@ -13,7 +13,8 @@ class PostitDetector():
         Convenience function
         Will eventually have error checking
         """
-        cv2.imshow('image', image)
+        plt.imshow(image)
+        plt.show()
 
     def img_to_binary(self, image):
         """
@@ -22,12 +23,12 @@ class PostitDetector():
         """
         if image is None:
             raise ValueError("Image was None")
-        gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+        gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
         ret, thresh = cv2.threshold(gray, 0, 255, cv2.THRESH_BINARY_INV+cv2.THRESH_OTSU)
-        print("Threshold was {0}".format(ret))
+        print("ret was {0}".format(ret))
         return thresh
 
-    def resize_image(self, image, axis=None, res_val=None):
+    def resize_img(self, image, axis=None, res_val=None):
         """
         Resizes an image to fit on the screen by default
         when supplying X or Y, it will resize (keeping aspect ratio)
@@ -56,3 +57,12 @@ class PostitDetector():
     def edge_detect(self, image, lower_thresh=100, upper_thresh=200):
         blur = cv2.blur(image, (3, 3))
         return cv2.Canny(blur, lower_thresh, upper_thresh)
+
+if __name__ == "__main__":
+    p = PostitDetector("C:\\src\\Minority-Report\\camera-imgs\\postits1.jpg")
+    p.img = p.resize_img(p.img)
+    # p.show_img(p.img)
+    p.img = p.img_to_binary(p.img)
+    #p.show_img(p.img)
+    edge = p.edge_detect(p.img)
+
