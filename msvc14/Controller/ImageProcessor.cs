@@ -6,8 +6,11 @@ using System.Threading.Tasks;
 
 namespace Minority_Report
 {
-    static class ImageProcessor
+    public static class ImageProcessor
     {
-
+        public static PostIt[] getPostIts()
+        {
+            return new PostIt[3];
+        }
     }
 }
