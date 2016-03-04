@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using log4net.Config;
 
 namespace MinorityReport
 {
@@ -10,8 +11,11 @@ namespace MinorityReport
     {
         static void Main(string[] args)
         {
+            ImageProcessor imgProc = new ImageProcessor();
+            for (;;)
+            {
+                // Do nothing.
+            }
         }
-
-        private ImageProcessor m_ImgProcessor;
     }
 }
