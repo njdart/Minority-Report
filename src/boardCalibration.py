@@ -70,3 +70,4 @@ if __name__ == "__main__":
 
         cv2.imwrite('new.jpg',img2)
 
+
