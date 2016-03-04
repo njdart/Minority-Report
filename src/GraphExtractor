@@ -50,7 +50,7 @@ class GraphExtractor:
 
     def extractGraph(self, showDebug=False, sigma=0.8, minPostitArea = 3000, maxPostitArea = 20000, lenTolerence = 0.15, minColourThresh = 64, maxColourThresh = 200):
         postits = self.extractPostits(showDebug, sigma, minPostitArea, maxPostitArea, lenTolerence, minColourThresh, maxColourThresh)
-        lines =  self.extractLines(showDebug, sigma)
+        lines =  self.extractLines(postits, showDebug, sigma)
         graph = {
                 "postits": postits,
                 "lines": lines
@@ -62,10 +62,14 @@ class GraphExtractor:
         foundPostits = []
         img = self.image
 
+        edged = cv2.Canny(img, 0, 90)
+        cv2.imwrite("image.jpg",edged)
+
         v = np.median(img)
         lower = int(max(0, (1.0 - sigma) * v))
         upper = int(min(255, (1.0 + sigma) * v))
-        edged = cv2.Canny(img, lower, upper)
+        edged = cv2.Canny(img, 0, 90)
+
 
         (_,cnts, _) = cv2.findContours(edged.copy(), cv2.RETR_TREE, cv2.CHAIN_APPROX_TC89_KCOS)
         for c in cnts:
@@ -82,9 +86,11 @@ class GraphExtractor:
                     self.postitPos.append(Rectangle)
                     self.postitImage.append(img[Rectangle[1]:(Rectangle[1]+Rectangle[3]), Rectangle[0]:(Rectangle[0]+Rectangle[2])])
         if showDebug:
-            edged
-            cv2.imshow("Canny edge detection", edged)
-            cv2.imshow("Canvas Extracted", img)
+
+            #cv2.imshow("Canny edge detection", edged)
+            #cv2.imshow("Canvas Extracted", img)
+            cv2.imwrite("image.jpg",edged)
+            #cv2.imwrite("image.jpg",img)
             cv2.waitKey(0)
 
         for idx, postit in enumerate(self.postitImage):
@@ -140,7 +146,10 @@ class GraphExtractor:
 
         return None
 
-    def extractLines(self, showDebug=True, sigma=0.8):
+    def getFeatures(self):
+        pass
+
+    def extractLines(self, postits, showDebug=False, sigma=0.8):
         foundLines = []
         img = self.image
 
@@ -149,49 +158,96 @@ class GraphExtractor:
         lower = int(max(0, (1.0 - sigma) * v))
         upper = int(min(255, (1.0 + sigma) * v))
         edged = cv2.Canny(img, lower, upper)
-        minLineLength = 100
-        maxLineGap = 10
-        lines = cv2.HoughLinesP(edged,1,np.pi/180,10,minLineLength,maxLineGap)
-        if lines.any():
-            for x1,y1,x2,y2 in lines[0]:
-                cv2.line(img,(x1,y1),(x2,y2),(0,255,0),2)
+
+        (_,cnts, _) = cv2.findContours(edged.copy(), cv2.RETR_TREE, cv2.CHAIN_APPROX_NONE)
+
+
+        for c in cnts:
+            postitIdx = [-1,-1]
+
+            startPoint, endPoint = self.findFurthestPair(c)
+
+            for idxstart, postit in enumerate(postits):
+                if postit["position"][0] < startPoint[0] < postit["position"][0]+postit["position"][2] and postit["position"][1] < startPoint[1] < postit["position"][1]+postit["position"][3]:
+                    postitIdx[0] = idxstart
+
+            for idxend, postit in enumerate(postits):
+                if postit["position"][0] < endPoint[0] < postit["position"][0]+postit["position"][2] and postit["position"][1] < endPoint[1] < postit["position"][1]+postit["position"][3]:
+                    postitIdx[1] = idxend
+
+            if postitIdx[0] > -1 and postitIdx[1] > -1:
+                foundLines.append(postitIdx)
+
+
             if showDebug:
-                cv2.imshow("Lines Extracted", img)
+                cImg = img.copy()
+                cv2.line(cImg,startPoint,endPoint,(255,0,0),5)
+                cv2.imshow("Contours", cImg)
                 cv2.waitKey(0)
+
+
+        if showDebug:
+            cv2.imshow("Lines Extracted", img)
+            cv2.waitKey(0)
 
 
         return foundLines
 
+    def findFurthestPair(self, contour):
+        distList =  np.zeros((4,4))
+
+        leftmost = tuple(contour[contour[:,:,0].argmin()][0])
+        rightmost = tuple(contour[contour[:,:,0].argmax()][0])
+        topmost = tuple(contour[contour[:,:,1].argmin()][0])
+        bottommost = tuple(contour[contour[:,:,1].argmax()][0])
+        points = [leftmost, rightmost, topmost, bottommost]
+
+        for idxa, pointa in enumerate(points):
+            for idxb, pointb in enumerate(points):
+                distList[idxa, idxb,] = math.hypot(pointa[0]-pointb[0],pointa[1]-pointb[1])
+        maxDistIdx = np.argmax(distList, axis=None)
+        maxDistIdx = np.unravel_index(maxDistIdx, distList.shape)
+        start = points[maxDistIdx[0]]
+        end = points[maxDistIdx[1]]
+        return(start, end)
+
+
+
 
 def findCanvas(image, showDebug=False):
-    (__, board) = cv2.threshold(image,200,255,cv2.THRESH_TOZERO)
+
+    (__, board) = cv2.threshold(image,100,255,cv2.THRESH_TOZERO)
     grayBoard = cv2.cvtColor(board, cv2.COLOR_RGB2GRAY)
+
+
 
     (__, boardContours, __) = cv2.findContours(grayBoard, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
     areas = [cv2.contourArea(c) for c in boardContours]
 
     max_index = np.argmax(areas)
-    canvasContour=boardContours[max_index]
+    canvasContour = boardContours[max_index]
     canvasBounds = cv2.boundingRect(canvasContour)
 
     if showDebug:
-        boundedImage = image[canvasBounds[1]:(canvasBounds[1]+canvasBounds[3]), canvasBounds[0]:(canvasBounds[0]+canvasBounds[2])]
-        cv2.imshow("Canvas Extracted", boundedImage)
+        for c in boardContours:
+            rect = cv2.minAreaRect(c)
+            box = cv2.boxPoints(rect)
+            box = np.int0(box)
+            cv2.drawContours(image,[box],0,(0,0,255),2)
+
         cv2.waitKey(0)
 
     return canvasBounds
 
 
 if __name__ == "__main__":
-    canvImg = cv2.imread("WIN_20160226_14_24_54_Pro.jpg")
+    canvImg = cv2.imread("IMG_20160304_154758.jpg")
     canvArea = findCanvas(canvImg)
-    image = cv2.imread("WIN_20160226_14_25_06_Pro.jpg")
+    image = cv2.imread("IMG_20160304_154813.jpg")
     image = image[canvArea[1]:(canvArea[1]+canvArea[3]), canvArea[0]:(canvArea[0]+canvArea[2])]
 
     extractor = GraphExtractor(image)
-    graph = extractor.extractGraph(minPostitArea = 800, maxPostitArea = 2000000, lenTolerence = 0.6)
-
-    print(len(graph))
+    graph = extractor.extractGraph(minPostitArea = 3000, maxPostitArea = 2000000, lenTolerence = 0.4, sigma=0.99)
     num = 0
 
     for postit in graph["postits"]:
@@ -200,7 +256,6 @@ if __name__ == "__main__":
         print(postit["position"])
         num += 1
     cv2.waitKey(0)
-    extractor.extractLines(showDebug=True)
-
+#http://opencv-python-tutroals.readthedocs.org/en/latest/py_tutorials/py_feature2d/py_feature_homography/py_feature_homography.html
 
 
