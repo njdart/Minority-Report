@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Drawing;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -10,9 +11,12 @@ namespace Minority_Report
 {
     public static class ImageProcessor
     {
-        public static PostIt[] getPostIts()
+        public static List<PostIt> extractPostIts(bool showDebug = false, double sigma = 0.8, int minPostitArea = 3000,
+            int maxPostItArea = 20000, double lenTolerance = 0.15, int minColourThresh = 64, int maxColourThresh = 200)
         {
-            return new PostIt[3];
+            List<PostIt> found = new List<PostIt>();
+
+            return found;
         }
 
         public static Rectangle findCanvas()
