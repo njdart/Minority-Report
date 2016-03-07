@@ -2,17 +2,15 @@
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
-[assembly: log4net.Config.XmlConfigurator(Watch = true)]
-
 // General Information about an assembly is controlled through the following 
 // set of attributes. Change these attribute values to modify the information
 // associated with an assembly.
-[assembly: AssemblyTitle("MinorityReport")]
+[assembly: AssemblyTitle("Storage")]
 [assembly: AssemblyDescription("")]
 [assembly: AssemblyConfiguration("")]
-[assembly: AssemblyCompany("")]
-[assembly: AssemblyProduct("MinorityReport")]
-[assembly: AssemblyCopyright("Copyright ©  2016")]
+[assembly: AssemblyCompany("Cambridge Consultants")]
+[assembly: AssemblyProduct("Storage")]
+[assembly: AssemblyCopyright("Copyright © Cambridge Consultants 2016")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]
 
@@ -22,7 +20,7 @@ using System.Runtime.InteropServices;
 [assembly: ComVisible(false)]
 
 // The following GUID is for the ID of the typelib if this project is exposed to COM
-[assembly: Guid("c33c5e88-d683-4d8e-9d4c-9907f3fdab90")]
+[assembly: Guid("2a5ec282-4cd8-4cda-a00b-19f3d3cfc75b")]
 
 // Version information for an assembly consists of the following four values:
 //

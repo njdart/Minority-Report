@@ -1,13 +1,27 @@
 ﻿using System;
+using System.Drawing;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Emgu.CV;
+using System.Drawing;
 
 namespace Minority_Report
 {
-    static class ImageProcessor
+    public static class ImageProcessor
     {
+        public static List<PostIt> extractPostIts(bool showDebug = false, double sigma = 0.8, int minPostitArea = 3000,
+            int maxPostItArea = 20000, double lenTolerance = 0.15, int minColourThresh = 64, int maxColourThresh = 200)
+        {
+            List<PostIt> found = new List<PostIt>();
 
+            return found;
+        }
+
+        public static Rectangle findCanvas()
+        {
+            return new Rectangle();
+        }
     }
 }

@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 
 namespace Minority_Report
 {
-    class WhiteBoard
+    public class WhiteBoard
     {
         List<PostIt> postits;
         List<Arrow> arrows;
@@ -24,13 +24,13 @@ namespace Minority_Report
         }
     }
 
-    class PostIt
+    public class PostIt
     {
         Point[] coords;
         Color color;
     }
 
-    class Arrow
+    public class Arrow
     {
         Point[] coords;
     }
