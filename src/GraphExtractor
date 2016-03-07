@@ -50,7 +50,7 @@ class GraphExtractor:
 
     def extractGraph(self, showDebug=False, sigma=0.8, minPostitArea = 3000, maxPostitArea = 20000, lenTolerence = 0.15, minColourThresh = 64, maxColourThresh = 200):
         postits = self.extractPostits(showDebug, sigma, minPostitArea, maxPostitArea, lenTolerence, minColourThresh, maxColourThresh)
-        lines =  self.extractLines(postits, showDebug, sigma)
+        lines =  self.extractLines(postits, showDebug)
         graph = {
                 "postits": postits,
                 "lines": lines
@@ -61,20 +61,14 @@ class GraphExtractor:
 
         foundPostits = []
         img = self.image
+        boxedimg = img.copy()
+        edgegray = self.edge(img)
 
-        edged = cv2.Canny(img, 0, 90)
-        cv2.imwrite("image.jpg",edged)
-
-        v = np.median(img)
-        lower = int(max(0, (1.0 - sigma) * v))
-        upper = int(min(255, (1.0 + sigma) * v))
-        edged = cv2.Canny(img, 0, 90)
-
-
-        (_,cnts, _) = cv2.findContours(edged.copy(), cv2.RETR_TREE, cv2.CHAIN_APPROX_TC89_KCOS)
+        (_,cnts, _) = cv2.findContours(edgegray.copy(), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
         for c in cnts:
             box = cv2.boxPoints(cv2.minAreaRect(c))
             box = np.int0(box)
+            cv2.drawContours(boxedimg, [box], 0, (0, 255, 0), 3)
             if ((cv2.contourArea(box) > minPostitArea) and (cv2.contourArea(box) < maxPostitArea)):
                 length = math.hypot(box[0,0]-box[1,0], box[0,1]-box[1,1])
                 height = math.hypot(box[2,0]-box[1,0], box[2,1]-box[1,1])
@@ -85,11 +79,15 @@ class GraphExtractor:
                         cv2.drawContours(img, [box], 0, (0, 255, 0), 3)
                     self.postitPos.append(Rectangle)
                     self.postitImage.append(img[Rectangle[1]:(Rectangle[1]+Rectangle[3]), Rectangle[0]:(Rectangle[0]+Rectangle[2])])
+        bob = cv2.resize(boxedimg,None, fx=0.5, fy=0.5, interpolation=cv2.INTER_AREA)
+        cv2.imshow("edged.jpg", bob)
+        cv2.waitKey(0)
+
         if showDebug:
 
             #cv2.imshow("Canny edge detection", edged)
             #cv2.imshow("Canvas Extracted", img)
-            cv2.imwrite("image.jpg",edged)
+            cv2.imwrite("image.jpg",img)
             #cv2.imwrite("image.jpg",img)
             cv2.waitKey(0)
 
@@ -149,33 +147,28 @@ class GraphExtractor:
     def getFeatures(self):
         pass
 
-    def extractLines(self, postits, showDebug=False, sigma=0.8):
+    def extractLines(self, postits, showDebug=False):
         foundLines = []
         img = self.image
 
-        gray = cv2.cvtColor(img,cv2.COLOR_BGR2GRAY)
-        v = np.median(img)
-        lower = int(max(0, (1.0 - sigma) * v))
-        upper = int(min(255, (1.0 + sigma) * v))
-        edged = cv2.Canny(img, lower, upper)
+        edged = self.edge(img)
 
         (_,cnts, _) = cv2.findContours(edged.copy(), cv2.RETR_TREE, cv2.CHAIN_APPROX_NONE)
-
-
+        tolerence =20
         for c in cnts:
             postitIdx = [-1,-1]
 
             startPoint, endPoint = self.findFurthestPair(c)
 
             for idxstart, postit in enumerate(postits):
-                if postit["position"][0] < startPoint[0] < postit["position"][0]+postit["position"][2] and postit["position"][1] < startPoint[1] < postit["position"][1]+postit["position"][3]:
+                if postit["position"][0]-tolerence < startPoint[0] < postit["position"][0]+postit["position"][2]+tolerence and postit["position"][1]-tolerence < startPoint[1] < postit["position"][1]+postit["position"][3]+tolerence:
                     postitIdx[0] = idxstart
 
             for idxend, postit in enumerate(postits):
-                if postit["position"][0] < endPoint[0] < postit["position"][0]+postit["position"][2] and postit["position"][1] < endPoint[1] < postit["position"][1]+postit["position"][3]:
+                if postit["position"][0]-tolerence < endPoint[0] < postit["position"][0]+postit["position"][2]+tolerence and postit["position"][1]-tolerence < endPoint[1] < postit["position"][1]+postit["position"][3]+tolerence:
                     postitIdx[1] = idxend
 
-            if postitIdx[0] > -1 and postitIdx[1] > -1:
+            if postitIdx[0] > -1 and postitIdx[1] > -1 and postitIdx[0] != postitIdx[1]:
                 foundLines.append(postitIdx)
 
 
@@ -211,6 +204,21 @@ class GraphExtractor:
         end = points[maxDistIdx[1]]
         return(start, end)
 
+    def edge(self,img):
+        img = cv2.medianBlur(img,9)
+
+        #self.display(img)
+        gray = cv2.cvtColor(img, cv2.COLOR_RGB2GRAY)
+        #self.display(gray)
+        edged = cv2.Canny(gray, 1, 30)
+        self.display(edged)
+
+        return edged
+
+    def display(self,img):
+        img = cv2.resize(img,None, fx=0.5, fy=0.5, interpolation=cv2.INTER_AREA)
+        cv2.imshow("Image", img)
+        cv2.waitKey(10)
 
 
 
@@ -247,7 +255,7 @@ if __name__ == "__main__":
     image = image[canvArea[1]:(canvArea[1]+canvArea[3]), canvArea[0]:(canvArea[0]+canvArea[2])]
 
     extractor = GraphExtractor(image)
-    graph = extractor.extractGraph(minPostitArea = 3000, maxPostitArea = 2000000, lenTolerence = 0.4, sigma=0.99)
+    graph = extractor.extractGraph(minPostitArea = 10000, maxPostitArea = 40000, lenTolerence = 0.4, sigma=0.33)
     num = 0
 
     for postit in graph["postits"]:
@@ -255,6 +263,8 @@ if __name__ == "__main__":
         print(postit["colour"])
         print(postit["position"])
         num += 1
+    for line in graph["lines"]:
+        print(line)
     cv2.waitKey(0)
 #http://opencv-python-tutroals.readthedocs.org/en/latest/py_tutorials/py_feature2d/py_feature_homography/py_feature_homography.html
 
