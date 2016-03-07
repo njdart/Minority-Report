@@ -62,7 +62,7 @@ class GraphExtractor:
         foundPostits = []
         img = self.image
         boxedimg = img.copy()
-        edgegray = self.edge(img)
+        edgegray = self.edge(img, False)
 
         (_,cnts, _) = cv2.findContours(edgegray.copy(), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
         for c in cnts:
@@ -151,7 +151,7 @@ class GraphExtractor:
         foundLines = []
         img = self.image
 
-        edged = self.edge(img)
+        edged = self.edge(img, True)
 
         (_,cnts, _) = cv2.findContours(edged.copy(), cv2.RETR_TREE, cv2.CHAIN_APPROX_NONE)
         tolerence =20
@@ -204,12 +204,16 @@ class GraphExtractor:
         end = points[maxDistIdx[1]]
         return(start, end)
 
-    def edge(self,img):
+    def edge(self,img,line):
         img = cv2.medianBlur(img,9)
-
         #self.display(img)
+
+        if not line:
+            __,img = cv2.threshold(img,120,255,cv2.THRESH_BINARY)
         gray = cv2.cvtColor(img, cv2.COLOR_RGB2GRAY)
-        #self.display(gray)
+
+
+        self.display(gray)
         edged = cv2.Canny(gray, 1, 30)
         self.display(edged)
 
@@ -218,7 +222,7 @@ class GraphExtractor:
     def display(self,img):
         img = cv2.resize(img,None, fx=0.5, fy=0.5, interpolation=cv2.INTER_AREA)
         cv2.imshow("Image", img)
-        cv2.waitKey(10)
+        cv2.waitKey(0)
 
 
 
