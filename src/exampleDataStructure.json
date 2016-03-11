@@ -1,0 +1,72 @@
+[
+
+  // A Frame/Snapshot
+  {
+    // UUID for the Snapshot
+    "uuid": "de305d54-75b4-431b-adb2-eb6b9e546014",
+
+    // The UUID of the snapshot this follows from
+    // May be used in future for branching?
+    "followsFrom": null,  
+
+    // The size of the extracted canvas used (IE the whiteboard)
+    // In Pixels
+    "canvas": {
+      "height": 1024,
+      "width": 768,
+
+      // The origonal canvas picture in base64?
+      "pixels": "?"
+    },
+
+    // A list of postits
+    "postits": [
+      {
+        // An *object* containing the pixel values (opencv spits out numpy arrays)
+        // may end up using bson to store this?
+        "pixels": "?",
+
+        // a colour (could be user defined)
+        "colour": "red",
+
+        // A UUID for a postit
+        "uuid": "787e2dab-8490-47db-af36-5ce800d902fe",
+
+        // Coordinates the postit was found on the canvas
+        // Top left of postit bounding box relative to top left of the canvas
+        "x": 0,
+        "y": 0,
+
+        // The size of the postit bounding box
+        "height": 10,
+        "width": 10,
+
+        // If the posit was a physical (Not projected) postit or not, if the postit was
+        // removed, but not binned then this should be true.
+        "isPhysical": true
+      },
+      ...
+    ],
+    "connections": [
+      {
+        // Starting coords ( Start and end coords may be unnessecary?)
+        "x1": 0,
+        "y1": 0,
+
+        // Ending coords
+        "x2": 100,
+        "y2": 100,
+
+        // UUID of the "start" postit
+        "from": "787e2dab-8490-47db-af36-5ce800d902fe",
+
+        // UUID of the "end" postit
+        "to": "ca389acc-f180-4007-b46d-420f1eeace25",
+
+        // the type of line IE line, arrow, dashed, cardinality
+        "type": "line"
+      },
+      ...
+    ]
+  }
+]
