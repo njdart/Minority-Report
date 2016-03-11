@@ -1,7 +1,7 @@
-﻿<Application x:Class="Minority_Report.App"
+﻿<Application x:Class="MinorityReportApp.App"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-             xmlns:local="clr-namespace:Minority_Report"
+             xmlns:local="clr-namespace:MinorityReportApp"
              StartupUri="MainWindow.xaml">
     <Application.Resources>
          

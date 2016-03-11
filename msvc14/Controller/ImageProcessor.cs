@@ -5,7 +5,6 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Emgu.CV;
-using System.Drawing;
 
 namespace Minority_Report
 {
@@ -14,9 +13,9 @@ namespace Minority_Report
         public static List<PostIt> extractPostIts(bool showDebug = false, double sigma = 0.8, int minPostitArea = 3000,
             int maxPostItArea = 20000, double lenTolerance = 0.15, int minColourThresh = 64, int maxColourThresh = 200)
         {
-            List<PostIt> found = new List<PostIt>();
+            List<PostIt> foundPostits = new List<PostIt>();
 
-            return found;
+            return foundPostits;
         }
 
         public static Rectangle findCanvas()
