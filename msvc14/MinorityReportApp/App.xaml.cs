@@ -6,7 +6,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using System.Windows;
 
-namespace Minority_Report
+namespace MinorityReportApp
 {
     /// <summary>
     /// Interaction logic for App.xaml
