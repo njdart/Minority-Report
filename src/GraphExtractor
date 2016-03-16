@@ -210,11 +210,14 @@ class GraphExtractor:
         return(start, end)
 
     def edge(self,img,line, showDebug=False):
+        kernel = np.ones((5,5),np.uint8)
+
         img = cv2.medianBlur(img,9)
         if showDebug:
             self.display("blurred",img)
-
         if not line:
+
+            img = cv2.dilate(img,kernel,iterations = 3)
             __,img = cv2.threshold(img,120,255,cv2.THRESH_BINARY)
             if showDebug:
                 self.display("Threshed",img)
@@ -273,7 +276,7 @@ if __name__ == "__main__":
     graph1 = extractor1.extractGraph(minPostitArea = 10000, maxPostitArea = 40000, lenTolerence = 0.4, sigma=0.33)
 
     extractor2 = GraphExtractor(image2)
-    graph2 = extractor2.extractGraph(showDebug=True, minPostitArea = 10000, maxPostitArea = 40000, lenTolerence = 0.4, sigma=0.33)
+    graph2 = extractor2.extractGraph(minPostitArea = 10000, maxPostitArea = 40000, lenTolerence = 0.4, sigma=0.33)
 
 
     for postit in graph1["postits"]:
