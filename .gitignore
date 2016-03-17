@@ -84,3 +84,6 @@ Debug/
 Release/
 Win32/
 x64/
+
+# GTK stuff
+*.glade~

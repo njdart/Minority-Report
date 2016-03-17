@@ -4,6 +4,7 @@
   <requires lib="gtk+" version="3.16"/>
   <object class="GtkWindow" id="window1">
     <property name="can_focus">False</property>
+    <signal name="destroy" handler="on_window1_destroy" swapped="no"/>
     <child>
       <object class="GtkBox" id="box1">
         <property name="visible">True</property>
@@ -190,6 +191,8 @@
           <object class="GtkToolbar" id="toolbar1">
             <property name="visible">True</property>
             <property name="can_focus">False</property>
+            <property name="toolbar_style">icons</property>
+            <property name="icon_size">2</property>
           </object>
           <packing>
             <property name="expand">False</property>
@@ -216,6 +219,7 @@
                     <property name="margin_top">3</property>
                     <property name="margin_bottom">3</property>
                     <property name="label_xalign">0</property>
+                    <property name="label_yalign">0</property>
                     <property name="shadow_type">none</property>
                     <child>
                       <object class="GtkDrawingArea" id="drawingarea1">
@@ -290,6 +294,7 @@
               <object class="GtkButtonBox" id="buttonbox1">
                 <property name="visible">True</property>
                 <property name="can_focus">False</property>
+                <property name="opacity">0.96999999999999997</property>
                 <property name="margin_left">15</property>
                 <property name="margin_right">15</property>
                 <property name="margin_top">15</property>
