@@ -107,7 +107,7 @@ class GraphExtractor:
             guessedColour = self.guess_colour(rAvg, gAvg, bAvg)
             self.postitColour.append(guessedColour)
 
-            keypoints, descriptors = self.sift.detectAndCompute(postit,None)
+            keypoints, descriptors = self.sift.detectAndCompute(gray,None)
 
             foundPostit = {
                 "image": postit,
@@ -297,6 +297,20 @@ if __name__ == "__main__":
         cv2.line(image2, line["startPoint"], line["endPoint"], [255,0,0], thickness=4)
     extractor1.display("canvas1",image1)
     extractor2.display("canvas2",image2)
+
+    bf = cv2.BFMatcher()
+    postitPair = []
+    for o,postit1 in enumerate(graph1["postits"]):
+        for p,postit2 in enumerate(graph2["postits"]):
+            matches = bf.knnMatch(postit1["descriptors"], postit2["descriptors"], k = 2)
+            good = []
+            for m,n in matches:
+                if m.distance < 0.45*n.distance:
+                    good.append([m])
+            print(o,p, len(good))
+            if (len(good)>5):
+                postitPair.append([o,p])
+    print(postitPair)
 
 #http://opencv-python-tutroals.readthedocs.org/en/latest/py_tutorials/py_feature2d/py_feature_homography/py_feature_homography.html
 
