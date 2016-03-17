@@ -3,8 +3,14 @@ gi.require_version("Gtk", "3.0")
 from gi.repository import Gtk
 
 class MinorityReportGtkHandler:
-    def on_window1_destroy(self, *args):
+    def application_quit(self, *args):
         Gtk.main_quit(*args)
+
+    def load_file(self, *args):
+        print("'load file' clicked")
+
+    def save_file(self, *args):
+        print("'save file' clicked")
 
 def start_gui():
     """

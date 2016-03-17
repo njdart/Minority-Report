@@ -4,7 +4,7 @@
   <requires lib="gtk+" version="3.16"/>
   <object class="GtkWindow" id="window1">
     <property name="can_focus">False</property>
-    <signal name="destroy" handler="on_window1_destroy" swapped="no"/>
+    <signal name="destroy" handler="application_quit" swapped="no"/>
     <child>
       <object class="GtkBox" id="box1">
         <property name="visible">True</property>
@@ -60,6 +60,7 @@
                         <property name="can_focus">False</property>
                         <property name="use_underline">True</property>
                         <property name="use_stock">True</property>
+                        <signal name="activate" handler="load_file" swapped="no"/>
                       </object>
                     </child>
                     <child>
@@ -69,6 +70,7 @@
                         <property name="can_focus">False</property>
                         <property name="use_underline">True</property>
                         <property name="use_stock">True</property>
+                        <signal name="activate" handler="save_file" swapped="no"/>
                       </object>
                     </child>
                     <child>
@@ -93,6 +95,7 @@
                         <property name="can_focus">False</property>
                         <property name="use_underline">True</property>
                         <property name="use_stock">True</property>
+                        <signal name="activate" handler="application_quit" swapped="no"/>
                       </object>
                     </child>
                   </object>
@@ -193,6 +196,34 @@
             <property name="can_focus">False</property>
             <property name="toolbar_style">icons</property>
             <property name="icon_size">2</property>
+            <child>
+              <object class="GtkToolButton" id="toolbutton_load">
+                <property name="visible">True</property>
+                <property name="can_focus">False</property>
+                <property name="label" translatable="yes">Load...</property>
+                <property name="use_underline">True</property>
+                <property name="stock_id">gtk-open</property>
+                <signal name="clicked" handler="load_file" swapped="no"/>
+              </object>
+              <packing>
+                <property name="expand">False</property>
+                <property name="homogeneous">True</property>
+              </packing>
+            </child>
+            <child>
+              <object class="GtkToolButton" id="toolbutton_save">
+                <property name="visible">True</property>
+                <property name="can_focus">False</property>
+                <property name="label" translatable="yes">Save...</property>
+                <property name="use_underline">True</property>
+                <property name="stock_id">gtk-save</property>
+                <signal name="clicked" handler="save_file" swapped="no"/>
+              </object>
+              <packing>
+                <property name="expand">False</property>
+                <property name="homogeneous">True</property>
+              </packing>
+            </child>
           </object>
           <packing>
             <property name="expand">False</property>
@@ -303,8 +334,8 @@
                 <property name="baseline_position">top</property>
                 <property name="layout_style">start</property>
                 <child>
-                  <object class="GtkButton" id="button1">
-                    <property name="label" translatable="yes">button</property>
+                  <object class="GtkButton" id="button_capture">
+                    <property name="label" translatable="yes">Capture</property>
                     <property name="visible">True</property>
                     <property name="can_focus">True</property>
                     <property name="receives_default">True</property>
@@ -316,11 +347,14 @@
                   </packing>
                 </child>
                 <child>
-                  <object class="GtkButton" id="button2">
-                    <property name="label" translatable="yes">button</property>
+                  <object class="GtkButton" id="button_load">
+                    <property name="label">gtk-open</property>
                     <property name="visible">True</property>
                     <property name="can_focus">True</property>
                     <property name="receives_default">True</property>
+                    <property name="use_stock">True</property>
+                    <property name="always_show_image">True</property>
+                    <signal name="clicked" handler="load_file" swapped="no"/>
                   </object>
                   <packing>
                     <property name="expand">True</property>
@@ -329,11 +363,14 @@
                   </packing>
                 </child>
                 <child>
-                  <object class="GtkButton" id="button3">
-                    <property name="label" translatable="yes">button</property>
+                  <object class="GtkButton" id="button_save">
+                    <property name="label">gtk-save</property>
                     <property name="visible">True</property>
                     <property name="can_focus">True</property>
                     <property name="receives_default">True</property>
+                    <property name="use_stock">True</property>
+                    <property name="always_show_image">True</property>
+                    <signal name="clicked" handler="save_file" swapped="no"/>
                   </object>
                   <packing>
                     <property name="expand">True</property>
