@@ -62,7 +62,7 @@ target/
 .ipynb_checkpoints
 
 #Pycharm specific
-.idea/*
+.idea/
 
 #Image files
 *.jpg
