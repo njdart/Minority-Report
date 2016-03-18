@@ -8,7 +8,7 @@ Responses that may be emitted by the server
 Emit a json representation of the graph, where the UUID's can be requested later. 
 ```json
 {
-  "id": "de305d54-75b4-431b-adb2-eb6b9e546014",
+  "canvasId": "de305d54-75b4-431b-adb2-eb6b9e546014",
   "timestamp": "2016-03-18T14:02:56.541Z",
   "postits": {
     "23a29456-5ded-4b66-b3f0-178b7afdc0e7": {
