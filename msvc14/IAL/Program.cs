@@ -4,22 +4,24 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Minority_Report.Input_Abstraction
+namespace MinorityReport
 {
     class MinorityReportApp
     {
         static void Main(string[] args)
         {
-            //KinectTest(args);
-            PostitTest(args);
+            KinectClient client = new KinectClient(args);
+            client.MainLoop().Wait();
+            ExitApp();
         }
 
-        static void PostitTest(string[] args)
+        private static void ExitApp()
         {
-            
+            log.Info("Exiting...");
+            Environment.Exit(0);
         }
-
-        static void KinectTest(string[] args)
+        
+        private static void KinectTest(string[] args)
         {
             log.Info("The Input Abstraction Layer's test program is starting up.");
             KinectHandler kinectHandler = new KinectHandler();

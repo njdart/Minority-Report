@@ -6,11 +6,9 @@ Warning: Do not import this!
 
 # built-in modules
 import sys
-import threading
 
 # our modules
 from controller import MinorityReportController
-from gui import start_gui
 
 help_text = """
 ## MINORITY REPORT ##
@@ -28,21 +26,13 @@ def parse_args():
             print("Unrecognised parameter '" + arg + "'.")
             exit()
 
-def start_controller(controller):
-    """Starts the controller. Encapsulated for use as a Thread target."""
-    controller.begin_loop()
-
 if __name__ == "__main__":
     parse_args()
     ctrl = MinorityReportController()
-    ctrl_thread = threading.Thread(target=start_controller,
-                                   kwargs={"controller": ctrl})
-    ctrl_thread.start()
-
-    # When start_gui returns, we are free to quit.
-    start_gui()
+    print("Starting....")
+    ctrl.Go()
     print("Stopping...")
-    ctrl.shutdown()
-    ctrl_thread.join()
+    ctrl.Cleanup()
+    exit(0)
 else:
     raise RuntimeError("This module should only serve as an entry point!")

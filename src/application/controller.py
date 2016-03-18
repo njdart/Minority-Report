@@ -1,95 +1,53 @@
 """
-The Controller is built on top of a HTTP server, in order to simplify interop
-between managed .NET code (Kinect-based data) and Python code (everything else,
-presumably).
-
-The server shall expect the Kinect-handling client to make a connection on a
-port, specified below as SERVER_PORT. The following requests are handled:
-
-    GESTURE
-    BODIES
-
-Each of these will also send a HTTP body in the form of plain-text JSON data.
-
---------------------------------------------------------------------------------
-Body data for GESTURE requests
-
-{
-    gestures :
-        [
-            {
-                type : <string>,
-                x    : <float>,
-                y    : <float>
-            },
-        ]
-}
-
---------------------------------------------------------------------------------
-Body data for BODIES requests
-
-{
-    bodies :
-        [
-            {
-                topleft_x : <float>,
-                topleft_y : <float>,
-                width     : <float>,
-                height    : <float>
-            }
-        ]
-}
+This is the top-level module of the application, containing the Controller
+class.
 """
 
-from http.server import (HTTPServer, BaseHTTPRequestHandler)
+import kinect_server
+import model
+import ui_server
+import camera_client
 
+import threading
+import time
 
-class MinorityReportController(HTTPServer):
+class MinorityReportController:
     """
-    This class acts as the controller for the Minority Report application. It
-    accepts connections from the Kinect-handling managed-code application (it
-    also starts up this application itself).
+    This is the top level class for the Minority Report application. It
+    initialises:
+    - REST server for communication with Kinect client application
+    - The Model (extracts graphs from images)
+    - Web server to serve user client applications (viewer, admin panel, etc.)
+    - Web client to receive images from smartphone
     """
-
     def __init__(self):
-        self.server_name = ""
-        self.server_port = 13337
+        """Initialises the controller."""
+        self.kinectServer = kinect_server.KinectServer()
+        self.model        = None # TODO
+        self.uiServer     = None # TODO
+        self.cameraClient = None # TODO
 
-        print("Initialising server...")
-        HTTPServer.__init__(self,
-                            (self.server_name, self.server_port),
-                            self.ControllerRequestHandler)
+        self.kinectServerThread = None
 
-    def spawn_kinect_client(self):
+    def Go(self):
         """
-        Spawns the process which handles Kinect data. (TODO)
+        Pretty self-explanatory method. Returns upon user-requested shutdown.
         """
-        print("Spawning Kinect client...")
+        # Kinect server startup
+        self.kinectServerThread = threading.Thread(
+            target = self.kinectServer.BeginLoop)
+        self.kinectServerThread.start()
 
-    def begin_loop(self):
-        self.spawn_kinect_client()
-        self.serve_forever(poll_interval=0.001)
+        # UI server startup
+        # Camera client startup
 
-    def service_actions(self):
-        pass
+        # TODO : this is actually meant to be an infinite loop
+        # while 1:
+        #     pass
+        time.sleep(5)
 
-    class ControllerRequestHandler(BaseHTTPRequestHandler):
-        """
-        This class is used to handle requests to the HTTP server by the protocol
-        specified at the top of this file.
-        """
-        def do_GESTURE(self):
-            pass
-
-        def do_BODIES(self):
-            pass
-
-        def do_GET(self):
-            """
-            This is the handler for GET requests. Since we don't really care
-            about these, we always send a very simple static response.
-            """
-            self.send_response(200, "hello")
-            self.send_header("Content-Length", "11")
-            self.end_headers()
-            self.wfile.write(b"hello world")
+    def Cleanup(self):
+        """Cleans up objects, threads, etc."""
+        # TODO
+        self.kinectServer.EndLoop()
+        self.kinectServerThread.join()

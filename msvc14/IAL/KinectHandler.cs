@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 using Microsoft.Kinect;
 using System.Drawing;
 
-namespace Minority_Report.Input_Abstraction
+namespace MinorityReport
 {
     class KinectHandlerException : Exception
     {

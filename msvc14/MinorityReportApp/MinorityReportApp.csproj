@@ -103,12 +103,6 @@
     <None Include="App.config" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\Controller\Controller.csproj">
-      <Project>{6f982fbf-b1b8-49e8-a13e-511bc76502b6}</Project>
-      <Name>Controller</Name>
-    </ProjectReference>
-  </ItemGroup>
-  <ItemGroup>
     <None Include="postits1.jpg">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
