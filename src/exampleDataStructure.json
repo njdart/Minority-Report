@@ -7,25 +7,27 @@
 
     // The UUID of the snapshot this follows from
     // May be used in future for branching?
-    "followsFrom": null,  
+    "derivedFrom": null,
+    "derivedAt": "2016-03-18T15:15:25.972Z",
 
     // The size of the extracted canvas used (IE the whiteboard)
     // In Pixels
     "canvas": {
+      "x": 10,
+      "y": 10,
       "height": 1024,
       "width": 768,
 
-      // The origonal canvas picture in base64?
+      // Tranformation to apply to the canvas
+      "transformation": [??],
+
+      // The canvas picture in base64?
       "pixels": "?"
     },
 
     // A list of postits
     "postits": [
       {
-        // An *object* containing the pixel values (opencv spits out numpy arrays)
-        // may end up using bson to store this?
-        "pixels": "?",
-
         // a colour (could be user defined)
         "colour": "red",
 
