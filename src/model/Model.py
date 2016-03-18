@@ -1,7 +1,6 @@
 import cv2
 import numpy as np
-from src.GraphExtractor import GraphExtractor
-from src.Canvas import Canvas
+
 
 class Model:
     """Current Canvas and history"""
