@@ -23,8 +23,8 @@ class MinorityReportController:
     def __init__(self):
         """Initialises the controller."""
         self.kinectServer = kinect_server.KinectServer()
+        self.uiServer     = ui_server.UIServer()
         self.model        = None # TODO
-        self.uiServer     = None # TODO
         self.cameraClient = None # TODO
 
         self.kinectServerThread = None
@@ -33,18 +33,20 @@ class MinorityReportController:
         """
         Pretty self-explanatory method. Returns upon user-requested shutdown.
         """
-        # Kinect server startup
+        # Kinect server startup (separate thread)
         self.kinectServerThread = threading.Thread(
             target = self.kinectServer.BeginLoop)
         self.kinectServerThread.start()
 
         # UI server startup
+        self.uiServer.Start()
+
         # Camera client startup
 
         # TODO : this is actually meant to be an infinite loop
         # while 1:
         #     pass
-        time.sleep(5)
+        # time.sleep(5)
 
     def Cleanup(self):
         """Cleans up objects, threads, etc."""

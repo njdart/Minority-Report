@@ -42,8 +42,9 @@ Body data for BODIES requests
 """
 
 from http.server import (HTTPServer, BaseHTTPRequestHandler)
+from http.client import HTTPConnection
 import time
-from threading import Timer
+from threading import Lock
 
 class KinectServer(HTTPServer):
     """
@@ -53,26 +54,47 @@ class KinectServer(HTTPServer):
     """
 
     def __init__(self):
-        self.server_name = "localhost"
-        self.server_port = 13337
+        self.default_server_name = "localhost"
+        self.default_server_port = 13337
         self.stopped = False
+
+        self.handlingLock = Lock()
 
         print("Initialising server...")
         HTTPServer.__init__(self,
-                            (self.server_name, self.server_port),
+                            (self.default_server_name,
+                             self.default_server_port),
                             self.ControllerRequestHandler)
 
     def BeginLoop(self):
         self.spawn_kinect_client()
         while not self.stopped:
+            self.handlingLock.acquire()
             self.handle_request()
+            self.handlingLock.release()
+
+            time.sleep(0.001)
+        print("Loop has ended")
     
     def EndLoop(self):
+        # In order to force the server end its request handling loop,
+        # a dummy request must be sent to stop handle_request from
+        # blocking. Then, the server is closed in a thread-safe way.
+        self.send_dummy_request()
+
+        self.handlingLock.acquire()
         self.server_close()
+        self.handlingLock.release()
+
         self.stopped = True
 
     def service_actions(self):
         pass
+
+    def send_dummy_request(self):
+        conn = HTTPConnection(self.default_server_name,
+                              self.default_server_port)
+        conn.request("GET", "/")
 
     def spawn_kinect_client(self):
         """
