@@ -4,14 +4,15 @@ using System.Drawing;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Emgu.CV;
 
 namespace Minority_Report
 {
     public class WhiteBoard
     {
-        List<PostIt> postits;
-        List<Arrow> arrows;
-        Bitmap img;
+        public List<PostIt> postits;
+        public List<Line> arrows;
+        public Bitmap img;
 
         WhiteBoard()
         {
@@ -24,14 +25,15 @@ namespace Minority_Report
         }
     }
 
-    public class PostIt
+    public struct PostIt
     {
-        Point[] coords;
-        Color color;
+        public Point[] coords;
+        public Color color;
+        public Mat image;
     }
 
-    public class Arrow
+    public struct Line
     {
-        Point[] coords;
+        public Point[] coords;
     }
 }

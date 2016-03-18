@@ -10,6 +10,17 @@ namespace Minority_Report.Input_Abstraction
     {
         static void Main(string[] args)
         {
+            //KinectTest(args);
+            PostitTest(args);
+        }
+
+        static void PostitTest(string[] args)
+        {
+            
+        }
+
+        static void KinectTest(string[] args)
+        {
             log.Info("The Input Abstraction Layer's test program is starting up.");
             KinectHandler kinectHandler = new KinectHandler();
 

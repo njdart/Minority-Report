@@ -73,11 +73,17 @@ target/
 # vim swp
 *.swp
 
-# Visual Studio
+# Visual Studio stuff
 .vs/*
 *.sdf
-bin/*
-obj/*
-Debug/*
-Release/*
-Win32/*
+*.suo
+*.opensdf
+bin/
+obj/
+Debug/
+Release/
+Win32/
+x64/
+
+# GTK stuff
+*.glade~
