@@ -20,3 +20,32 @@ Digital solutions such as smart boards offer a way of more conveniently storing 
 ### The Solution
 
 The ideal solution would be to not change the way we work; use whiteboards and sticky notes, with pens, diagrams, graphs, keys etc, And have the outcome represented by a computer whist interacting with the digitisation process as little as possible.
+
+### TODO:
+
+- Consider [python multiprocessing](https://docs.python.org/2/library/multiprocessing.html) for slow/expensive operations?
+- Android set individual settings (contrast, resolution, exposure)?
+- Feature Matching: find a postit from previous frame if not found in current frame (and not binned)
+- kinect integration and client taking to python web server
+- Flask-SocketIO server
+    - serve html/js content?
+ 
+### Definitions
+
+- A ```Frame``` is an image, with an associated canvas, containing postits and lines.
+- A ```Canvas``` is a keystone corrected frame cropped to the projectable area. A canvas may "inherit" from a previous canvas such that a change tree can be built up and branched from.
+- A ```postit``` is either physical, projected or user-defined. A cropped section of a canvas. Containing colour, dimensions, size and location in the canvas.
+- A ```connection``` is between two postits, containing line information such as type.
+ 
+## Structure
+
+### Camera
+
+### Server
+
+### Client
+
+### Kinect
+
+### Model
+
