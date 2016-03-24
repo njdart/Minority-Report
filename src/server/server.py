@@ -15,6 +15,14 @@ def index():
 def test_message(message):
     emit('my response', {'data': 'got it!'})
 
+def update(canvas):
+    """
+    This method can be called by the model to broadcast a canvas update to all listening clients
+    :param canvas: model/Canvas/Canvas class
+    :return: None
+    """
+    pass
+
 
 if __name__ == '__main__':
     socketio.run(app)
