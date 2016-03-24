@@ -9,7 +9,10 @@ class Canvas:
         self.connections = cxns
 
     def getPostit(self,ID):
-        pass
+        for postit in self.postits:
+            if postit.ID == ID:
+                return postit
+        return None
 
 
 

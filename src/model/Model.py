@@ -2,6 +2,7 @@ import cv2
 import numpy as np
 import uuid
 import json
+import datetime
 from src.model.GraphExtractor import GraphExtractor
 from src.model.Canvas import Canvas
 from src.model.Postit import Postit
@@ -11,6 +12,7 @@ class Model:
     def __init__(self):
         self.canvasList = []
         self.canvasConnections = []
+        self.prevCanvasID = 0
 
         self.calibImage = []
 
@@ -45,7 +47,9 @@ class Model:
 
     # todo: Create JSON from the canvas history
     def save(self,filename):
-        pass
+        data = self.canvasList
+        with open(filename, 'w') as outfile:
+            json.dump(data, outfile)
 
     # todo: set canvas history from JSON file
     def load(self,filename):
@@ -101,15 +105,16 @@ class Model:
     # Compare a new list of postits to the list of known active postits
     def updatePostits(self,newPostits):
         bf = cv2.BFMatcher()
-        postitIDs = [len(newPostits)]
+        postitIDs = []
         activePostitsFound = []
         for o,newPostit in enumerate(newPostits):
             goodMatches = []
+            #print(len(self.activePostits))
             for p, oldPostit in enumerate(self.activePostits):
                 matches = bf.knnMatch(oldPostit.descriptors, newPostit["descriptors"], k = 2)
                 good = []
                 for m,n in matches:
-                    if m.distance < 0.45*n.distance:
+                    if m.distance < 0.40*n.distance:
                         good.append([m])
                 #print(o,p, len(good))
                 if (len(good)>5):
@@ -118,7 +123,7 @@ class Model:
             if (len(goodMatches) == 0):
                 # Create new entry on list of active postits and then add ID to list
                 newID = uuid.uuid4()
-                createdPostit = Postit(newID,newPostit,'physical')
+                createdPostit = Postit(newID,newPostit,0)
                 self.activePostits.append(createdPostit)
                 postitIDs.append(newID)
                 activePostitsFound.append(newID)
@@ -133,15 +138,16 @@ class Model:
                 pass
         for p, oldPostit in enumerate(self.activePostits):
             if oldPostit.ID not in activePostitsFound:
-                oldPostit.setState('digital')
-
+                oldPostit.setState(0)
 
         return postitIDs
 
     # Compare lines found with know list of connections
     def updateLines(self,postitIDs, lines):
         for cxn in lines:
-            connection = [postitIDs[cxn[0]],postitIDs[cxn[0]]]
+            #print(cxn["postitIdx"][0])
+            #print(postitIDs[cxn["postitIdx"][0]])
+            connection = [postitIDs[cxn["postitIdx"][0]],postitIDs[cxn["postitIdx"][1]]]
             if connection not in self.postitConnections:
                 self.postitConnections.append(connection)
 
@@ -151,11 +157,39 @@ class Model:
         extractor = GraphExtractor(canvasImage)
         graph = extractor.extractGraph(minPostitArea = 10000, maxPostitArea = 40000, lenTolerence = 0.4, sigma=0.33)
         self.comparePrev(graph)
-        newCanvas = Canvas(uuid.uuid4(),self.snapshotTime,self.rawImage,self.canvasBounds,self.activePostits,self.postitConnections)
+        newID = uuid.uuid4()
+        newCanvas = Canvas(newID, self.snapshotTime,self.rawImage,self.canvasBounds,self.activePostits,self.postitConnections)
+        self.canvasConnections.append([self.prevCanvasID, newID])
+        self.prevCanvasID = newID
         self.canvasList.append(newCanvas)
 
+    def display(self):
+        dispImage = np.zeros((self.canvasBounds[3], self.canvasBounds[2], 3), np.uint8)
+        lastCanvas = self.canvasList[-1]
+        for line in lastCanvas.connections:
+            startPoint = (int(lastCanvas.getPostit(line[0]).location[0]+(lastCanvas.getPostit(line[0]).size[0])/2), int(lastCanvas.getPostit(line[0]).location[1]+(lastCanvas.getPostit(line[0]).size[1])/2))
+            endPoint = (int(lastCanvas.getPostit(line[1]).location[0]+(lastCanvas.getPostit(line[1]).size[0])/2), int(lastCanvas.getPostit(line[1]).location[1]+(lastCanvas.getPostit(line[1]).size[1])/2))
+            cv2.line(dispImage, startPoint, endPoint, [255,0,0], thickness=4)
+        for postit in lastCanvas.postits:
+            x1 = postit.location[0]
+            y1 = postit.location[1]
+            x2 = postit.location[0]+postit.size[0]
+            y2 = postit.location[1]+postit.size[1]
+            if postit.physical == 1:
+                cv2.rectangle(dispImage,(x1,y1),(x2,y2),(0,0,0),thickness=cv2.FILLED)
+                cv2.rectangle(dispImage,(x1,y1),(x2,y2),(0,255,0),thickness=4)
+            elif postit.physical == 0:
+                cv2.rectangle(dispImage,(x1,y1),(x2,y2),(0,0,0),thickness=cv2.FILLED)
+                dispImage[postit.location[0]:postit.location[0]+postit.image.shape[0], postit.location[1]:postit.location[1]+postit.image.shape[1]] = postit.image
+                cv2.rectangle(dispImage,(x1,y1),(x2,y2),(0,200,200),thickness=4)
 
+        r = 1920 / dispImage.shape[1]
+        dim = (1920, int(dispImage.shape[0] * r))
 
+        # perform the actual resizing of the image and show it
+        dispImage = cv2.resize(dispImage, dim, interpolation = cv2.INTER_AREA)
+        cv2.imshow("Display", dispImage)
+        cv2.waitKey(0)
 
 if __name__ == "__main__":
     canvImg = cv2.imread("IMG_20160304_154758.jpg")
@@ -163,8 +197,9 @@ if __name__ == "__main__":
     boardModel.newCalibImage(canvImg)
     boardModel.runAutoCalibrate()
     image1 = cv2.imread("IMG_20160304_154813.jpg")
-    boardModel.newRawImage(image1)
+    boardModel.newRawImage(image1, datetime.datetime.now())
+    boardModel.display()
     image2 = cv2.imread("IMG_20160304_154821.jpg")
-    boardModel.newRawImage(image2)
-
+    boardModel.newRawImage(image2, datetime.datetime.now())
+    #boardModel.save("data.txt")
 
