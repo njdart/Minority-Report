@@ -1,10 +1,12 @@
 class Canvas:
-    """A snapshot of the canvas"""
-    def __init__(self,ID):
-        self.ID
-        self.rawImage
-        self.bounds
-
+    """A snapshot of the state of the canvas and the inerpretation of it"""
+    def __init__(self, newid, time, boardImage, canvasBounds, postits, cxns):
+        self.ID= newid
+        self.timestamp = time
+        self.rawImage = boardImage
+        self.bounds = canvasBounds
+        self.postits = postits
+        self.connections = cxns
 
     def getPostit(self,ID):
         pass

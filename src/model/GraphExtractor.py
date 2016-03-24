@@ -314,7 +314,6 @@ if __name__ == "__main__":
                 ret,threshed = cv2.threshold(gray,127,255,cv2.THRESH_BINARY+cv2.THRESH_OTSU)
                 kernel = np.ones((3,3),np.uint8)
                 threshed = cv2.dilate(threshed,kernel)
-                cv2.imwrite("postit.png",threshed)
                 print(pytesseract.image_to_string(Image.open("postit.png")))
     print(postitPair)
 
