@@ -10,7 +10,7 @@ class GraphExtractor:
         self.DEBUG_PLOT = False
         self.rawImage = image
         self.image = image
-        self.sift  = cv2.xfeatures2d.SIFT_create()
+        self.sift = cv2.xfeatures2d.SIFT_create()
         self.postitPos = []
         self.postitImage = []
         self.postitColour = []
