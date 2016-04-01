@@ -36,7 +36,7 @@ Body data for BODIES requests
                 topleft_y : <float>,
                 width     : <float>,
                 height    : <float>
-            }
+            },
         ]
 }
 """
@@ -45,6 +45,53 @@ from http.server import (HTTPServer, BaseHTTPRequestHandler)
 from http.client import HTTPConnection
 import time
 from threading import Lock
+import json
+
+
+def body_data_from_json(json_str):
+    try:
+        print("debug1")
+        data = json.loads(json_str)
+        print("debug2")
+    except JSONDecodeError as e:
+        print("Error decoding JSON: `%s'" % e.msg)
+        return False
+
+    retval = []
+    try:
+        bodies = data["bodies"]
+        if type(bodies) != list:
+            raise BodyDataError
+        for body in bodies:
+            retval.append(BodyData(body["topleft_x"],
+                                   body["topleft_y"],
+                                   body["width"],
+                                   body["height"]))
+
+    except (BodyDataError, ValueError):
+        print("Invalid BODIES request.")
+        return False
+
+    return retval
+        
+
+class BodyData:
+    def __init__(top_left_x, top_left_y, width, height):
+        if (not type(top_left_x) in [int, float]) or (
+            not type(top_left_y) in [int, float]) or (
+            not type(width)      in [int, float]) or (
+            not type(height)     in [int, float]):
+           raise BodyDataError
+
+        self.top_left_x = top_left_x
+        self.top_left_y = top_left_y
+        self.width = width
+        self.height = height
+
+
+class BodyDataError(ValueError):
+    pass
+
 
 class KinectServer(HTTPServer):
     """
@@ -54,7 +101,7 @@ class KinectServer(HTTPServer):
     """
 
     def __init__(self):
-        self.default_server_name = "localhost"
+        self.default_server_name = ""
         self.default_server_port = 13337
         self.stopped = False
 
@@ -111,14 +158,24 @@ class KinectServer(HTTPServer):
             pass
 
         def do_BODIES(self):
-            pass
+            length = int(self.headers["Content-Length"])
+            json_str = self.rfile.read(length)
+            body_data = body_data_from_json(json_str)
+            if (body_data != False) and (type(body_data) == list):
+                print(len(body_data), "bodies reported")
+                self.send_response(200)
+            else:
+                print("invalid lel")
+                self.send_response(400)
+            self.end_headers()
 
         def do_GET(self):
             """
             This is the handler for GET requests. Since we don't really care
             about these, we always send a very simple static response.
             """
-            self.send_response(200, "hello")
-            self.send_header("Content-Length", "11")
+            data = b"hello world"
+            self.send_response(200)
+            self.send_header("Content-Length", str(len(data)))
             self.end_headers()
-            self.wfile.write(b"hello world")
+            self.wfile.write(data)
