@@ -1,3 +1,4 @@
+#!/usr/bin/python
 """
 Module serving as the application's entry point.
 
