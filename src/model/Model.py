@@ -8,6 +8,7 @@ from src.model.Canvas import Canvas
 from src.model.Postit import Postit
 import zipfile
 import os
+import requests
 
 class Model:
     """Model of the board storing history of the canvas and settings used to ge extract that information"""
@@ -36,8 +37,8 @@ class Model:
         self.canvasBounds = newBounds
 
     # From the current calibImage calculates likely boundaries of the canvas
-    def runAutoCalibrate(self):
-        self.canvasBounds = self.findCanvas(self.calibImage)
+    def runAutoCalibrate(self,canvThresh=150):
+        self.canvasBounds = self.findCanvas(self.calibImage,canvThresh)
 
     # Returns position of postits and relationships of current graph
     def getAbstractGraph(self):
@@ -166,8 +167,8 @@ class Model:
         self.update()
 
     # From calibImage find likely canvasBounds
-    def findCanvas(self, image, showDebug=False):
-        (__, board) = cv2.threshold(image,100,255,cv2.THRESH_TOZERO)
+    def findCanvas(self, image, thresh = 150, showDebug=False):
+        (__, board) = cv2.threshold(image,thresh,255,cv2.THRESH_TOZERO)
         grayBoard = cv2.cvtColor(board, cv2.COLOR_RGB2GRAY)
 
         (__, boardContours, __) = cv2.findContours(grayBoard, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
@@ -178,12 +179,13 @@ class Model:
         canvasBounds = cv2.boundingRect(canvasContour)
 
         if showDebug:
+            debugImage = image.copy()
             for c in boardContours:
                 rect = cv2.minAreaRect(c)
                 box = cv2.boxPoints(rect)
                 box = np.int0(box)
-                cv2.drawContours(image,[box],0,(0,0,255),2)
-
+                cv2.drawContours(debugImage,[box],0,(0,0,255),2)
+            cv2.imshow("debug",debugImage)
             cv2.waitKey(0)
 
         return canvasBounds
@@ -225,7 +227,7 @@ class Model:
                 # Create new entry on list of active postits and then add ID to list
                 newID = uuid.uuid4()
                 createdPostit =  Postit(newID, newPostit["position"][0], newPostit["position"][1],
-                                        newPostit["position"][2], newPostit["position"][3], newPostit["colour"],False)
+                                        newPostit["position"][2], newPostit["position"][3], newPostit["colour"],True)
                 newUniquePostits.append(createdPostit)
                 postitIDs.append(newID)
                 activePostitsFound.append(newID)
@@ -298,19 +300,44 @@ class Model:
             cv2.waitKey(0)
 
 if __name__ == "__main__":
-    canvImg = cv2.imread('/home/jjs/projects/Minority-Report/src/IMG_20160304_154758.jpg')
     boardModel = Model()
-    boardModel.newCalibImage(canvImg)
-    boardModel.runAutoCalibrate()
-    image1 = cv2.imread('/home/jjs/projects/Minority-Report/src/IMG_20160304_154813.jpg')
-    boardModel.newRawImage(image1, datetime.datetime.now())
-    #boardModel.display()
-    image2 = cv2.imread('/home/jjs/projects/Minority-Report/src/IMG_20160304_154821.jpg')
-    boardModel.newRawImage(image2, datetime.datetime.now())
-    #boardModel.display()
-    boardModel.save("canvas_data")
-    newBoard = Model()
-    newBoard.load("canvas_data")
-    newBoard.display()
+    r = requests.get("http://localhost:8080")
+    if r.status_code == 200:
+        print("Got Good Calibartion Image")
+        nparray = np.asarray(bytearray(r.content), dtype="uint8")
+        canvImg = cv2.imdecode(nparray,cv2.IMREAD_COLOR)
+        boardModel.newCalibImage(canvImg)
+        boardModel.runAutoCalibrate(canvThresh=150)
+    else:
+        print(":( Got Bad Calibration Image")
+        print(r.text)
+    input("Waiting >")
+    while(1):
+        r = requests.get("http://localhost:8080")
+        if r.status_code == 200:
+            print("Got Good Postit Image")
+            nparray = np.asarray(bytearray(r.content), dtype="uint8")
+            img = cv2.imdecode(nparray,cv2.IMREAD_COLOR)
+            boardModel.newRawImage(img, datetime.datetime.now())
+            boardModel.display()
+        else:
+            print(":( Got Bad Postit Image")
+            print(r.text)
+
+
+    # canvImg = cv2.imread('/home/jjs/projects/Minority-Report/src/IMG_20160304_154758.jpg')
+    # boardModel = Model()
+    # boardModel.newCalibImage(canvImg)
+    # boardModel.runAutoCalibrate()
+    # image1 = cv2.imread('/home/jjs/projects/Minority-Report/src/IMG_20160304_154813.jpg')
+    # boardModel.newRawImage(image1, datetime.datetime.now())
+    # #boardModel.display()
+    # image2 = cv2.imread('/home/jjs/projects/Minority-Report/src/IMG_20160304_154821.jpg')
+    # boardModel.newRawImage(image2, datetime.datetime.now())
+    # #boardModel.display()
+    # boardModel.save("canvas_data")
+    # newBoard = Model()
+    # newBoard.load("canvas_data")
+    # newBoard.display()
 
 
