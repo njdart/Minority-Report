@@ -1,4 +1,4 @@
-var testJson = `[
+[
   {
     "canvas":{
       "bottom-left":{
@@ -225,44 +225,4 @@ var testJson = `[
     "uuid":"71fea569-9dd6-45d6-a5f2-0a49b1953029",
     "width":4160
   }
-]`
-
-var POSTIT_SIZE = 100;
-
-canvases = $.parseJSON(testJson);
-
-$("#canvas-svg").attr("height", $(window).innerHeight());
-
-// Draw postits
-
-function createPostIt(postit, canvW, canvH) {
-    var pielem = document.createElementNS("http://www.w3.org/2000/svg", "rect");
-    pielem.setAttribute("fill", "#000");
-
-    var width = (postit.width/canvW)*$(window).innerWidth();
-    var height = (postit.height/canvH)*$(window).innerHeight();
-    var x = (postit.x/canvW)*$(window).innerWidth();
-    var y = (postit.y/canvH)*$(window).innerHeight();
-
-    pielem.setAttribute("width", width.toString());
-    pielem.setAttribute("height", height.toString());
-    pielem.setAttribute("x", x.toString());
-    pielem.setAttribute("y", y.toString());
-
-    document.getElementById("canvas-svg").appendChild(pielem);
-}
-
-function drawPostIts() {
-    var postits = canvases[1].postits;
-    var canvW = canvases[1].width;
-    var canvH = canvases[1].height;
-    for(i=0;i<postits.length;i++)
-    {
-	createPostIt(postits[i], canvW, canvH);
-	console.log(postits[i]);
-    }
-    console.log("End drawPostIts()");
-}
-
-drawPostIts();
-// Draw connections
+]
