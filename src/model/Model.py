@@ -6,7 +6,8 @@ import datetime
 from src.model.GraphExtractor import GraphExtractor
 from src.model.Canvas import Canvas
 from src.model.Postit import Postit
-from pprint import pprint
+import zipfile
+import os
 
 class Model:
     """Model of the board storing history of the canvas and settings used to ge extract that information"""
@@ -66,6 +67,7 @@ class Model:
     # Create JSON from the canvas history
     def save(self,filename):
         data = []
+        zf = zipfile.ZipFile(filename+'.zip', mode='w')
         for canv in self.canvasList:
             cv2.imwrite(str(canv.ID)+".png",canv.rawImage)
             postits = []
@@ -116,31 +118,40 @@ class Model:
                 "postits" : postits,
                 "connections" : connections
                 }
+
+            zf.write(str(canv.ID)+".png")
+            os.remove(str(canv.ID)+".png")
             data.append(canvas)
-        with open(filename, 'w') as outfile:
+        with open("canvas_history.json", 'w') as outfile:
             json.dump(data, outfile, sort_keys=True, indent=2, separators=(',',':'))
+        zf.write("canvas_history.json")
+        os.remove("canvas_history.json")
+        zf.close()
 
-    # todo: set canvas history from JSON file
+
+    # set canvas history from JSON file
     def load(self,filename):
-        with open(filename)as data_file:
-            data =json.load(data_file)
-            for dataCanvas in data:
-                dataBoardImage = cv2.imread(dataCanvas["uuid"]+".png")
-                dataBounds = [dataCanvas["canvas"]["top-left"]["x"], dataCanvas["canvas"]["top-left"]["y"],
-                              dataCanvas["canvas"]["bottom-right"]["x"]-dataCanvas["canvas"]["top-left"]["x"],
-                              dataCanvas["canvas"]["bottom-right"]["y"]-dataCanvas["canvas"]["top-left"]["y"]]
-                dataPostits = []
-                for dataPostit in dataCanvas["postits"]:
-                    postit = Postit(dataPostit["uuid"],dataPostit["x"],dataPostit["y"],dataPostit["width"],
-                                    dataPostit["height"],dataPostit["colour"],dataPostit["isPhysical"])
-                    dataPostits.append(postit)
-                dataConnections = []
-                for dataLine in dataCanvas["connections"]:
-                    cxn = [dataLine["from"],dataLine["to"]]
-                    dataConnections.append(cxn)
+        zf = zipfile.ZipFile(filename+'.zip')
+        data_file = zf.read("canvas_history.json").decode("utf-8")
+        data =json.loads(data_file)
+        for dataCanvas in data:
+            image = zf.read(dataCanvas["uuid"]+".png")
+            dataBoardImage =  cv2.imdecode(np.frombuffer(image, np.uint8), 1)
+            dataBounds = [dataCanvas["canvas"]["top-left"]["x"], dataCanvas["canvas"]["top-left"]["y"],
+                          dataCanvas["canvas"]["bottom-right"]["x"]-dataCanvas["canvas"]["top-left"]["x"],
+                          dataCanvas["canvas"]["bottom-right"]["y"]-dataCanvas["canvas"]["top-left"]["y"]]
+            dataPostits = []
+            for dataPostit in dataCanvas["postits"]:
+                postit = Postit(dataPostit["uuid"],dataPostit["x"],dataPostit["y"],dataPostit["width"],
+                                dataPostit["height"],dataPostit["colour"],dataPostit["isPhysical"])
+                dataPostits.append(postit)
+            dataConnections = []
+            for dataLine in dataCanvas["connections"]:
+                cxn = [dataLine["from"],dataLine["to"]]
+                dataConnections.append(cxn)
 
-                canvas = Canvas(dataCanvas["uuid"],dataCanvas["derivedAt"],dataBoardImage,dataBounds,dataPostits,dataConnections,dataCanvas["derivedFrom"])
-                self.canvasList.append(canvas)
+            canvas = Canvas(dataCanvas["uuid"],dataCanvas["derivedAt"],dataBoardImage,dataBounds,dataPostits,dataConnections,dataCanvas["derivedFrom"])
+            self.canvasList.append(canvas)
         return None
 #========================================================#
 
@@ -293,13 +304,13 @@ if __name__ == "__main__":
     boardModel.runAutoCalibrate()
     image1 = cv2.imread('/home/jjs/projects/Minority-Report/src/IMG_20160304_154813.jpg')
     boardModel.newRawImage(image1, datetime.datetime.now())
-    boardModel.display()
+    #boardModel.display()
     image2 = cv2.imread('/home/jjs/projects/Minority-Report/src/IMG_20160304_154821.jpg')
     boardModel.newRawImage(image2, datetime.datetime.now())
-    boardModel.display()
-    boardModel.save("data.json")
+    #boardModel.display()
+    boardModel.save("canvas_data")
     newBoard = Model()
-    newBoard.load("data.json")
+    newBoard.load("canvas_data")
     newBoard.display()
 
 
