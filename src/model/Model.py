@@ -227,7 +227,7 @@ class Model:
                 # Create new entry on list of active postits and then add ID to list
                 newID = uuid.uuid4()
                 createdPostit =  Postit(newID, newPostit["position"][0], newPostit["position"][1],
-                                        newPostit["position"][2], newPostit["position"][3], newPostit["colour"],True)
+                                        newPostit["position"][2], newPostit["position"][3], newPostit["colour"],True,self.newID)
                 newUniquePostits.append(createdPostit)
                 postitIDs.append(newID)
                 activePostitsFound.append(newID)
@@ -235,16 +235,16 @@ class Model:
                 # Return ID of Matched postits
                 updatingPostit = self.activePostits.pop(goodMatches[0])
                 postitIDs.insert(p, updatingPostit.getID())
-                updatingPostit.update(newPostit)
+                updatingPostit.update(newPostit,self.newID)
                 self.activePostits.append(updatingPostit)
             else:
                 # Throw error as this state should not be reachable
                 pass
-
-        self.activePostits.extend(newUniquePostits)
         for p, oldPostit in enumerate(self.activePostits):
             if oldPostit.ID not in activePostitsFound:
                 oldPostit.setState(False)
+        self.activePostits.extend(newUniquePostits)
+
 
         return postitIDs
 
@@ -261,12 +261,13 @@ class Model:
     def update(self):
         canvasImage = self.getCanvasImage()
         extractor = GraphExtractor(canvasImage)
-        graph = extractor.extractGraph(minPostitArea = 10000, maxPostitArea = 40000, lenTolerence = 0.4, sigma=0.33)
+        graph = extractor.extractGraph(minPostitArea = 3000, maxPostitArea = 10000, lenTolerence = 0.4, sigma=0.33)
+        self.newID = uuid.uuid4()
         self.comparePrev(graph)
-        newID = uuid.uuid4()
-        newCanvas = Canvas(newID, self.snapshotTime,self.rawImage,self.canvasBounds,self.activePostits,self.postitConnections,self.prevCanvasID)
-        self.canvasConnections.append([self.prevCanvasID, newID])
-        self.prevCanvasID = newID
+
+        newCanvas = Canvas(self.newID, self.snapshotTime,self.rawImage,self.canvasBounds,self.activePostits,self.postitConnections,self.prevCanvasID)
+        self.canvasConnections.append([self.prevCanvasID, self.newID])
+        self.prevCanvasID = self.newID
         self.canvasList.append(newCanvas)
 
     def display(self):
@@ -287,9 +288,11 @@ class Model:
                     cv2.rectangle(dispImage,(x1,y1),(x2,y2),(0,255,0),thickness=4)
                 elif postit.physical == 0:
                     cv2.rectangle(dispImage,(x1,y1),(x2,y2),(0,0,0),thickness=cv2.FILLED)
-                    postitImage = postit.getImage(lastCanvas.getImage(self.rawImage))
-                    dispImage[y1:y1+postitImage.shape[0], x1:x1+postitImage.shape[1]] = postitImage
-                    cv2.rectangle(dispImage,(x1,y1),(x2,y2),(0,200,200),thickness=4)
+                    for canvas in self.canvasList:
+                        if canvas.ID == postit.last_canvas_ID:
+                            postitImage = postit.getImage(canvas.getImage(self.rawImage))
+                            dispImage[y1:y1+postitImage.shape[0], x1:x1+postitImage.shape[1]] = postitImage
+                            cv2.rectangle(dispImage,(x1,y1),(x2,y2),(0,200,200),thickness=4)
 
             r = 1920 / dispImage.shape[1]
             dim = (1920, int(dispImage.shape[0] * r))

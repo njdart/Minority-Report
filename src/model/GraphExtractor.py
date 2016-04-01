@@ -65,13 +65,14 @@ class GraphExtractor:
         foundPostits = []
         img = self.image
         boxedimg = img.copy()
-        edgegray = self.edge(img, False, showDebug=True)
+        edgegray = self.edge(img, False, showDebug=False)
         (_,cnts, _) = cv2.findContours(edgegray.copy(), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
         for c in cnts:
             box = cv2.boxPoints(cv2.minAreaRect(c))
             box = np.int0(box)
             cv2.drawContours(boxedimg, [box], 0, (0, 255, 0), 3)
             if ((cv2.contourArea(box) > minPostitArea) and (cv2.contourArea(box) < maxPostitArea)):
+                #print("here")
                 length = math.hypot(box[0,0]-box[1,0], box[0,1]-box[1,1])
                 height = math.hypot(box[2,0]-box[1,0], box[2,1]-box[1,1])
                 if (length*(2-lenTolerence) < length+height < length*(2+lenTolerence)):
@@ -81,6 +82,7 @@ class GraphExtractor:
                         cv2.drawContours(img, [box], 0, (0, 255, 0), 3)
                     self.postitPos.append(Rectangle)
                     self.postitImage.append(img[Rectangle[1]:(Rectangle[1]+Rectangle[3]), Rectangle[0]:(Rectangle[0]+Rectangle[2])])
+                    #self.display("name",self.postitImage[-1])
 
 
 
