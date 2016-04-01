@@ -3,20 +3,22 @@ import numpy as np
 
 class Postit:
     """Individual Postit"""
-    def __init__(self,id,x,y,width,height,colour,physical):
+    def __init__(self,id,x,y,width,height,colour,physical,last_canvas_ID):
         self.ID = id
         self.location = [x,y]
         self.size = [width,height]
         self.colour = colour
         self.physical = physical
+        self.last_canvas_ID = last_canvas_ID
 
-    def update(self, postitdata):
+    def update(self, postitdata,new_canvas_ID):
         self.location = [postitdata["position"][0], postitdata["position"][1]]
         self.size = [postitdata["position"][2], postitdata["position"][3]]
         self.image = postitdata["image"]
         self.colour = postitdata["colour"]
         self.keypoints = postitdata["keypoints"]
         self.descriptors = postitdata["descriptors"]
+        self.last_canvas_ID = new_canvas_ID
 
     def getID(self):
         return self.ID
