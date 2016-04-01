@@ -1,11 +1,12 @@
 import numpy as np
 import cv2
 import math
+import GraphExtractor
 
 
 
 def getImage():
-    image = 'test2.jpg'
+    image = 'test5.jpg'
     image = cv2.imread(image)
     return image
 
@@ -71,6 +72,11 @@ def cropSquare(corners, image, imgsize):
 
 
     origin = np.float32(origin)
+
+    origh = 0 + imgsize[1] * 0.2
+    origw = 0 + imgsize[0] * 0.2
+
+    #destinaiton = np.float32([[origw,origh],[origw,imgsize[0]*0.8],[imgsize[1]*0.8,origh],[imgsize[1]*0.8,imgsize[0]*0.8]])
     destinaiton = np.float32([[0,0],[0,imgsize[0]],[imgsize[1],0],[imgsize[1],imgsize[0]]])
 
     print origin
@@ -93,17 +99,30 @@ def undistortImage(mtx, dist, img, corners, imgsize):
 if __name__ == "__main__":
 
 
-    pattern_size = (4,8)#(9,6)
+    pattern_size = (5,8)
 
     img = getImage()
+
+    #print GraphExtractor.findCanvas(img)
+
+    #h, w = img.shape[:2]
+
+    #res = cv2.resize(img, (w/2, h/2))
+
+    cv2.imwrite('orig.jpg', img)
+    cv2.imwrite('small.jpg', res)
 
     mtx, dist, corners, imgsize = calibDist(pattern_size, img)
 
 
     #todo: store mtx, dist, corners, imgsize
 
+    #img = cv2.imread('test5-2.jpg')
 
-    final = undistortImage(mtx, dist, img, corners, imgsize)
+
+    final = undistortImage(mtx, dist, res, corners, imgsize)
+
+    cv2.imwrite('final2.jpg',final)
 
 
 
