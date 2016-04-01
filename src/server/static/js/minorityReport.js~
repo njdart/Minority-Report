@@ -47,7 +47,10 @@ var nodes = [];
 
 for(cur in received.postits)
 {
-    nodes.push({fixed:true, x:received.postits[cur].realX, y:received.postits[cur].realY});
+    temp = received.postits[cur]
+    nodes.push({fixed:true, x:temp.realX, y:temp.realY});
+    console.log(cur.realX, cur.realY);
+    console.log(received.postits[cur]);
 }
 
 //var nodes = [
