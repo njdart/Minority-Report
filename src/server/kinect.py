@@ -1,9 +1,10 @@
 from server import app
+from flask import request
 
-@app.route("/kinect/body")
-def body_data():
-    return "body data page"
+@app.route("/kinect/body", methods=["POST"])
+def body_data_post():
+    return "body data page...<br><br>" + str(request.data)
 
-@app.route("/kinect/gesture")
-def gesture_data():
-    return "gesture data page"
+@app.route("/kinect/gesture", methods=["POST"])
+def gesture_data_post():
+    return "gesture data page...<br><br>" + str(request.data)
