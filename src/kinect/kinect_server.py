@@ -41,141 +41,53 @@ Body data for BODIES requests
 }
 """
 
-from http.server import (HTTPServer, BaseHTTPRequestHandler)
-from http.client import HTTPConnection
-import time
-from threading import Lock
-import json
+import multiprocessing
+
+from flask import Flask
+from flask import request
+app = Flask(__name__)
+
+@app.route("/")
+def hello_world():
+    return "hello world"
+
+@app.route("/body")
+def body_data():
+    return "body data response"
+
+@app.route("/gesture")
+def gesture_data():
+    return "gesture data response"
+
+@app.route("/shutdown")
+def shutdown():
+    func = request.environ.get('werkzeug.server.shutdown')
+    if func is None:
+        raise RuntimeError('Not running with the Werkzeug Server')
+    func()
+    return "bye"
 
 
-def body_data_from_json(json_str):
-    try:
-        print("debug1")
-        data = json.loads(json_str)
-        print("debug2")
-    except JSONDecodeError as e:
-        print("Error decoding JSON: `%s'" % e.msg)
-        return False
-
-    retval = []
-    try:
-        bodies = data["bodies"]
-        if type(bodies) != list:
-            raise BodyDataError
-        for body in bodies:
-            retval.append(BodyData(body["topleft_x"],
-                                   body["topleft_y"],
-                                   body["width"],
-                                   body["height"]))
-
-    except (BodyDataError, ValueError):
-        print("Invalid BODIES request.")
-        return False
-
-    return retval
-        
-
-class BodyData:
-    def __init__(top_left_x, top_left_y, width, height):
-        if (not type(top_left_x) in [int, float]) or (
-            not type(top_left_y) in [int, float]) or (
-            not type(width)      in [int, float]) or (
-            not type(height)     in [int, float]):
-           raise BodyDataError
-
-        self.top_left_x = top_left_x
-        self.top_left_y = top_left_y
-        self.width = width
-        self.height = height
-
-
-class BodyDataError(ValueError):
-    pass
-
-
-class KinectServer(HTTPServer):
-    """
-    This class acts as the controller for the Minority Report application. It
-    accepts connections from the Kinect-handling managed-code application (it
-    also starts up this application itself).
-    """
-
+class KinectServer:
     def __init__(self):
         self.default_server_name = ""
         self.default_server_port = 13337
         self.stopped = False
 
-        self.handlingLock = Lock()
-
-        print("Initialising server...")
-        HTTPServer.__init__(self,
-                            (self.default_server_name,
-                             self.default_server_port),
-                            self.ControllerRequestHandler)
-
-    def BeginLoop(self):
+    def Start(self):
+        self.process = multiprocessing.Process(target = app.run,
+                                               args   = ["0.0.0.0", 13337],
+                                               kwargs = {"debug": True})
         self.spawn_kinect_client()
-        while not self.stopped:
-            self.handlingLock.acquire()
-            self.handle_request()
-            self.handlingLock.release()
-
-            time.sleep(0.001)
-        print("Loop has ended")
+        self.process.start()
     
-    def EndLoop(self):
-        # In order to force the server end its request handling loop,
-        # a dummy request must be sent to stop handle_request from
-        # blocking. Then, the server is closed in a thread-safe way.
-        self.send_dummy_request()
-
-        self.handlingLock.acquire()
-        self.server_close()
-        self.handlingLock.release()
-
-        self.stopped = True
-
-    def service_actions(self):
+    def Stop(self):
+        self.process.terminate()
+        self.process.join()
         pass
-
-    def send_dummy_request(self):
-        conn = HTTPConnection(self.default_server_name,
-                              self.default_server_port)
-        conn.request("GET", "/")
 
     def spawn_kinect_client(self):
         """
         Spawns the process which handles Kinect data. (TODO)
         """
         print("Spawning Kinect client...")
-
-    class ControllerRequestHandler(BaseHTTPRequestHandler):
-        """
-        This class is used to handle requests to the HTTP server by the protocol
-        specified at the top of this file.
-        """
-        def do_GESTURE(self):
-            pass
-
-        def do_BODIES(self):
-            length = int(self.headers["Content-Length"])
-            json_str = self.rfile.read(length)
-            body_data = body_data_from_json(json_str)
-            if (body_data != False) and (type(body_data) == list):
-                print(len(body_data), "bodies reported")
-                self.send_response(200)
-            else:
-                print("invalid lel")
-                self.send_response(400)
-            self.end_headers()
-
-        def do_GET(self):
-            """
-            This is the handler for GET requests. Since we don't really care
-            about these, we always send a very simple static response.
-            """
-            data = b"hello world"
-            self.send_response(200)
-            self.send_header("Content-Length", str(len(data)))
-            self.end_headers()
-            self.wfile.write(data)

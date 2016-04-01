@@ -60,18 +60,19 @@ class GraphExtractor:
             }
         return graph
 
-    def extractPostits(self, showDebug=False, sigma=0.8, minPostitArea = 3000, maxPostitArea = 20000, lenTolerence = 0.15, minColourThresh = 64, maxColourThresh = 200):
+    def extractPostits(self, showDebug=True, sigma=0.8, minPostitArea = 3000, maxPostitArea = 20000, lenTolerence = 0.15, minColourThresh = 64, maxColourThresh = 200):
 
         foundPostits = []
         img = self.image
         boxedimg = img.copy()
-        edgegray = self.edge(img, False, showDebug)
+        edgegray = self.edge(img, False, showDebug=False)
         (_,cnts, _) = cv2.findContours(edgegray.copy(), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
         for c in cnts:
             box = cv2.boxPoints(cv2.minAreaRect(c))
             box = np.int0(box)
             cv2.drawContours(boxedimg, [box], 0, (0, 255, 0), 3)
             if ((cv2.contourArea(box) > minPostitArea) and (cv2.contourArea(box) < maxPostitArea)):
+                #print("here")
                 length = math.hypot(box[0,0]-box[1,0], box[0,1]-box[1,1])
                 height = math.hypot(box[2,0]-box[1,0], box[2,1]-box[1,1])
                 if (length*(2-lenTolerence) < length+height < length*(2+lenTolerence)):
@@ -81,6 +82,7 @@ class GraphExtractor:
                         cv2.drawContours(img, [box], 0, (0, 255, 0), 3)
                     self.postitPos.append(Rectangle)
                     self.postitImage.append(img[Rectangle[1]:(Rectangle[1]+Rectangle[3]), Rectangle[0]:(Rectangle[0]+Rectangle[2])])
+                    #self.display("name",self.postitImage[-1])
 
 
 
@@ -211,18 +213,18 @@ class GraphExtractor:
         end = points[maxDistIdx[1]]
         return(start, end)
 
-    def edge(self,img,line, showDebug=False):
+    def edge(self,img,line, showDebug=False, thresh=110):
         kernel = np.ones((5,5),np.uint8)
-
         img = cv2.medianBlur(img,9)
         if showDebug:
             self.display("blurred",img)
         if not line:
-
             img = cv2.dilate(img,kernel,iterations = 3)
-            __,img = cv2.threshold(img,120,255,cv2.THRESH_BINARY)
+            imgcopy = img.copy()
+            __,img = cv2.threshold(imgcopy,thresh,255,cv2.THRESH_BINARY)
             if showDebug:
                 self.display("Threshed",img)
+
         gray = cv2.cvtColor(img, cv2.COLOR_RGB2GRAY)
         if showDebug:
             self.display("gray",gray)
