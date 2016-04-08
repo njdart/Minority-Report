@@ -80,10 +80,6 @@ $.each(received.postits, function(index, note){
 // property. The values of those properties are the indices in
 // the `nodes` array of the two endpoints of the link.
 
-var links = [
-    { source: 0, target: 1 },
-    { source: 1, target: 0 }
-];
 
 // Here's were the code begins. We start off by creating an SVG
 // container to hold the visualization. We only need to specify
