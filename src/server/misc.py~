@@ -7,12 +7,12 @@ def index():
 
 @app.route('/js/<path:path>')
 def js_serve(path):
-    print(path)
+    print path
     return send_from_directory('static/js', path)
 
 @app.route('/styles/<path:path>')
 def css_serve(path):
-    print(path)
+    print path
     return send_from_directory('static/styles', path)
 
 @socketio.on('my event')

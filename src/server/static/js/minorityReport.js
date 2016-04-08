@@ -3,21 +3,29 @@ var testJson = `{
   "timestamp": "2016-03-18T14:02:56.541Z",
   "postits": {
     "23a29456-5ded-4b66-b3f0-178b7afdc0e7": {
-      "realX": 350,
-      "realY": 350,
+      "realX": 450,
+      "realY": 450,
       "colour": "red",
       "connections": [
         "36afb67b-c127-4fb8-b795-b917c4099742"
       ]
     },
     "36afb67b-c127-4fb8-b795-b917c4099742": {
-      "realX": 500,
-      "realY": 500,
+      "realX": 1200,
+      "realY": 1200,
       "colour": "red",
       "connections": [
         "23a29456-5ded-4b66-b3f0-178b7afdc0e7"
       ]
-    }
+    },
+    "cc6e74e0-46e2-484f-8427-92410bccf281": {
+      "realX": 1400,
+      "realY": 2400,
+      "colour": "green",
+      "connections": [
+        "23a29456-5ded-4b66-b3f0-178b7afdc0e7"
+      ]
+    }   
   }
 }`
 
@@ -26,6 +34,18 @@ var POSTIT_SIZE = 100;
 var received = $.parseJSON(testJson);
 
 var width = $(window).width(), height = $(window).height();
+console.log("width: " + width);
+console.log("height: " + height);
+
+var scaleFactor = Math.max(width, height) * 100;
+
+var idToIndex = new Array();
+
+$.each(received.postits, function(index, note)
+{
+  idToIndex[note] = index;
+});
+
 
 // Define the data for the example. In general, a force layout
 // requires two data arrays. The first array, here named `nodes`,
@@ -45,14 +65,15 @@ var width = $(window).width(), height = $(window).height();
 
 var nodes = [];
 
-for(cur in received.postits)
-{
-    nodes.push({fixed:true, x:received.postits[cur].realX, y:received.postits[cur].realY});
-}
+var links = [
+    //{ source: 0, target: 1 },
+    //{ source: 1, target: 0 }
+];
 
-//var nodes = [
-//{fixed:true, x: 300, y:500},{fixed:true, x:600, y:800},{fixed:true, x:450, y:500}
-//];
+$.each(received.postits, function(index, note){
+  console.log(note);
+  nodes.push({fixed:true, x:scaleFactor/note.realX, y:scaleFactor/note.realY});
+});
 
 
 // The `links` array contains objects with a `source` and a `target`
