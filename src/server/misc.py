@@ -14,8 +14,3 @@ def js_serve(path):
 def css_serve(path):
     print(path)
     return send_from_directory('static/styles', path)
-
-@socketio.on('my event')
-def test_message(message):
-    emit('my response', {'data': 'got it!'})
-
