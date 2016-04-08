@@ -1,32 +1,37 @@
 var testJson = `{
   "canvasId": "de305d54-75b4-431b-adb2-eb6b9e546014",
   "timestamp": "2016-03-18T14:02:56.541Z",
-  "postits": {
-    "23a29456-5ded-4b66-b3f0-178b7afdc0e7": {
-      "realX": 450,
-      "realY": 450,
+  "postits": [
+    {
+      "postitId": "23a29456-5ded-4b66-b3f0-178b7afdc0e7",
+      "realX": 10,
+      "realY": 10,
       "colour": "red",
       "connections": [
-        "36afb67b-c127-4fb8-b795-b917c4099742"
+        "36afb67b-c127-4fb8-b795-b917c4099742",
+        "3fb558b4-5c5c-42a1-98db-84267c470a47"
       ]
     },
-    "36afb67b-c127-4fb8-b795-b917c4099742": {
-      "realX": 1200,
-      "realY": 1200,
+
+    {
+      "postitId": "36afb67b-c127-4fb8-b795-b917c4099742",
+      "realX": 10,
+      "realY": 10,
       "colour": "red",
       "connections": [
         "23a29456-5ded-4b66-b3f0-178b7afdc0e7"
       ]
     },
-    "cc6e74e0-46e2-484f-8427-92410bccf281": {
-      "realX": 1400,
-      "realY": 2400,
+
+    {
+      "postitId": "3fb558b4-5c5c-42a1-98db-84267c470a47",
+      "realX": 10,
+      "realY": 10,
       "colour": "green",
       "connections": [
-        "23a29456-5ded-4b66-b3f0-178b7afdc0e7"
       ]
-    }   
-  }
+    }
+  ]
 }`
 
 var POSTIT_SIZE = 100;
@@ -41,9 +46,10 @@ var scaleFactor = Math.max(width, height) * 100;
 
 var idToIndex = new Array();
 
-$.each(received.postits, function(index, note)
+var idx = 0;
+$.each(received.postits, function(id, note)
 {
-  idToIndex[note] = index;
+  idToIndex[id] = index;
 });
 
 
@@ -73,7 +79,17 @@ var links = [
 $.each(received.postits, function(index, note){
   console.log(note);
   nodes.push({fixed:true, x:scaleFactor/note.realX, y:scaleFactor/note.realY});
+  if (note.connections.length > 0)
+  {
+    $.each(note.connections, function(index, value)
+    {
+      console.log(index, value);
+      links.push({source: idToIndex[note], target: idToIndex[value]});
+    });
+  }
 });
+
+console.log(links);
 
 
 // The `links` array contains objects with a `source` and a `target`
