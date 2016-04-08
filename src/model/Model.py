@@ -23,6 +23,18 @@ class Model:
         self.rawImage = []
         self.activePostits = []
         self.postitConnections = []
+
+        self.minPostitArea = 1000
+        self.maxPostitArea = 20000
+        self.lenTolerence = 0.4
+        self.minColourThresh = 64
+        self.maxColourThresh = 200
+        self.postitThresh = 120
+        self.sigma = 0.33
+
+        self.debug = False
+
+
 #=========================================================#
     # Return current rawImage
     def getRawImage(self):
@@ -37,8 +49,8 @@ class Model:
         self.canvasBounds = newBounds
 
     # From the current calibImage calculates likely boundaries of the canvas
-    def runAutoCalibrate(self,canvThresh=150):
-        self.canvasBounds = self.findCanvas(self.calibImage,canvThresh)
+    def runAutoCalibrate(self,showDebug=False, canvThresh=150):
+        self.canvasBounds = self.findCanvas(self.calibImage, canvThresh, showDebug)
 
     # Returns position of postits and relationships of current graph
     def getAbstractGraph(self):
@@ -65,7 +77,7 @@ class Model:
                 return postit
         return None
 
-    # Create JSON from the canvas history
+    # Create .zip archive of the canvas history
     def save(self,filename):
         data = []
         zf = zipfile.ZipFile(filename+'.zip', mode='w')
@@ -81,7 +93,8 @@ class Model:
                     "y" : canvPostit.location[1],
                     "height": canvPostit.size[1],
                     "width": canvPostit.size[0],
-                    "isPhysical" : canvPostit.physical
+                    "isPhysical" : canvPostit.physical,
+                    "lastCanvasID" : str(canvPostit.last_canvas_ID)
                 }
                 postits.append(postit)
             for cxn in canv.connections:
@@ -129,8 +142,7 @@ class Model:
         os.remove("canvas_history.json")
         zf.close()
 
-
-    # set canvas history from JSON file
+    # From .zip archive reconstruct the cavas history
     def load(self,filename):
         zf = zipfile.ZipFile(filename+'.zip')
         data_file = zf.read("canvas_history.json").decode("utf-8")
@@ -144,7 +156,7 @@ class Model:
             dataPostits = []
             for dataPostit in dataCanvas["postits"]:
                 postit = Postit(dataPostit["uuid"],dataPostit["x"],dataPostit["y"],dataPostit["width"],
-                                dataPostit["height"],dataPostit["colour"],dataPostit["isPhysical"])
+                                dataPostit["height"],dataPostit["colour"],dataPostit["isPhysical"],dataPostit["lastCanvasID"])
                 dataPostits.append(postit)
             dataConnections = []
             for dataLine in dataCanvas["connections"]:
@@ -160,14 +172,15 @@ class Model:
     def newCalibImage(self,image):
         self.calibImage = image
 
-    # Set a new rawImage
-    def newRawImage(self,image,time):
+    # Set a new rawImage triggering a new canvas to be taken
+    def newRawImage(self,image,time,update = 0):
         self.rawImage = image
         self.snapshotTime = time
-        self.update()
+        if update:
+            self.update()
 
     # From calibImage find likely canvasBounds
-    def findCanvas(self, image, thresh = 150, showDebug=False):
+    def findCanvas(self, image, thresh, showDebug):
         (__, board) = cv2.threshold(image,thresh,255,cv2.THRESH_TOZERO)
         grayBoard = cv2.cvtColor(board, cv2.COLOR_RGB2GRAY)
 
@@ -198,7 +211,7 @@ class Model:
         canvasEndY = self.canvasBounds[1]+self.canvasBounds[3]
         return self.rawImage[canvasStartY:canvasEndY, canvasStartX:canvasEndX]
 
-    # Compre current graph with previous graph
+    # Compare current graph with previous graph
     def comparePrev(self,newGraph):
         postitIDs = self.updatePostits(newGraph["postits"])
         self.updateLines(postitIDs,newGraph["lines"])
@@ -257,11 +270,24 @@ class Model:
             if connection not in self.postitConnections:
                 self.postitConnections.append(connection)
 
+    def imageSettings(self, mipa, mapa, lento, sig, mico, maco, poth):
+        self.minPostitArea = mipa
+        self.maxPostitArea = mapa
+        self.lenTolerence = lento
+        self.maxColourThresh = maco
+        self.minColourThresh = mico
+        self.postitThresh = poth
+        self.sigma = sig
+
+    def setDebug(self, state):
+        self.debug = state
+
     # Main update loop using the current settings to extract data from current rawImage
     def update(self):
         canvasImage = self.getCanvasImage()
         extractor = GraphExtractor(canvasImage)
-        graph = extractor.extractGraph(minPostitArea = 3000, maxPostitArea = 10000, lenTolerence = 0.4, sigma=0.33)
+        graph = extractor.extractGraph(self.debug, self.minPostitArea,self.maxPostitArea, self.lenTolerence,
+                                       self.minColourThresh, self.maxColourThresh, self.postitThresh)
         self.newID = uuid.uuid4()
         self.comparePrev(graph)
 
@@ -270,6 +296,7 @@ class Model:
         self.prevCanvasID = self.newID
         self.canvasList.append(newCanvas)
 
+    # For testing construct the current canvas into a visual display for projecting back on to physical postits
     def display(self):
         if len(self.canvasList):
             lastCanvas = self.canvasList[-1]
@@ -303,44 +330,69 @@ class Model:
             cv2.waitKey(0)
 
 if __name__ == "__main__":
-    boardModel = Model()
-    r = requests.get("http://localhost:8080")
-    if r.status_code == 200:
-        print("Got Good Calibartion Image")
-        nparray = np.asarray(bytearray(r.content), dtype="uint8")
-        canvImg = cv2.imdecode(nparray,cv2.IMREAD_COLOR)
-        boardModel.newCalibImage(canvImg)
-        boardModel.runAutoCalibrate(canvThresh=150)
-    else:
-        print(":( Got Bad Calibration Image")
-        print(r.text)
-    input("Waiting >")
-    while(1):
-        r = requests.get("http://localhost:8080")
-        if r.status_code == 200:
-            print("Got Good Postit Image")
-            nparray = np.asarray(bytearray(r.content), dtype="uint8")
-            img = cv2.imdecode(nparray,cv2.IMREAD_COLOR)
-            boardModel.newRawImage(img, datetime.datetime.now())
-            boardModel.display()
-        else:
-            print(":( Got Bad Postit Image")
-            print(r.text)
 
-
-    # canvImg = cv2.imread('/home/jjs/projects/Minority-Report/src/IMG_20160304_154758.jpg')
+    ######
+    # When Using this test code follow these steps to minimize problems with image processing
+    # 1.    Set background of projector to white
+    # 2.    Run this script
+    # 3.    Add initial postits
+    # 4.    Cover the projector and pess enter with the console selected
+    # 5.    Drag the "Display" window to be shown on projector, and uncover projector. Do not close this window
+    # 6.    Make changes to postit layout
+    # 7.    Cover the projector and pess enter, this time with the "Display" window selected
+    # 8.    Uncover projector
+    # 9.    If expected postits are missing
+    #           goto Deubug.
+    # 10.   Else goto 6.
+    #
+    # Debug:
+    #   - Area being cropped out as the canvas is not correct
+    #       ~ Cause : Brightness in the room differs from test conditions
+    #       ~ Fix   : Change find canvas threshold
+    #   - Postit not found
+    #       ~ Cause : Brightness in the room differs from test conditions
+    #       ~ Fix   : Change find postit threshold
+    ######
     # boardModel = Model()
-    # boardModel.newCalibImage(canvImg)
-    # boardModel.runAutoCalibrate()
-    # image1 = cv2.imread('/home/jjs/projects/Minority-Report/src/IMG_20160304_154813.jpg')
-    # boardModel.newRawImage(image1, datetime.datetime.now())
-    # #boardModel.display()
-    # image2 = cv2.imread('/home/jjs/projects/Minority-Report/src/IMG_20160304_154821.jpg')
-    # boardModel.newRawImage(image2, datetime.datetime.now())
-    # #boardModel.display()
-    # boardModel.save("canvas_data")
-    # newBoard = Model()
-    # newBoard.load("canvas_data")
-    # newBoard.display()
+    # r = requests.get("http://localhost:8080") # Request image from phone
+    # # Receiving an image from the request gives code 200, all other returns means that the image has no been obtained
+    # if r.status_code == 200:
+    #     print("Got Good Calibartion Image")
+    #     nparray = np.asarray(bytearray(r.content), dtype="uint8") # Transform byte array to numpy array
+    #     canvImg = cv2.imdecode(nparray,cv2.IMREAD_COLOR) # Decode values as openCV colours
+    #     boardModel.newCalibImage(canvImg) #set as calibration image
+    #     boardModel.runAutoCalibrate(canvThresh=150) # Autocalibratefrom image
+    # else:
+    #     print(":( Got Bad Calibration Image")
+    #     print(r.text)
+    # input("Waiting >")
+    # while(1):
+    #     r = requests.get("http://localhost:8080")
+    #     if r.status_code == 200:
+    #         print("Got Good Postit Image")
+    #         nparray = np.asarray(bytearray(r.content), dtype="uint8")
+    #         img = cv2.imdecode(nparray,cv2.IMREAD_COLOR)
+    #         boardModel.newRawImage(img, datetime.datetime.now())
+    #         boardModel.display()
+    #     else:
+    #         print(":( Got Bad Postit Image")
+    #         print(r.text)
+
+
+    canvImg = cv2.imread('/home/jjs/projects/Minority-Report/src/IMG_20160304_154758.jpg')
+    boardModel = Model()
+    boardModel.setDebug(True)
+    boardModel.newCalibImage(canvImg)
+    boardModel.runAutoCalibrate(showDebug = True, canvThresh=100)
+    image1 = cv2.imread('/home/jjs/projects/Minority-Report/src/IMG_20160304_154813.jpg')
+    boardModel.newRawImage(image1, datetime.datetime.now(), 1, )
+    boardModel.display()
+    image2 = cv2.imread('/home/jjs/projects/Minority-Report/src/IMG_20160304_154821.jpg')
+    boardModel.newRawImage(image2, datetime.datetime.now(),1)
+    boardModel.display()
+    #boardModel.save("canvas_data")
+    #newBoard = Model()
+    #newBoard.load("canvas_data")
+    #newBoard.display()
 
 
