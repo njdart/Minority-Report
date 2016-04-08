@@ -3,7 +3,8 @@ import io
 import cv2
 from PIL import Image
 from flask_socketio import emit
-from server import (socketio)
+from server import (socketio, databaseHandler)
+from src.model.User import User
 
 def npArray2Base64(npArray):
     img = Image.fromarray(npArray)
@@ -11,6 +12,55 @@ def npArray2Base64(npArray):
     img.save(buffer, format="JPEG")
     return base64.b64encode(buffer.getvalue()).decode("utf-8")
     # $('div').css('background-image', 'url(data:image/gif;base64,' + a.image + ')');
+
+
+@socketio.on('getUsers')
+def getUsers():
+    emit('getUsers', [user.as_object() for user in databaseHandler().get_users()])
+
+
+@socketio.on('addUser')
+def addUser(details):
+    emit('addUser', User(username=details["username"], databaseHandler=databaseHandler()).create().as_object())
+
+@socketio.on('getUser')
+def getUser(details):
+    username = details["username"] if "username" in details else None
+    id = details["id"] if "id" in details else None
+
+    emit('getUser', [{"username": user[1], "id": user[0]} for user in
+                     databaseHandler().get_user(username=username, id=id)])
+
+@socketio.on('updateUser')
+def updateUser(details):
+    username = details["username"] if "username" in details else None
+    id = details["id"] if "id" in details else None
+
+    user = databaseHandler().get_user(id=id)
+
+    if not user:
+        emit('updateUser', False)
+        return
+
+    if username != user.get_username():
+        user.set_username(username)
+        user.update()
+
+    emit('updateUser', user.as_object())
+
+@socketio.on('deleteUser')
+def deleteUser(details):
+    username = details["username"] if "username" in details else None
+    id = details["id"] if "id" in details else None
+
+    user = databaseHandler().get_user(id=id)
+
+    if user:
+        emit('deleteUser', user.delete().as_object())
+
+    else:
+        emit('deleteUser', False)
+
 
 @socketio.on('getAll')
 def getAll(request):

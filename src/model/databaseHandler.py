@@ -1,5 +1,8 @@
-import sqlite3
 import os
+import sqlite3
+
+from src.model.User import User
+
 
 class ModelDatabase(object):
     """
@@ -29,11 +32,13 @@ class ModelDatabase(object):
             return False
 
         if not self.get_user(username=username):
-            self.database.execute('INSERT INTO users (username) VALUES (?)', (username, ))
+            c = self.database.cursor()
+            c.execute('INSERT INTO users (username) VALUES (?)', (username, ))
+            self.database.commit()
 
-            return True
+            return self.get_user(username=username)
 
-        return False
+        return None
 
     def get_users(self):
         """
@@ -46,7 +51,7 @@ class ModelDatabase(object):
         c = self.database.cursor()
 
         c.execute('SELECT * FROM users;')
-        return c.fetchall()
+        return [User.from_database_tuple(userTuple, databaseHandler=self) for userTuple in c.fetchall()]
 
     def get_user(self, username=None, id=None):
         """
@@ -69,7 +74,7 @@ class ModelDatabase(object):
         else:
             c.execute('SELECT * FROM users WHERE id=?', (id, ))
 
-        return c.fetchone()
+        return User.from_database_tuple(c.fetchone(), databaseHandler=self)
 
     def get_users_canvases(self, user):
         pass

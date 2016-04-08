@@ -1,6 +1,6 @@
 CREATE TABLE IF NOT EXISTS users (
   id       INTEGER PRIMARY KEY autoincrement,
-  username TEXT NOT NULL
+  username TEXT NOT NULL UNIQUE
 );
 
 CREATE TABLE IF NOT EXISTS images (

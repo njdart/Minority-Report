@@ -1,17 +1,9 @@
-#!/usr/bin/python
-"""
-Module serving as the application's entry point.
+#!/usr/bin/env python3
 
-Warning: Do not import this!
-"""
+import sys
+from controller import MinorityReportController
 
 if __name__ == "__main__":
-
-    # built-in modules
-    import sys
-
-    # our modules
-    from controller import MinorityReportController
 
     help_text = """
     ## MINORITY REPORT ##
