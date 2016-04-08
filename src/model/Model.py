@@ -8,9 +8,10 @@ from src.model.Canvas import Canvas
 from src.model.Postit import Postit
 import zipfile
 import os
-import requests
+
 
 class Model:
+
     """Model of the board storing history of the canvas and settings used to ge extract that information"""
     def __init__(self):
         self.canvasList = []

@@ -1,11 +1,9 @@
-from server import (app, socketio)
-from flask_socketio import send, emit
-import numpy as np
-from PIL import Image
-import io
 import base64
-
+import io
 import cv2
+from PIL import Image
+from flask_socketio import emit
+from server import (socketio)
 
 def npArray2Base64(npArray):
     img = Image.fromarray(npArray)
@@ -105,3 +103,15 @@ def getCanvas(request):
         ]
     })
 
+@socketio.on('getSettings')
+def getSettings():
+    emit('getSettings', {
+        "Setting": {
+            "value": "Foo",
+            "options": [
+                "Bar",
+                "Baz"
+            ]
+        }
+    }
+         )

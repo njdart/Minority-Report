@@ -5,6 +5,14 @@ from server import (app, socketio)
 def index():
     return render_template('index.html')
 
+@app.route('/hud')
+def hud():
+    return render_template('hud.html')
+
+@app.route('/debug')
+def debug():
+    return render_template('debug.html')
+
 @app.route('/js/<path:path>')
 def js_serve(path):
     print(path)
