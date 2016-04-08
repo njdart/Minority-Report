@@ -9,4 +9,5 @@
 {
     stroke: #777;
     stroke-width: 2px;
+    transform: translate(50px,50px);
 }
