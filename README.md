@@ -29,8 +29,6 @@ Enter Minority Report. The ultimate goal of this ambitious project is to enginee
 - Android set individual settings (contrast, resolution, exposure)?
 - Feature Matching: find a postit from previous frame if not found in current frame (and not binned)
 - kinect integration and client taking to python web server
-- Flask-SocketIO server
-    - serve html/js content?
  
 ### Definitions
 
