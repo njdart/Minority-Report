@@ -14,20 +14,74 @@
             <h1>Users</h1>
             <table class="usernames-table">
                 <thead class="usernames-tableHead">
-                    <td>Id</td>
-                    <td>Username</td>
-                    <td></td>
+                    <tr>
+                        <td>Id</td>
+                        <td>Username</td>
+                        <td></td>
+                    </tr>
                 </thead>
                 <tbody class="usernames-tableBody">
+                    <tr class="table-row_template">
+                        <td class="usernames-id">
+                        </td>
+                        <td>
+                            <input class="usernames-username" type="text" />
+                        </td>
+                        <td>
+                            <input class="usernames-remove" type="button" value="x" />
+                        </td>
+                    </tr>
                     <tr class="usernames-userRow_new table-row_new">
                         <td>
-                            <input class="usernames-id" type="number" disabled="disabled" />
+                            <input class="usernames-id_new" type="number" disabled="disabled" />
                         </td>
                         <td>
-                            <input class="usernames-username" type="text"/>
+                            <input class="usernames-username_new" type="text" />
                         </td>
                         <td>
-                            <input class="usernames-add" type="button" value="+"/>
+                            <input class="usernames-add" type="button" value="+" />
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <h1>Images</h1>
+            <table class="images-table">
+                <thead class="images-tableHead">
+                    <tr>
+                        <td>Id</td>
+                        <td>User</td>
+                        <td>Timestamp</td>
+                        <td></td>
+                    </tr>
+                </thead>
+                <tbody class="images-tableBody">
+                    <tr class="table-row_template">
+                        <td>
+                            <a href="#" class="images-id"></a>
+                        </td>
+                        <td>
+                            <select class="images-user user-select"></select>
+                        </td>
+                        <td>
+                            <input class="images-timestamp" type="text" />
+                        </td>
+                        <td>
+                            <input class="images-remove" type="button" value="x" />
+                        </td>
+                    </tr>
+                    <tr class="images-imageRow_new table-row_new">
+                        <td>
+                            <input type="file" class="images-file">
+                        </td>
+                        <td>
+                            <select class="images-user user-select"></select>
+                        </td>
+                        <td>
+                            <input class="images-timestamp" type="text" />
+                        </td>
+                        <td>
+                            <input class="images-add" type="button" value="+" />
                         </td>
                     </tr>
                 </tbody>

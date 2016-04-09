@@ -22,11 +22,8 @@ class User(SqliteObject):
     def get_username(self):
         return self.username
 
-    def id(self):
-        if id:
-            self.id = id
-
-        return id
+    def get_id(self):
+        return self.id
 
     def as_object(self):
         return {

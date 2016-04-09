@@ -23,3 +23,7 @@ tbody > tr:nth-child(even) {
 .table-row_new {
     background: #578757 !important;
 }
+
+.table-row_template {
+    display: none;
+}

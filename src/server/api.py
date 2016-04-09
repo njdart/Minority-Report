@@ -1,18 +1,10 @@
-import base64
-import io
 import cv2
-from PIL import Image
+import numpy as np
+import datetime
 from flask_socketio import emit
 from server import (socketio, databaseHandler)
 from src.model.User import User
-
-def npArray2Base64(npArray):
-    img = Image.fromarray(npArray)
-    buffer = io.BytesIO()
-    img.save(buffer, format="JPEG")
-    return base64.b64encode(buffer.getvalue()).decode("utf-8")
-    # $('div').css('background-image', 'url(data:image/gif;base64,' + a.image + ')');
-
+from src.model.Image import Image
 
 @socketio.on('getUsers')
 def getUsers():
@@ -50,7 +42,6 @@ def updateUser(details):
 
 @socketio.on('deleteUser')
 def deleteUser(details):
-    username = details["username"] if "username" in details else None
     id = details["id"] if "id" in details else None
 
     user = databaseHandler().get_user(id=id)
@@ -61,6 +52,24 @@ def deleteUser(details):
     else:
         emit('deleteUser', False)
 
+@socketio.on('addImage')
+def addImage(details):
+    userId = details["user"]
+    # EG "2016-04-09T13:04:50.148Z"
+    timestamp = datetime.datetime.strptime(details["timestamp"], '%Y-%m-%dT%H:%M:%S.%fZ')
+    file = details["file"]
+
+    arr = np.fromstring(file, np.uint8)
+    npArr = cv2.imdecode(arr, cv2.IMREAD_COLOR)
+
+    emit('addImage', Image(user=userId,
+                           npArray=npArr,
+                           timestamp=timestamp,
+                           databaseHandler=databaseHandler()).create().as_object())
+
+@socketio.on('getImages')
+def getImage():
+    emit('getImages', [image.as_object() for image in databaseHandler().get_images()])
 
 @socketio.on('getAll')
 def getAll(request):
@@ -163,5 +172,4 @@ def getSettings():
                 "Baz"
             ]
         }
-    }
-         )
+    })

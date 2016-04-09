@@ -9,7 +9,7 @@ class SqliteObject(object):
     def from_database_tuple(tuple, databaseHandler):
         raise NotImplementedError('Abstract SQL Object cannot be made from a tuple')
 
-    def id(self):
+    def get_id(self):
         return id
 
     def as_object(self):
@@ -72,6 +72,7 @@ class SqliteObject(object):
         c = self.databaseHandler.database.cursor()
         c.execute(query)
         self.databaseHandler.database.commit()
-        self.id = c.lastrowid
+        if not self.id:
+            self.id = c.lastrowid
 
         return self

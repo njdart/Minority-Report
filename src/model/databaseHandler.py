@@ -1,6 +1,6 @@
 import os
 import sqlite3
-
+from src.model.Image import Image
 from src.model.User import User
 
 
@@ -43,10 +43,10 @@ class ModelDatabase(object):
     def get_users(self):
         """
         Get all users from the database
-        :return False if the database was not available, a list of (users, id) tuples otherwise
+        :return empty array if the database was not available, a list of (users, id) tuples otherwise
         """
         if not self.database:
-            return False
+            return []
 
         c = self.database.cursor()
 
@@ -76,8 +76,14 @@ class ModelDatabase(object):
 
         return User.from_database_tuple(c.fetchone(), databaseHandler=self)
 
-    def get_users_canvases(self, user):
-        pass
+    def get_images(self):
+        """
+        get all images from the database
+        :return:
+        """
+        if not self.database:
+            return []
 
-    def get_canvas(self, canvasId):
-        pass
+        c = self.database.cursor()
+        c.execute('SELECT * FROM images;')
+        return [Image.from_database_tuple(imageTuple, databaseHandler=self) for imageTuple in c.fetchall()]
