@@ -10,7 +10,6 @@ class GraphExtractor:
         self.DEBUG_PLOT = False
         self.rawImage = image
         self.image = image
-        self.sift = cv2.xfeatures2d.SIFT_create()
         self.postitPos = []
         self.postitImage = []
         self.postitColour = []
@@ -112,17 +111,11 @@ class GraphExtractor:
             guessedColour = self.guess_colour(rAvg, gAvg, bAvg)
             self.postitColour.append(guessedColour)
 
-            keypoints, descriptors = self.sift.detectAndCompute(gray,None)
-
             foundPostit = {
                 "image": postit,
                 "colour": guessedColour,
-                "position": self.postitPos[idx],
-                "keypoints": keypoints,
-                "descriptors": descriptors
-
+                "position": self.postitPos[idx]
             }
-
             foundPostits.append(foundPostit)
 
         return foundPostits
@@ -152,7 +145,7 @@ class GraphExtractor:
         edged = self.edge(img, True, showDebug, 0)
 
         (_,cnts, _) = cv2.findContours(edged.copy(), cv2.RETR_TREE, cv2.CHAIN_APPROX_NONE)
-        tolerence =20
+        tolerence =40
         for c in cnts:
             postitIdx = [-1,-1]
 
@@ -216,7 +209,7 @@ class GraphExtractor:
 
     def edge(self,img,line, showDebug, thresh):
         kernel = np.ones((5,5),np.uint8)
-        img = cv2.medianBlur(img,9)
+        img = cv2.medianBlur(img,7)
         #if showDebug:
         #   self.display("blurred",img)
         if not line:

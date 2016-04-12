@@ -16,8 +16,6 @@ class Postit:
         self.size = [postitdata["position"][2], postitdata["position"][3]]
         self.image = postitdata["image"]
         self.colour = postitdata["colour"]
-        self.keypoints = postitdata["keypoints"]
-        self.descriptors = postitdata["descriptors"]
         self.last_canvas_ID = new_canvas_ID
 
     def getID(self):

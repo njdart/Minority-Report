@@ -9,7 +9,6 @@ from src.model.Postit import Postit
 import zipfile
 import os
 import requests
-
 class Model:
     """Model of the board storing history of the canvas and settings used to ge extract that information"""
     def __init__(self):
@@ -22,18 +21,19 @@ class Model:
         self.canvasBounds = []
         self.rawImage = []
         self.activePostits = []
+
         self.postitConnections = []
 
-        self.minPostitArea = 1000
-        self.maxPostitArea = 20000
+        self.minPostitArea = 2000
+        self.maxPostitArea = 10000
         self.lenTolerence = 0.4
         self.minColourThresh = 64
+
         self.maxColourThresh = 200
         self.postitThresh = 120
         self.sigma = 0.33
 
         self.debug = False
-
 
 #=========================================================#
     # Return current rawImage
@@ -65,7 +65,7 @@ class Model:
             "ID" : IDs
         }
         graph = {
-            "connections" : self.postitConnectionss,
+            "connections" : self.postitConnections,
             "postit" : postit
         }
         return graph
@@ -226,16 +226,33 @@ class Model:
             goodMatches = []
             #print(len(self.activePostits))
             for p, oldPostit in enumerate(self.activePostits):
-                matches = bf.knnMatch(oldPostit.getDescriptors(self.getCanvasImage()), newPostit["descriptors"], k = 2)
+                oim = oldPostit.getImage(self.getCanvasImage())
+                nim = newPostit["image"]
+                # Initiate SIFT detector
+                sift = cv2.xfeatures2d.SIFT_create()
+
+                # find the keypoints and descriptors with SIFT
+                kp1, des1 = sift.detectAndCompute(oim,None)
+                kp2, des2 = sift.detectAndCompute(nim,None)
+
+                # create BFMatcher object
+                bf = cv2.BFMatcher()
+
+                # Match descriptors.
+                matches = bf.knnMatch(des2,des1,k=2)
+                #print(matches)
                 good = []
                 for m,n in matches:
-                    if m.distance < 0.45*n.distance:
+                    #print(m.distance)
+                    if m.distance <0.45*n.distance:
                         good.append([m])
-                #print(o,p, len(good))
-                if (len(good)>5):
-                    #print("match")
+
+                if (len(good)>10):
                     goodMatches.append(p)
                     activePostitsFound.append(oldPostit.ID)
+                #print(len(good))
+            #
+            # print(len(goodMatches))
             if (len(goodMatches) == 0):
                 # Create new entry on list of active postits and then add ID to list
                 newID = uuid.uuid4()
@@ -265,7 +282,7 @@ class Model:
     def updateLines(self,postitIDs, lines):
         for cxn in lines:
             #print(cxn["postitIdx"][0])
-            #print(postitIDs[cxn["postitIdx"][0]])
+            #print(len(postitIDs))
             connection = [postitIDs[cxn["postitIdx"][0]],postitIDs[cxn["postitIdx"][1]]]
             if connection not in self.postitConnections:
                 self.postitConnections.append(connection)
@@ -372,7 +389,7 @@ if __name__ == "__main__":
     #         print("Got Good Postit Image")
     #         nparray = np.asarray(bytearray(r.content), dtype="uint8")
     #         img = cv2.imdecode(nparray,cv2.IMREAD_COLOR)
-    #         boardModel.newRawImage(img, datetime.datetime.now())
+    #         boardModel.newRawImage(img, datetime.datetime.now(),update=1)
     #         boardModel.display()
     #     else:
     #         print(":( Got Bad Postit Image")
@@ -381,11 +398,12 @@ if __name__ == "__main__":
 
     canvImg = cv2.imread('/home/jjs/projects/Minority-Report/src/IMG_20160304_154758.jpg')
     boardModel = Model()
-    boardModel.setDebug(True)
+    boardModel.setDebug(False)
     boardModel.newCalibImage(canvImg)
-    boardModel.runAutoCalibrate(showDebug = True, canvThresh=100)
+    boardModel.runAutoCalibrate(showDebug = False, canvThresh=100)
+    boardModel.imageSettings(5000,50000,0.4,0.33,64,200,120)
     image1 = cv2.imread('/home/jjs/projects/Minority-Report/src/IMG_20160304_154813.jpg')
-    boardModel.newRawImage(image1, datetime.datetime.now(), 1, )
+    boardModel.newRawImage(image1, datetime.datetime.now(), 1)
     boardModel.display()
     image2 = cv2.imread('/home/jjs/projects/Minority-Report/src/IMG_20160304_154821.jpg')
     boardModel.newRawImage(image2, datetime.datetime.now(),1)
