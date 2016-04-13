@@ -72,9 +72,9 @@ class Model:
 
     # Return canvas from history using the UUID associated with it
     def getCanvas(self,ID):
-        for postit in self.canvasList:
-            if postit.ID == ID:
-                return postit
+        for canvas in self.canvasList:
+            if canvas.ID == ID:
+                return canvas
         return None
 
     # Create .zip archive of the canvas history
@@ -211,6 +211,10 @@ class Model:
         canvasEndY = self.canvasBounds[1]+self.canvasBounds[3]
         return self.rawImage[canvasStartY:canvasEndY, canvasStartX:canvasEndX]
 
+    def getPrevCanvasImage(self):
+        canvas = self.getCanvas(self.prevCanvasID)
+        return canvas.getImage(canvas.rawImage)
+
     # Compare current graph with previous graph
     def comparePrev(self,newGraph):
         postitIDs = self.updatePostits(newGraph["postits"])
@@ -223,10 +227,13 @@ class Model:
         activePostitsFound = []
         newUniquePostits = []
         for o,newPostit in enumerate(newPostits):
-            goodMatches = []
+            maxidx = -1
+            good = np.zeros(len(self.activePostits), dtype=np.int)
             #print(len(self.activePostits))
+            IDs = []
             for p, oldPostit in enumerate(self.activePostits):
-                oim = oldPostit.getImage(self.getCanvasImage())
+
+                oim = oldPostit.getImage(self.getPrevCanvasImage())
                 nim = newPostit["image"]
                 # Initiate SIFT detector
                 sift = cv2.xfeatures2d.SIFT_create()
@@ -235,25 +242,35 @@ class Model:
                 kp1, des1 = sift.detectAndCompute(oim,None)
                 kp2, des2 = sift.detectAndCompute(nim,None)
 
+                #print(str(len(kp1))+","+str(len(kp2)))
                 # create BFMatcher object
                 bf = cv2.BFMatcher()
+                if len(kp1) > 0 and len(kp2) > 0:
+                    # Match descriptors.
+                    matches = bf.knnMatch(des2,des1, k=2)
+                    #print(matches)
+                    IDs.append(oldPostit.ID)
+                    for m,n in matches:
+                        #print(str(m.distance)+"<"+str(0.2*n.distance))
+                        #print(m.distance <(0.2*n.distance))
+                        #print(good)
+                        if m.distance <(0.75*n.distance):
+                            good[p] = good[p] + 1
+                else:
+                    pass
+                    #print("here")
+                    #cv2.imshow("thing",oim)
+                    #cv2.waitKey(0)
 
-                # Match descriptors.
-                matches = bf.knnMatch(des2,des1,k=2)
-                #print(matches)
-                good = []
-                for m,n in matches:
-                    #print(m.distance)
-                    if m.distance <0.45*n.distance:
-                        good.append([m])
+            print(good)
+            try:
+                if max(good)>10:
+                    maxidx = np.argmax(good)
+            except:
+                pass
 
-                if (len(good)>10):
-                    goodMatches.append(p)
-                    activePostitsFound.append(oldPostit.ID)
-                #print(len(good))
-            #
             # print(len(goodMatches))
-            if (len(goodMatches) == 0):
+            if (maxidx == -1):
                 # Create new entry on list of active postits and then add ID to list
                 newID = uuid.uuid4()
                 createdPostit =  Postit(newID, newPostit["position"][0], newPostit["position"][1],
@@ -261,15 +278,14 @@ class Model:
                 newUniquePostits.append(createdPostit)
                 postitIDs.append(newID)
                 activePostitsFound.append(newID)
-            elif(len(goodMatches) == 1):
-                # Return ID of Matched postits
-                updatingPostit = self.activePostits.pop(goodMatches[0])
-                postitIDs.insert(p, updatingPostit.getID())
-                updatingPostit.update(newPostit,self.newID)
-                self.activePostits.append(updatingPostit)
             else:
-                # Throw error as this state should not be reachable
-                pass
+                # Return ID of Matched postits
+                updatingPostit = self.activePostits.pop(maxidx)
+                postitIDs.append(updatingPostit.getID())
+                activePostitsFound.append(updatingPostit.getID())
+                updatingPostit.update(newPostit,self.newID)
+                self.activePostits.insert(maxidx,updatingPostit)
+
         for p, oldPostit in enumerate(self.activePostits):
             if oldPostit.ID not in activePostitsFound:
                 oldPostit.setState(False)
@@ -338,8 +354,8 @@ class Model:
                             dispImage[y1:y1+postitImage.shape[0], x1:x1+postitImage.shape[1]] = postitImage
                             cv2.rectangle(dispImage,(x1,y1),(x2,y2),(0,200,200),thickness=4)
 
-            r = 1920 / dispImage.shape[1]
-            dim = (1920, int(dispImage.shape[0] * r))
+            r = 720 / dispImage.shape[1]
+            dim = (720, int(dispImage.shape[0] * r))
 
             # perform the actual resizing of the image and show it
             dispImage = cv2.resize(dispImage, dim, interpolation = cv2.INTER_AREA)
@@ -404,10 +420,17 @@ if __name__ == "__main__":
     boardModel.imageSettings(5000,50000,0.4,0.33,64,200,120)
     image1 = cv2.imread('/home/jjs/projects/Minority-Report/src/IMG_20160304_154813.jpg')
     boardModel.newRawImage(image1, datetime.datetime.now(), 1)
+    print("1")
     boardModel.display()
     image2 = cv2.imread('/home/jjs/projects/Minority-Report/src/IMG_20160304_154821.jpg')
     boardModel.newRawImage(image2, datetime.datetime.now(),1)
+    print("2")
     boardModel.display()
+    image3 = cv2.imread('/home/jjs/projects/Minority-Report/src/IMG_20160304_154813b.jpg')
+    boardModel.newRawImage(image3, datetime.datetime.now(),1)
+    print("3")
+    boardModel.display()
+
     #boardModel.save("canvas_data")
     #newBoard = Model()
     #newBoard.load("canvas_data")
