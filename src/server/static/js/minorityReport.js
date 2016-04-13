@@ -230,26 +230,35 @@ var testJson = `[
 var POSTIT_SIZE = 100;
 
 canvases = $.parseJSON(testJson);
+ourh = $(window).innerHeight()-21;
+ourw = $(window).innerWidth()-21;
 
-$("#canvas-svg").attr("height", $(window).innerHeight());
+uuid_to_postit_scaled = {}
+
+$("#picanvas").attr("height", ourh).
+		attr("width", ourw);
 
 // Draw postits
 
 function createPostIt(postit, canvW, canvH) {
-    var pielem = document.createElementNS("http://www.w3.org/2000/svg", "rect");
-    pielem.setAttribute("fill", "#000");
+    var canv = document.getElementById("picanvas");
+    var ctx = canv.getContext("2d");
+    ctx.fillStyle = "#000";
+    
+    var width = (postit.width/canvW)*ourw;
+    var height = (postit.height/canvH)*ourh;
 
-    var width = (postit.width/canvW)*$(window).innerWidth();
-    var height = (postit.height/canvH)*$(window).innerHeight();
-    var x = (postit.x/canvW)*$(window).innerWidth();
-    var y = (postit.y/canvH)*$(window).innerHeight();
+    var x = (postit.x/canvW)*ourw;
+    var y = (postit.y/canvH)*ourh;
 
-    pielem.setAttribute("width", width.toString());
-    pielem.setAttribute("height", height.toString());
-    pielem.setAttribute("x", x.toString());
-    pielem.setAttribute("y", y.toString());
+    uuid_to_postit_scaled[postit.uuid] = {
+	    "x": x,
+	    "y": y,
+	    "width": width,
+	    "height": height
+    }
 
-    document.getElementById("canvas-svg").appendChild(pielem);
+    ctx.fillRect(x, y, width, height);
 }
 
 function drawPostIts() {
@@ -264,5 +273,32 @@ function drawPostIts() {
     console.log("End drawPostIts()");
 }
 
+function createConnection(connection)
+{
+    var ctx = document.getElementById("picanvas").getContext("2d");
+    
+    var from = uuid_to_postit_scaled[connection.from];
+    var to = uuid_to_postit_scaled[connection.to];
+
+    var fromx = from.x + (from.width/2);
+    var fromy = from.y + (from.height/2);
+    var tox = to.x + (to.width/2);
+    var toy = to.y + (to.height/2);
+
+    ctx.moveTo(fromx, fromy);
+    ctx.lineTo(tox, toy);
+    ctx.stroke();
+}
+
+function drawConnections() {
+    var connections = canvases[1].connections;
+
+    for(i=0;i<connections.length;i++)
+    {
+	createConnection(connections[i]);
+    }
+}
+
 drawPostIts();
-// Draw connections
+drawConnections();
+
