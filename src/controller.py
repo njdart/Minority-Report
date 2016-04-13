@@ -5,7 +5,7 @@ class.
 
 import server
 
-class MinorityReportController:
+class MinorityReportController(object):
     """
     This is the top level class for the Minority Report application. It
     initialises:

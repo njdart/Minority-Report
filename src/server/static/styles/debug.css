@@ -1,0 +1,29 @@
+table {
+    border-collapse: collapse;
+}
+
+table, thead, tbody, tr, td {
+    border: 0px;
+    padding: 5px 5px;
+}
+
+thead {
+    font-weight: 800;
+    background: #4F618E;
+}
+
+tbody > tr:nth-child(odd) {
+    background: #EEE;
+}
+
+tbody > tr:nth-child(even) {
+    background: #DDD;
+}
+
+.table-row_new {
+    background: #578757 !important;
+}
+
+.table-row_template {
+    display: none;
+}
