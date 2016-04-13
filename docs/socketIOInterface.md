@@ -10,8 +10,9 @@ Emit a json representation of the graph, where the UUID's can be requested later
 {
   "canvasId": "de305d54-75b4-431b-adb2-eb6b9e546014",
   "timestamp": "2016-03-18T14:02:56.541Z",
-  "postits": {
-    "23a29456-5ded-4b66-b3f0-178b7afdc0e7": {
+  "postits": [
+    {
+      "postitId": "23a29456-5ded-4b66-b3f0-178b7afdc0e7",
       "realX": 10,
       "realY": 10,
       "colour": "red",
@@ -20,23 +21,34 @@ Emit a json representation of the graph, where the UUID's can be requested later
         "3fb558b4-5c5c-42a1-98db-84267c470a47"
       ]
     },
-    "36afb67b-c127-4fb8-b795-b917c4099742": {
+
+    {
+      "postitId": "36afb67b-c127-4fb8-b795-b917c4099742",
       "realX": 10,
       "realY": 10,
       "colour": "red",
       "connections": [
         "23a29456-5ded-4b66-b3f0-178b7afdc0e7"
       ]
+    },
+
+    {
+      "postitId": "3fb558b4-5c5c-42a1-98db-84267c470a47",
+      "realX": 10,
+      "realY": 10,
+      "colour": "green",
+      "connections": [
+      ]
     }
-  }
+  ]
 }
 ```
 
 ## Response events:
 Requests that are accepted by the server. Responses will be emitted with the same name eg on ```getPostit``` will also emit ```getPostit```
 
-###### ```getPostit``` 
-Requests a postit from it's UUID and canvas UUID.
+###### ```getPostits``` 
+Requests postits from it's UUID and canvas UUID:
 
 ```json
 [
@@ -48,14 +60,34 @@ Requests a postit from it's UUID and canvas UUID.
 ]
 ```
 
+will return:
+
+```json
+[
+  {
+    "canvas": "de305d54-75b4-431b-adb2-eb6b9e546014",
+    "id": "23a29456-5ded-4b66-b3f0-178b7afdc0e7",
+    "image": "base64-encoded image: see http://stackoverflow.com/questions/26331787/socket-io-node-js-simple-example-to-send-image-files-from-server-to-client",
+    "realX": 10,
+    "realY": 10,
+    "colour": "red",
+    "connections": [
+      "36afb67b-c127-4fb8-b795-b917c4099742",
+      "3fb558b4-5c5c-42a1-98db-84267c470a47"
+    ]
+  },
+  ...
+]
+```
 ###### ```getCanvas```
 Request a canvas from it's uuid. Same data structure as updateCanvasGraph
 ```json
 {
   "id": "de305d54-75b4-431b-adb2-eb6b9e546014",
   "timestamp": "2016-03-18T14:02:56.541Z",
-  "postits": {
-    "23a29456-5ded-4b66-b3f0-178b7afdc0e7": {
+  "postits": [
+    {
+      "id": "23a29456-5ded-4b66-b3f0-178b7afdc0e7",
       "realX": 10,
       "realY": 10,
       "colour": "red",
@@ -64,7 +96,8 @@ Request a canvas from it's uuid. Same data structure as updateCanvasGraph
         "3fb558b4-5c5c-42a1-98db-84267c470a47"
       ]
     },
-    "36afb67b-c127-4fb8-b795-b917c4099742": {
+    {
+      "id": "36afb67b-c127-4fb8-b795-b917c4099742",
       "realX": 10,
       "realY": 10,
       "colour": "red",

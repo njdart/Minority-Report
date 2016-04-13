@@ -87,3 +87,6 @@ x64/
 
 # GTK stuff
 *.glade~
+
+# Temp files
+*~

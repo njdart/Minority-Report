@@ -10,7 +10,6 @@ class GraphExtractor:
         self.DEBUG_PLOT = False
         self.rawImage = image
         self.image = image
-        self.sift = cv2.xfeatures2d.SIFT_create()
         self.postitPos = []
         self.postitImage = []
         self.postitColour = []
@@ -51,8 +50,9 @@ class GraphExtractor:
             },
         }
 
-    def extractGraph(self, showDebug=False, sigma=0.8, minPostitArea = 3000, maxPostitArea = 20000, lenTolerence = 0.15, minColourThresh = 64, maxColourThresh = 200):
-        postits = self.extractPostits(showDebug, sigma, minPostitArea, maxPostitArea, lenTolerence, minColourThresh, maxColourThresh)
+
+    def extractGraph(self, showDebug, minPostitArea, maxPostitArea, lenTolerence, minColourThresh, maxColourThresh, postitThresh):
+        postits = self.extractPostits(showDebug, minPostitArea, maxPostitArea, lenTolerence, minColourThresh, maxColourThresh, postitThresh)
         lines =  self.extractLines(postits, showDebug)
         graph = {
                 "postits": postits,
@@ -60,27 +60,29 @@ class GraphExtractor:
             }
         return graph
 
-    def extractPostits(self, showDebug=True, sigma=0.8, minPostitArea = 3000, maxPostitArea = 20000, lenTolerence = 0.15, minColourThresh = 64, maxColourThresh = 200):
+    def extractPostits(self, showDebug, minPostitArea, maxPostitArea, lenTolerence, minColourThresh, maxColourThresh, postitThresh):
 
         foundPostits = []
         img = self.image
         boxedimg = img.copy()
-        edgegray = self.edge(img, False, showDebug=True)
+        edgegray = self.edge(img, False, showDebug,postitThresh)
         (_,cnts, _) = cv2.findContours(edgegray.copy(), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
         for c in cnts:
             box = cv2.boxPoints(cv2.minAreaRect(c))
             box = np.int0(box)
             cv2.drawContours(boxedimg, [box], 0, (0, 255, 0), 3)
+            if showDebug:
+                print(cv2.contourArea(box))
             if ((cv2.contourArea(box) > minPostitArea) and (cv2.contourArea(box) < maxPostitArea)):
+                #print("here")
                 length = math.hypot(box[0,0]-box[1,0], box[0,1]-box[1,1])
                 height = math.hypot(box[2,0]-box[1,0], box[2,1]-box[1,1])
                 if (length*(2-lenTolerence) < length+height < length*(2+lenTolerence)):
                     Rectangle = cv2.boundingRect(c)
-                    if showDebug:
-                        print(cv2.contourArea(box))
-                        cv2.drawContours(img, [box], 0, (0, 255, 0), 3)
+                    #cv2.drawContours(img, [box], 0, (0, 255, 0), 3)
                     self.postitPos.append(Rectangle)
                     self.postitImage.append(img[Rectangle[1]:(Rectangle[1]+Rectangle[3]), Rectangle[0]:(Rectangle[0]+Rectangle[2])])
+                    #self.display("name",self.postitImage[-1])
 
 
 
@@ -109,17 +111,11 @@ class GraphExtractor:
             guessedColour = self.guess_colour(rAvg, gAvg, bAvg)
             self.postitColour.append(guessedColour)
 
-            keypoints, descriptors = self.sift.detectAndCompute(gray,None)
-
             foundPostit = {
                 "image": postit,
                 "colour": guessedColour,
-                "position": self.postitPos[idx],
-                "keypoints": keypoints,
-                "descriptors": descriptors
-
+                "position": self.postitPos[idx]
             }
-
             foundPostits.append(foundPostit)
 
         return foundPostits
@@ -142,14 +138,14 @@ class GraphExtractor:
 
         return None
 
-    def extractLines(self, postits, showDebug=False):
+    def extractLines(self, postits, showDebug):
         foundLines = []
         img = self.image
 
-        edged = self.edge(img, True)
+        edged = self.edge(img, True, showDebug, 0)
 
         (_,cnts, _) = cv2.findContours(edged.copy(), cv2.RETR_TREE, cv2.CHAIN_APPROX_NONE)
-        tolerence =20
+        tolerence =40
         for c in cnts:
             postitIdx = [-1,-1]
 
@@ -211,11 +207,11 @@ class GraphExtractor:
         end = points[maxDistIdx[1]]
         return(start, end)
 
-    def edge(self,img,line, showDebug=False, thresh=110):
+    def edge(self,img,line, showDebug, thresh):
         kernel = np.ones((5,5),np.uint8)
-        img = cv2.medianBlur(img,9)
-        if showDebug:
-            self.display("blurred",img)
+        img = cv2.medianBlur(img,7)
+        #if showDebug:
+        #   self.display("blurred",img)
         if not line:
             img = cv2.dilate(img,kernel,iterations = 3)
             imgcopy = img.copy()
@@ -224,8 +220,8 @@ class GraphExtractor:
                 self.display("Threshed",img)
 
         gray = cv2.cvtColor(img, cv2.COLOR_RGB2GRAY)
-        if showDebug:
-            self.display("gray",gray)
+        #if showDebug:
+        #    self.display("gray",gray)
 
         edged = cv2.Canny(gray, 1, 30)
         if showDebug:

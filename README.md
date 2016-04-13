@@ -2,7 +2,7 @@
 
 ## About
 
-This project started as a Year in Industry/gap year project whilst working at [Cambridge Consultants](http://www.cambridgeconsultants.com/). The aim of the project was to reproduce some of the human-computer interactions displayed in the film of the same name. A key problem of many development environments is transferring information from a hi-fidelity physical world where we all interact to a lo-fidelity digital world where many of us work.
+This project started as a Year in Industry/gap year project whilst working at [Cambridge Consultants](http://www.cambridgeconsultants.com/). The aim of the project was to reproduce some of the human-computer interactions displayed in the film of the same name. A key problem of many development environments is transferring information from a lo-fidelity physical world where we all interact to a hi-fidelity digital world where many of us work.
 
 ### The Problem
 
@@ -25,12 +25,7 @@ Enter Minority Report. The ultimate goal of this ambitious project is to enginee
 
 ### TODO:
 
-- Consider [python multiprocessing](https://docs.python.org/2/library/multiprocessing.html) for slow/expensive operations?
-- Android set individual settings (contrast, resolution, exposure)?
-- Feature Matching: find a postit from previous frame if not found in current frame (and not binned)
-- kinect integration and client taking to python web server
-- Flask-SocketIO server
-    - serve html/js content?
+See issues
  
 ### Definitions
 

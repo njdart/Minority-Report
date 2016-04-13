@@ -3,8 +3,6 @@ import cv2
 import math
 import GraphExtractor
 
-
-
 def getImage():
     image = 'test5.jpg'
     image = cv2.imread(image)
@@ -78,9 +76,6 @@ def cropSquare(corners, image, imgsize):
 
     #destinaiton = np.float32([[origw,origh],[origw,imgsize[0]*0.8],[imgsize[1]*0.8,origh],[imgsize[1]*0.8,imgsize[0]*0.8]])
     destinaiton = np.float32([[0,0],[0,imgsize[0]],[imgsize[1],0],[imgsize[1],imgsize[0]]])
-
-    print origin
-    print destinaiton
 
     M = cv2.getPerspectiveTransform(origin, destinaiton)
     dst = cv2.warpPerspective(image, M, tuple(reversed(imgsize)))
