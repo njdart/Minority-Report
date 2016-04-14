@@ -49,8 +49,8 @@ class Model:
         self.canvasBounds = newBounds
 
     # From the current calibImage calculates likely boundaries of the canvas
-    def runAutoCalibrate(self,showDebug=False, canvThresh=150):
-        self.canvasBounds = self.findCanvas(self.calibImage, canvThresh, showDebug)
+    def runAutoCalibrate(self,showDebug=False):
+        self.canvasBounds = self.findCanvas(self.calibImage, showDebug)
 
     # Returns position of postits and relationships of current graph
     def getAbstractGraph(self):
@@ -180,9 +180,9 @@ class Model:
             self.update()
 
     # From calibImage find likely canvasBounds
-    def findCanvas(self, image, thresh, showDebug):
-        (__, board) = cv2.threshold(image,thresh,255,cv2.THRESH_TOZERO)
-        grayBoard = cv2.cvtColor(board, cv2.COLOR_RGB2GRAY)
+    def findCanvas(self, image, showDebug):
+        smoothImg = self.bwSmooth(image)
+        (__, grayBoard) = cv2.threshold(smoothImg,250,255,cv2.THRESH_OTSU)
 
         (__, boardContours, __) = cv2.findContours(grayBoard, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
         areas = [cv2.contourArea(c) for c in boardContours]
@@ -198,7 +198,8 @@ class Model:
                 box = cv2.boxPoints(rect)
                 box = np.int0(box)
                 cv2.drawContours(debugImage,[box],0,(0,0,255),2)
-            cv2.imshow("debug",debugImage)
+            cv2.imshow("debug",cv2.resize(debugImage,None,fx=0.25,fy=0.25))
+            #cv2.imshow("debug",debugImage)
             cv2.waitKey(0)
 
         return canvasBounds
@@ -235,22 +236,9 @@ class Model:
             #print(len(self.activePostits))
             IDs = []
             for p, oldPostit in enumerate(self.activePostits):
-                clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8,8))
 
-                oim = oldPostit.getImage(self.getPrevCanvasImage(oldPostit.last_canvas_ID))
-                oim = cv2.cvtColor(oim, cv2.COLOR_RGB2GRAY)
-                oim = clahe.apply(oim)
-                oim = cv2.bilateralFilter(oim,9,75,75)
-                #cv2.imshow("thing",oim)
-                #cv2.waitKey(0)
-
-                nim = newPostit["image"]
-                nim = cv2.cvtColor(nim, cv2.COLOR_RGB2GRAY)
-                nim = clahe.apply(nim)
-                nim = cv2.bilateralFilter(nim,9,75,75)
-                #cv2.imshow("thing",nim)
-                #cv2.waitKey(0)
-
+                oim = self.bwSmooth(oldPostit.getImage(self.getPrevCanvasImage(oldPostit.last_canvas_ID)))
+                nim = self.bwSmooth(newPostit["image"])
                 # Initiate SIFT detector
                 sift = cv2.xfeatures2d.SIFT_create()
 
@@ -273,16 +261,14 @@ class Model:
                         if m.distance <(0.75*n.distance):
                             good[p] = good[p] + 1
                 else:
-                    print("here")
+                    #print("here")
                     img = self.getPrevCanvasImage()
-                    print(oldPostit.last_canvas_ID)
-                    print(self.newID)
                     cv2.imshow("thing",cv2.resize(img,None,fx=0.5,fy=0.5))
                     cv2.waitKey(0)
                     cv2.imshow("thing",oim)
                     cv2.waitKey(0)
 
-            print(good)
+            #print(good)
             try:
                 if max(good)>10:
                     maxidx = np.argmax(good)
@@ -334,6 +320,13 @@ class Model:
 
     def setDebug(self, state):
         self.debug = state
+
+    def bwSmooth(self, image):
+        clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8,8))
+        grayImg = cv2.cvtColor(image, cv2.COLOR_RGB2GRAY)
+        normImg = clahe.apply(grayImg)
+        smoothImg = cv2.bilateralFilter(normImg,9,75,75)
+        return smoothImg
 
     # Main update loop using the current settings to extract data from current rawImage
     def update(self):
@@ -414,7 +407,7 @@ if __name__ == "__main__":
     #     nparray = np.asarray(bytearray(r.content), dtype="uint8") # Transform byte array to numpy array
     #     canvImg = cv2.imdecode(nparray,cv2.IMREAD_COLOR) # Decode values as openCV colours
     #     boardModel.newCalibImage(canvImg) #set as calibration image
-    #     boardModel.runAutoCalibrate(canvThresh=150) # Autocalibratefrom image
+    #     boardModel.runAutoCalibrate() # Autocalibratefrom image
     # else:
     #     print(":( Got Bad Calibration Image")
     #     print(r.text)
@@ -436,7 +429,7 @@ if __name__ == "__main__":
     boardModel = Model()
     boardModel.setDebug(False)
     boardModel.newCalibImage(canvImg)
-    boardModel.runAutoCalibrate(showDebug = False, canvThresh=100)
+    boardModel.runAutoCalibrate(showDebug = True)
     boardModel.imageSettings(5000,50000,0.4,0.33,64,200,120)
     image1 = cv2.imread('/home/jjs/projects/Minority-Report/src/IMG_20160304_154813.jpg')
     boardModel.newRawImage(image1, datetime.datetime.now(), 1)

@@ -109,14 +109,15 @@ class GraphExtractor:
             bAvg = bTotal / count
 
             guessedColour = self.guess_colour(rAvg, gAvg, bAvg)
-            self.postitColour.append(guessedColour)
+            if guessedColour != None:
+                self.postitColour.append(guessedColour)
 
-            foundPostit = {
-                "image": postit,
-                "colour": guessedColour,
-                "position": self.postitPos[idx]
-            }
-            foundPostits.append(foundPostit)
+                foundPostit = {
+                    "image": postit,
+                    "colour": guessedColour,
+                    "position": self.postitPos[idx]
+                }
+                foundPostits.append(foundPostit)
 
         return foundPostits
 
