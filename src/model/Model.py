@@ -211,9 +211,12 @@ class Model:
         canvasEndY = self.canvasBounds[1]+self.canvasBounds[3]
         return self.rawImage[canvasStartY:canvasEndY, canvasStartX:canvasEndX]
 
-    def getPrevCanvasImage(self):
-        canvas = self.getCanvas(self.prevCanvasID)
-        return canvas.getImage(canvas.rawImage)
+    def getPrevCanvasImage(self, ID):
+        if ID == self.newID:
+            return self.getCanvasImage()
+        else:
+            canvas = self.getCanvas(ID)
+            return canvas.getImage(canvas.rawImage)
 
     # Compare current graph with previous graph
     def comparePrev(self,newGraph):
@@ -232,9 +235,22 @@ class Model:
             #print(len(self.activePostits))
             IDs = []
             for p, oldPostit in enumerate(self.activePostits):
+                clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8,8))
 
-                oim = oldPostit.getImage(self.getPrevCanvasImage())
+                oim = oldPostit.getImage(self.getPrevCanvasImage(oldPostit.last_canvas_ID))
+                oim = cv2.cvtColor(oim, cv2.COLOR_RGB2GRAY)
+                oim = clahe.apply(oim)
+                oim = cv2.bilateralFilter(oim,9,75,75)
+                #cv2.imshow("thing",oim)
+                #cv2.waitKey(0)
+
                 nim = newPostit["image"]
+                nim = cv2.cvtColor(nim, cv2.COLOR_RGB2GRAY)
+                nim = clahe.apply(nim)
+                nim = cv2.bilateralFilter(nim,9,75,75)
+                #cv2.imshow("thing",nim)
+                #cv2.waitKey(0)
+
                 # Initiate SIFT detector
                 sift = cv2.xfeatures2d.SIFT_create()
 
@@ -257,10 +273,14 @@ class Model:
                         if m.distance <(0.75*n.distance):
                             good[p] = good[p] + 1
                 else:
-                    pass
-                    #print("here")
-                    #cv2.imshow("thing",oim)
-                    #cv2.waitKey(0)
+                    print("here")
+                    img = self.getPrevCanvasImage()
+                    print(oldPostit.last_canvas_ID)
+                    print(self.newID)
+                    cv2.imshow("thing",cv2.resize(img,None,fx=0.5,fy=0.5))
+                    cv2.waitKey(0)
+                    cv2.imshow("thing",oim)
+                    cv2.waitKey(0)
 
             print(good)
             try:
@@ -429,6 +449,14 @@ if __name__ == "__main__":
     image3 = cv2.imread('/home/jjs/projects/Minority-Report/src/IMG_20160304_154813b.jpg')
     boardModel.newRawImage(image3, datetime.datetime.now(),1)
     print("3")
+    boardModel.display()
+    image4 = cv2.imread('/home/jjs/projects/Minority-Report/src/IMG_20160304_154813c.jpg')
+    boardModel.newRawImage(image4, datetime.datetime.now(),1)
+    print("4")
+    boardModel.display()
+    image5 = cv2.imread('/home/jjs/projects/Minority-Report/src/IMG_20160304_154813d.jpg')
+    boardModel.newRawImage(image5, datetime.datetime.now(),1)
+    print("5")
     boardModel.display()
 
     #boardModel.save("canvas_data")
