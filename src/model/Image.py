@@ -5,17 +5,34 @@ import io
 import base64
 import cv2
 import os
+import requests
+import numpy
 from src.model.SqliteObject import SqliteObject
 
 
 class Image(SqliteObject):
 
-    def __init__(self, user, npArray, id=None, timestamp=None, databaseHandler=None):
-        super().__init__(properties=["id", "user", "timestamp"], table="images", databaseHandler=databaseHandler)
+    def __init__(self, user, npArray, id=uuid.uuid4(), timestamp=None, databaseHandler=None):
+        super().__init__(id=id,
+                         properties=["id", "user", "timestamp"],
+                         table="images",
+                         databaseHandler=databaseHandler)
         self.user = user
         self.image = npArray.copy()
-        self.id = id if id is not None else uuid.uuid4()
         self.timestamp = timestamp if timestamp is not None else datetime.datetime.now()
+
+    @staticmethod
+    def from_uri(user, uri='http://localhost:8080'):
+        response = requests.get(uri)
+
+        if response.status_code == 200:
+            nparray = numpy.asarray(bytearray(request.content), dtype="uint8")
+            return Image(user=user,
+                         npArray=cv2.imdecode(nparray, cv2.IMREAD_COLOR))
+        else:
+            print(response.status_code)
+            print(response.json())
+            return None
 
     @staticmethod
     def from_database_tuple(tuple, databaseHandler=None):

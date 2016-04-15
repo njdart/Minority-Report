@@ -1,33 +1,87 @@
-class Canvas:
-    """A snapshot of the state of the canvas and the inerpretation of it"""
-    def __init__(self, newid, time, boardImage, canvasBounds, postits, cxns, prevCanvID):
-        self.ID = newid
-        self.timestamp = time
-        self.rawImage = boardImage
-        self.bounds = canvasBounds
-        self.postits = postits
-        self.connections = cxns
-        self.derivedFrom = prevCanvID
+from src.model.SqliteObject import SqliteObject
+import uuid
+import datetime
 
-    def getPostit(self,ID):
+
+class Canvas(SqliteObject):
+    """
+    A Canvas object relating an image to it's canvas bounds
+    """
+
+    def __init__(self,
+                 image,
+                 canvasBounds,
+                 id=uuid.uuid4(),
+                 postits=[],
+                 connections=[],
+                 derivedFrom=None,
+                 derivedAt=datetime.datetime.now(),
+                 databaseHandler=None):
+        """
+        :param image OpenCV Numpy array
+        :param canvasBounds list of (x, y) tuples in the order [topLeft, topRight, bottomRight, bottomLeft]
+        :param id UUID v4
+        :param postits list of postit objects or UUID v4s
+        :param connections list of (postit/postitUUID, postit/postitUUID) tuples
+        :param derivedFrom canvas object or ID this object derives from
+        """
+        super(Canvas, self).__init__(id=id,
+                                     properties=[
+                                         "image",
+                                         "derivedFrom",
+                                         "derivedAt",
+                                         "canvasTopLeftX",
+                                         "canvasTopLeftY",
+                                         "canvasTopRightX",
+                                         "canvasTopRightY",
+                                         "canvasBottomLeftX",
+                                         "canvasBottomLeftY",
+                                         "canvasBottomRightX",
+                                         "canvasBottomRightY"
+                                     ],
+                                     table="canvas",
+                                     databaseHandler=databaseHandler)
+        self.image = image
+
+        canvasTopLeft = canvasBounds[0]
+        self.canvasTopLeftX = canvasTopLeft[0]
+        self.canvasTopLeftY = canvasTopLeft[1]
+
+        canvasTopRight = canvasBounds[1]
+        self.canvasTopRightX = canvasTopRight[0]
+        self.canvasTopRightY = canvasTopRight[1]
+
+        canvasBottomRight = canvasBounds[2]
+        self.canvasBottomRightX = canvasBottomRight[0]
+        self.canvasBottomRightY = canvasBottomRight[1]
+
+        canvasBottomLeft = canvasBounds[3]
+        self.canvasBottomLeftX = canvasBottomLeft[0]
+        self.canvasBottomLeftY = canvasBottomLeft[1]
+
+        self.postits = postits
+        self.connections = connections
+        self.derivedFrom = derivedFrom
+        self.derivedAt = derivedAt
+
+    def get_postit(self, id):
+        """
+        get a postit by it's id"""
         for postit in self.postits:
-            if postit.ID == ID:
+            if type(postit) == int and postit == id:
+                return self.databaseHandler.get_postit(id)
+            elif postit.get_id() == id:
                 return postit
         return None
 
-    def getImage(self,boardImage):
-        canvasStartX = self.bounds[0]
-        canvasStartY = self.bounds[1]
-        canvasEndX = self.bounds[0]+self.bounds[2]
-        canvasEndY = self.bounds[1]+self.bounds[3]
-        return self.rawImage[canvasStartY:canvasEndY, canvasStartX:canvasEndX]
+    def add_connection(self, start, end):
+        self.connections.append((start, end))
 
+    def get_image(self):
+        return self.image
 
+    def get_canvas_keystoned(self):
+        raise Exception('Not Implemented ... Josh?')
 
-    def getUUID(self):
-        return self.ID
-
-
-
-if __name__ == "__main__":
-    pass
+    def get_canvas_unkeystoned(self):
+        return self.image[self.canvasTopLeftY:self.canvasBottomRightY, self.canvasTopLeftX:self.canvasBottomRightX]

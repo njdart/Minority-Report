@@ -1,9 +1,9 @@
 class SqliteObject(object):
-    def __init__(self, properties, table, databaseHandler=None):
+    def __init__(self, properties, table, id=None, databaseHandler=None):
         self.properties = properties
         self.table = table
         self.databaseHandler = databaseHandler
-        self.id = None
+        self.id = id
 
     @staticmethod
     def from_database_tuple(tuple, databaseHandler):

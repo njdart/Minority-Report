@@ -28,6 +28,16 @@ CREATE TABLE IF NOT EXISTS canvases (
   FOREIGN KEY(image) REFERENCES images(id)
 );
 
+CREATE TABLE IF NOT EXISTS connections (
+  id                 STRING PRIMARY KEY,
+  from               STRING NOT NULL,
+  to                 STRING NOT NULL,
+  type               STRING,
+
+  FOREIGN KEY(from) REFERENCES postits(id),
+  FOREIGN Key(to) REFERENCES postits(id)
+)
+
 CREATE TABLE IF NOT EXISTS postits (
     id     STRING PRIMARY KEY,
     canvas STRING,

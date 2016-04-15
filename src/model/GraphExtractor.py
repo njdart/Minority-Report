@@ -6,9 +6,10 @@ from PIL import Image
 
 class GraphExtractor:
     """Get postits from a board image"""
-    def __init__(self, image):
+    def __init__(self, image, previousPostits):
         self.DEBUG_PLOT = False
         self.rawImage = image
+        self.prevPostits = previousPostits
         self.image = image
         self.postitPos = []
         self.postitImage = []
@@ -152,13 +153,18 @@ class GraphExtractor:
 
             startPoint, endPoint = self.findFurthestPair(c)
 
-            for idxstart, postit in enumerate(postits):
+            for idx, postit in enumerate(postits):
                 if postit["position"][0]-tolerence < startPoint[0] < postit["position"][0]+postit["position"][2]+tolerence and postit["position"][1]-tolerence < startPoint[1] < postit["position"][1]+postit["position"][3]+tolerence:
-                    postitIdx[0] = idxstart
-
-            for idxend, postit in enumerate(postits):
+                    postitIdx[0] = idx
                 if postit["position"][0]-tolerence < endPoint[0] < postit["position"][0]+postit["position"][2]+tolerence and postit["position"][1]-tolerence < endPoint[1] < postit["position"][1]+postit["position"][3]+tolerence:
-                    postitIdx[1] = idxend
+                    postitIdx[1] = idx
+
+
+            #for idxend, postit in enumerate(postits):
+            #    if postit["position"][0]-tolerence < endPoint[0] < postit["position"][0]+postit["position"][2]+tolerence and postit["position"][1]-tolerence < endPoint[1] < postit["position"][1]+postit["position"][3]+tolerence:
+            #        postitIdx[1] = idxend
+
+
 
             if postitIdx[0] > -1 and postitIdx[1] > -1 and postitIdx[0] != postitIdx[1]:
                 if not foundLines:

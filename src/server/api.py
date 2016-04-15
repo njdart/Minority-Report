@@ -1,10 +1,22 @@
 import cv2
 import numpy as np
+from PIL import Image as PILImage
+import io
+import base64
 import datetime
 from flask_socketio import emit
 from server import (socketio, databaseHandler)
 from src.model.User import User
 from src.model.Image import Image
+
+from flask import send_from_directory
+from server import (app, socketio)
+
+def npArray2Base64(npArray):
+    img = PILImage.fromarray(npArray)
+    buffer = io.BytesIO()
+    img.save(buffer, format="JPEG")
+    return base64.b64encode(buffer.getvalue()).decode("utf-8")
 
 @socketio.on('getUsers')
 def getUsers():
@@ -68,8 +80,12 @@ def addImage(details):
                            databaseHandler=databaseHandler()).create().as_object())
 
 @socketio.on('getImages')
-def getImage():
+def getImages():
     emit('getImages', [image.as_object() for image in databaseHandler().get_images()])
+
+@app.route('/images/<postitId>')
+def getImage(postitId):
+    return send_from_directory("/home/jashan/Minority-Report/src/server/static/", "testPostit1.jpg")
 
 @socketio.on('getAll')
 def getAll(request):
@@ -84,11 +100,6 @@ def getAll(request):
                   "realX": 450,
                   "realY": 450,
                   "colour": "red",
-                  "image": npArray2Base64(cv2.imread('/home/jashan/Minority-Report/src/server/static/testPostit1.jpg')),
-                  "connections": [
-                    "36afb67b-c127-4fb8-b795-b917c4099742",
-                    "3fb558b4-5c5c-42a1-98db-84267c470a47"
-                    ]
                 },
 
                 {
@@ -96,7 +107,6 @@ def getAll(request):
                   "realX": 790,
                   "realY": 450,
                   "colour": "red",
-                  "image": npArray2Base64(cv2.imread('/home/jashan/Minority-Report/src/server/static/testPostit2.jpg')),
                   "connections": [
                     "23a29456-5ded-4b66-b3f0-178b7afdc0e7"
                   ]
@@ -107,10 +117,20 @@ def getAll(request):
                   "realX": 1200,
                   "realY": 970,
                   "colour": "green",
-                  "image": npArray2Base64(cv2.imread('/home/jashan/Minority-Report/src/server/static/testPostit1.jpg')),
                   "connections": []
                 }
-            ]
+            ],
+            "connections": {
+                "23a29456-5ded-4b66-b3f0-178b7afdc0e7": [
+                    "36afb67b-c127-4fb8-b795-b917c4099742",
+                    "3fb558b4-5c5c-42a1-98db-84267c470a47"
+                ],
+                "36afb67b-c127-4fb8-b795-b917c4099742": [
+                    "23a29456-5ded-4b66-b3f0-178b7afdc0e7"
+                ],
+                "3fb558b4-5c5c-42a1-98db-84267c470a47": [
+                ]
+            }
         }
     )
 
@@ -121,7 +141,6 @@ def getPostits(request):
         {
             "canvas": "de305d54-75b4-431b-adb2-eb6b9e546014",
             "id": "23a29456-5ded-4b66-b3f0-178b7afdc0e7",
-            "image": npArray2Base64(cv2.imread('/home/jashan/Minority-Report/src/server/statictestPostit1.jpg')),
             "realX": 10,
             "realY": 10,
             "colour": "red",
