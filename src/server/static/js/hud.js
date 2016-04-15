@@ -26,23 +26,14 @@ $(function()
 function processResponse(received)
 {
   latestReceived = received;
-  console.log(latestReceived, "\n");
+  //console.log(latestReceived, "\n");
   idToPostitCoords = {};
 
   mapPostits();
 
-
-  drawPostits();
-
   drawConnections();
 
- /* $.each(idToPostitCoords, function(id, coords)
-  {
-    console.log(id, coords["x"], coords["y"]);
-    console.log(coords);
-  });*/
-  
-  console.log("FINISHED");
+  drawPostits();
   
 }
 
@@ -50,8 +41,11 @@ function drawPostits()
 {
   $.each(latestReceived.postits, function(_, p){
     hudContext.fillStyle = p.colour;
+    var img = new Image();
+    img.src = "http://0.0.0.0:8088/images/" + p.postitId + ".jpg";
+    hudContext.drawImage(img, idToPostitCoords[p.postitId]["y"], idToPostitCoords[p.postitId]["x"], POSTIT_SIZE, POSTIT_SIZE);
     //hudContext.stroke();
-    hudContext.fillRect(idToPostitCoords[p.postitId]["y"], idToPostitCoords[p.postitId]["x"], POSTIT_SIZE, POSTIT_SIZE);
+    //hudContext.fillRect(idToPostitCoords[p.postitId]["y"], idToPostitCoords[p.postitId]["x"], POSTIT_SIZE, POSTIT_SIZE);
   });
 }
 
@@ -61,7 +55,7 @@ function drawConnections()
   {
     $.each(conns, function(_, postitId2)
     {
-      console.log(postitId1, postitId2);
+      //console.log(postitId1, postitId2);
       hudContext.lineWidth = 5;
       hudContext.strokeStyle = "#000000";
       hudContext.moveTo(idToPostitCoords[postitId1]["y"] + POSTIT_SIZE/2, idToPostitCoords[postitId1]["x"] + POSTIT_SIZE/2);
