@@ -35,8 +35,6 @@ class Postit(SqliteObject):
         self.width = width
         self.height = height
         self.colour = colour
-        self.physical = self.physical
-        self.colour = colour
         self.physical = physical
         self.canvas = canvas
 
@@ -59,16 +57,30 @@ class Postit(SqliteObject):
         keypoints, descriptors = sift.detectAndCompute(gray,None)
         return descriptors
 
-    def get_postit_image(self):
-        pass
-
     def get_canvas(self):
-        if type(self.canvas) == uuid.UUID:
-            return self.databaseHandler.get_canvas(self.canvas)
-        else:
+        #if type(self.canvas) == uuid.UUID:
+        #    return self.databaseHandler.get_canvas(self.canvas)
+        #else:
             return self.canvas
 
-    def get_postit_image(self, scaleWidth, scaleHeight):
-        raise Exception('Not Implemented ... Josh?')
-        #postit = canvasImage[self.location[1]:(self.location[1]+self.size[1]), self.location[0]:(self.location[0]+self.size[0])]
-        #return postit
+    def get_postit_image(self, canvasImage):
+        postit = canvasImage[self.realY:(self.realY+self.height), self.realX:(self.realX+self.width)]
+        return postit
+
+    def update_postit(self,
+                x,
+                y,
+                width,
+                height,
+                colour,
+                canvas,
+                physical):
+
+        self.realX = x
+        self.realY = y
+        self.width = width
+        self.height = height
+        self.colour = colour
+        self.physical = physical
+        self.canvas = canvas
+

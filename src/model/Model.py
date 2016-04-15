@@ -18,6 +18,7 @@ class Model:
 
         self.calibImage = []
 
+        self.simpleBounds = []
         self.canvasBounds = []
         self.rawImage = []
         self.activePostits = []
@@ -73,7 +74,7 @@ class Model:
     # Return canvas from history using the UUID associated with it
     def getCanvas(self,ID):
         for canvas in self.canvasList:
-            if canvas.ID == ID:
+            if canvas.get_id() == ID:
                 return canvas
         return None
 
@@ -189,7 +190,7 @@ class Model:
 
         max_index = np.argmax(areas)
         canvasContour = boardContours[max_index]
-        canvasBounds = cv2.boundingRect(canvasContour)
+        self.simpleBounds = cv2.boundingRect(canvasContour)
 
         fCanvasContours = canvasContour.flatten()
         canvX = np.zeros([int(len(fCanvasContours)/2),1])
@@ -221,7 +222,7 @@ class Model:
         #print(str(canvX[max3])+","+str(canvY[max3]))
         #print(str(canvX[max4])+","+str(canvY[max4]))
         canvasPts = [(canvX[max1][0], canvY[max1][0]), (canvX[max2][0], canvY[max2][0]), (canvX[max3][0], canvY[max3][0]), (canvX[max4][0], canvY[max4][0])]
-        self.canvasPts = np.array(canvasPts)
+
         if showDebug:
             debugImage = image.copy()
             for c in boardContours:
@@ -237,7 +238,7 @@ class Model:
             #cv2.imshow("debug",debugImage)
             cv2.waitKey(0)
 
-        return canvasBounds
+        return np.array(canvasPts)
 
     def four_point_transform(self, image, pts):
         # obtain a consistent order of the points and unpack them
@@ -307,14 +308,14 @@ class Model:
         #canvasEndX = self.canvasBounds[0]+self.canvasBounds[2]
         #canvasEndY = self.canvasBounds[1]+self.canvasBounds[3]
         #return self.rawImage[canvasStartY:canvasEndY, canvasStartX:canvasEndX]
-        return self.four_point_transform(self.rawImage,self.canvasPts)
+        return self.four_point_transform(self.rawImage,self.canvasBounds)
 
     def getPrevCanvasImage(self, ID):
         if ID == self.newID:
             return self.getCanvasImage()
         else:
             canvas = self.getCanvas(ID)
-            return self.four_point_transform(canvas.rawImage, self.canvasPts)
+            return self.four_point_transform(canvas.image, self.canvasBounds)
 
     # Compare current graph with previous graph
     def comparePrev(self,newGraph):
@@ -332,7 +333,7 @@ class Model:
             #print(len(self.activePostits))
             IDs = []
             for p, oldPostit in enumerate(self.activePostits):
-                oim = self.bwSmooth(oldPostit.getImage(self.getPrevCanvasImage(oldPostit.last_canvas_ID)))
+                oim = self.bwSmooth(oldPostit.get_postit_image(self.getPrevCanvasImage(oldPostit.get_canvas())))
                 nim = self.bwSmooth(newPostit["image"])
                 #cv2.imshow("nimR",oldPostit.getImage(self.getPrevCanvasImage(oldPostit.last_canvas_ID)))
                 #cv2.imshow("nim",nim)
@@ -353,7 +354,7 @@ class Model:
                     # Match descriptors.
                     matches = bf.knnMatch(des2,des1, k=2)
                     #print(matches)
-                    IDs.append(oldPostit.ID)
+                    IDs.append(oldPostit.get_id())
                     for m,n in matches:
                         #print(str(m.distance)+"<"+str(0.2*n.distance))
                         #print(m.distance <(0.2*n.distance))
@@ -376,22 +377,36 @@ class Model:
             if (maxidx == -1):
                 # Create new entry on list of active postits and then add ID to list
                 newID = uuid.uuid4()
-                createdPostit =  Postit(newID, newPostit["position"][0], newPostit["position"][1],
-                                        newPostit["position"][2], newPostit["position"][3], newPostit["colour"],True,self.newID)
+
+                createdPostit =  Postit(x=newPostit["position"][0],
+                                        y=newPostit["position"][1],
+                                        width=newPostit["position"][2],
+                                        height=newPostit["position"][3],
+                                        colour=newPostit["colour"],
+                                        id=newID,
+                                        canvas=self.newID
+                                        )
                 newUniquePostits.append(createdPostit)
                 postitIDs.append(newID)
                 activePostitsFound.append(newID)
             else:
                 # Return ID of Matched postits
                 updatingPostit = self.activePostits.pop(maxidx)
-                postitIDs.append(updatingPostit.getID())
-                activePostitsFound.append(updatingPostit.getID())
-                updatingPostit.update(newPostit,self.newID, True)
+                postitIDs.append(updatingPostit.get_id())
+                activePostitsFound.append(updatingPostit.get_id())
+                updatingPostit.update_postit(x=newPostit["position"][0],
+                                        y=newPostit["position"][1],
+                                        width=newPostit["position"][2],
+                                        height=newPostit["position"][3],
+                                        colour=newPostit["colour"],
+                                        canvas=self.newID,
+                                        physical=True
+                                        )
                 self.activePostits.insert(maxidx,updatingPostit)
 
         for p, oldPostit in enumerate(self.activePostits):
-            if oldPostit.ID not in activePostitsFound:
-                oldPostit.setState(False)
+            if oldPostit.get_id() not in activePostitsFound:
+                oldPostit.set_physical(False)
         self.activePostits.extend(newUniquePostits)
 
 
@@ -433,8 +448,14 @@ class Model:
                                        self.minColourThresh, self.maxColourThresh, self.postitThresh)
         self.newID = uuid.uuid4()
         self.comparePrev(graph)
-
-        newCanvas = Canvas(self.newID, self.snapshotTime,self.rawImage,self.canvasBounds,self.activePostits,self.postitConnections,self.prevCanvasID)
+        newCanvas = Canvas(image=self.rawImage,
+                           canvasBounds=self.canvasBounds,
+                           id=self.newID,
+                           postits=self.activePostits,
+                           connections=self.postitConnections,
+                           derivedFrom=self.prevCanvasID,
+                           derivedAt=self.snapshotTime
+                           )
         self.canvasConnections.append([self.prevCanvasID, self.newID])
         self.prevCanvasID = self.newID
         self.canvasList.append(newCanvas)
@@ -443,24 +464,26 @@ class Model:
     def display(self):
         if len(self.canvasList):
             lastCanvas = self.canvasList[-1]
-            dispImage = np.zeros((lastCanvas.bounds[3], lastCanvas.bounds[2], 3), np.uint8)
+            dispImage = np.zeros((self.simpleBounds[3], self.simpleBounds[2], 3), np.uint8)
             for line in lastCanvas.connections:
-                startPoint = (int(lastCanvas.getPostit(line[0]).location[0]+(lastCanvas.getPostit(line[0]).size[0])/2), int(lastCanvas.getPostit(line[0]).location[1]+(lastCanvas.getPostit(line[0]).size[1])/2))
-                endPoint = (int(lastCanvas.getPostit(line[1]).location[0]+(lastCanvas.getPostit(line[1]).size[0])/2), int(lastCanvas.getPostit(line[1]).location[1]+(lastCanvas.getPostit(line[1]).size[1])/2))
+                startPoint = (int(lastCanvas.get_postit(line[0]).get_position()[0]+(lastCanvas.get_postit(line[0]).get_size()[0])/2),
+                              int(lastCanvas.get_postit(line[0]).get_position()[1]+(lastCanvas.get_postit(line[0]).get_size()[1])/2))
+                endPoint = (int(lastCanvas.get_postit(line[1]).get_position()[0]+(lastCanvas.get_postit(line[1]).get_size()[0])/2),
+                            int(lastCanvas.get_postit(line[1]).get_position()[1]+(lastCanvas.get_postit(line[1]).get_size()[1])/2))
                 cv2.line(dispImage, startPoint, endPoint, [255,0,0], thickness=4)
             for postit in lastCanvas.postits:
-                x1 = postit.location[0]
-                y1 = postit.location[1]
-                x2 = postit.location[0]+postit.size[0]
-                y2 = postit.location[1]+postit.size[1]
+                x1 = postit.get_position()[0]
+                y1 = postit.get_position()[1]
+                x2 = postit.get_position()[0]+postit.get_size()[0]
+                y2 = postit.get_position()[1]+postit.get_size()[1]
                 if postit.physical == 1:
                     cv2.rectangle(dispImage,(x1,y1),(x2,y2),(0,0,0),thickness=cv2.FILLED)
                     cv2.rectangle(dispImage,(x1,y1),(x2,y2),(0,255,0),thickness=4)
                 elif postit.physical == 0:
                     cv2.rectangle(dispImage,(x1,y1),(x2,y2),(0,0,0),thickness=cv2.FILLED)
                     for canvas in self.canvasList:
-                        if canvas.ID == postit.last_canvas_ID:
-                            postitImage = postit.getImage(self.four_point_transform(canvas.rawImage, self.canvasPts))
+                        if canvas.get_id() == postit.get_canvas():
+                            postitImage = postit.get_postit_image(self.four_point_transform(canvas.image, self.canvasBounds))
                             dispImage[y1:y1+postitImage.shape[0], x1:x1+postitImage.shape[1]] = postitImage
                             cv2.rectangle(dispImage,(x1,y1),(x2,y2),(0,200,200),thickness=4)
 

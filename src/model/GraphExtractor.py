@@ -159,11 +159,12 @@ class GraphExtractor:
                 if postit["position"][0]-tolerence < endPoint[0] < postit["position"][0]+postit["position"][2]+tolerence and postit["position"][1]-tolerence < endPoint[1] < postit["position"][1]+postit["position"][3]+tolerence:
                     postitIdx[1] = idx
 
-
-            #for idxend, postit in enumerate(postits):
-            #    if postit["position"][0]-tolerence < endPoint[0] < postit["position"][0]+postit["position"][2]+tolerence and postit["position"][1]-tolerence < endPoint[1] < postit["position"][1]+postit["position"][3]+tolerence:
-            #        postitIdx[1] = idxend
-
+            #for idx, postit in enumerate(self.prevPostits):
+            #    if not postit.physical:
+            #        if postit.location[0]-tolerence < startPoint[0] < postit.location[0]+postit.size[0]+tolerence and postit.location[1]-tolerence < startPoint[1] < postit.location[1]+postit.size[1]+tolerence:
+            #            postitIdx[0] = postit.ID
+            #        if postit.location[0]-tolerence < endPoint[0] < postit.location[0]+postit.size[0]+tolerence and postit.location[1]-tolerence < endPoint[1] < postit.location[1]+postit.size[1]+tolerence:
+            #            postitIdx[1] = postit.ID
 
 
             if postitIdx[0] > -1 and postitIdx[1] > -1 and postitIdx[0] != postitIdx[1]:

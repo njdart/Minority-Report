@@ -10,7 +10,7 @@ class SqliteObject(object):
         raise NotImplementedError('Abstract SQL Object cannot be made from a tuple')
 
     def get_id(self):
-        return id
+        return self.id
 
     def as_object(self):
         raise NotImplementedError('Abstract SQL Object cannot be represented as an object')
