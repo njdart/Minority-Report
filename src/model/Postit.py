@@ -69,8 +69,6 @@ class Postit(SqliteObject):
             return self.canvas
 
     def get_postit_image(self, scaleWidth, scaleHeight):
-        postit = canvasImage[self.location[1]:(self.location[1]+self.size[1]), self.location[0]:(self.location[0]+self.size[0])]
-        return postit
-
-if __name__ == "__main__":
-    pass
+        raise Exception('Not Implemented ... Josh?')
+        #postit = canvasImage[self.location[1]:(self.location[1]+self.size[1]), self.location[0]:(self.location[0]+self.size[0])]
+        #return postit
