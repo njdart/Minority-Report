@@ -1,37 +1,74 @@
 import cv2
-import numpy as np
+import uuid
+from src.model.SqliteObject import SqliteObject
 
-class Postit:
-    """Individual Postit"""
-    def __init__(self,id,x,y,width,height,colour,physical,last_canvas_ID):
-        self.ID = id
-        self.location = [x,y]
-        self.size = [width,height]
+
+class Postit(SqliteObject):
+    """
+    Represents a postit in a canvas
+    """
+
+    def __init__(self,
+                 x,
+                 y,
+                 width,
+                 height,
+                 colour,
+                 canvas,
+                 physical=True,
+                 id=uuid.uuid4(),
+                 databaseHandler=None):
+        super(Postit, self).__init__(id=id,
+                                     properties=[
+                                         "id",
+                                         "canvas",
+                                         "height",
+                                         "width",
+                                         "realX",
+                                         "realY",
+                                         "colour"
+                                     ],
+                                     table="postits",
+                                     databaseHandler=databaseHandler)
+        self.realX = x
+        self.realY = y
+        self.width = width
+        self.height = height
+        self.colour = colour
+        self.physical = self.physical
         self.colour = colour
         self.physical = physical
-        self.last_canvas_ID = last_canvas_ID
+        self.canvas = canvas
 
-    def update(self, postitdata,new_canvas_ID):
-        self.location = [postitdata["position"][0], postitdata["position"][1]]
-        self.size = [postitdata["position"][2], postitdata["position"][3]]
-        self.image = postitdata["image"]
-        self.colour = postitdata["colour"]
-        self.last_canvas_ID = new_canvas_ID
+    def get_position(self):
+        return (self.realX, self.realY)
 
-    def getID(self):
-        return self.ID
+    def get_size(self):
+        return (self.width, self.height)
 
-    def setState(self,newstate):
-        self.physical = newstate
+    def get_color(self):
+        return self.colour
 
-    def getDescriptors(self,canvasImage):
-        sift  = cv2.xfeatures2d.SIFT_create()
+    def set_physical(self, state=False):
+        self.physical = state
+
+    def get_descriptors(self,canvasImage):
+        sift = cv2.xfeatures2d.SIFT_create()
         postit = self.getImage(canvasImage)
         gray = cv2.cvtColor(postit, cv2.COLOR_BGR2GRAY)
         keypoints, descriptors = sift.detectAndCompute(gray,None)
         return descriptors
 
-    def getImage(self,canvasImage):
+    def get_postit_image(self):
+        pass
+
+    def get_canvas(self):
+        if type(self.canvas) == uuid.UUID:
+            return self.databaseHandler.get_canvas(self.canvas)
+        else:
+            return self.canvas
+
+    def get_postit_image(self, scaleWidth, scaleHeight):
         postit = canvasImage[self.location[1]:(self.location[1]+self.size[1]), self.location[0]:(self.location[0]+self.size[0])]
         return postit
 
