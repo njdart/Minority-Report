@@ -417,7 +417,15 @@ class Model:
         for cxn in lines:
             #print(cxn["postitIdx"][0])
             #print(len(postitIDs))
-            connection = [postitIDs[cxn["postitIdx"][0]],postitIDs[cxn["postitIdx"][1]]]
+            if "postitIdStart" in cxn.keys():
+                start = cxn["postitIdStart"]
+            else:
+                start = postitIDs[cxn["postitIdx"][0]]
+            if "postitIdEnd" in cxn.keys():
+                end = cxn["postitIdEnd"]
+            else:
+                end = postitIDs[cxn["postitIdx"][1]]
+            connection = [start,end]
             if connection not in self.postitConnections:
                 self.postitConnections.append(connection)
 
@@ -519,63 +527,63 @@ if __name__ == "__main__":
     #       ~ Cause : Brightness in the room differs from test conditions
     #       ~ Fix   : Change find postit threshold
     #####
-    # boardModel = Model()
-    # boardModel.setDebug(False)
-    # boardModel.imageSettings(2000,40000,0.4,0.33,64,200,105)
-    # input("Waiting for focus >")
-    # requests.get("http://localhost:8080/focus")
-    # input("Waiting for boarders>")
-    # r = requests.get("http://localhost:8080") # Request image from phone
-    # # Receiving an image from the request gives code 200, all other returns means that the image has no been obtained
-    # if r.status_code == 200:
-    #     print("Got Good Calibartion Image")
-    #     nparray = np.asarray(bytearray(r.content), dtype="uint8") # Transform byte array to numpy array
-    #     canvImg = cv2.imdecode(nparray,cv2.IMREAD_COLOR) # Decode values as openCV colours
-    #     boardModel.newCalibImage(canvImg) #set as calibration image
-    #     boardModel.runAutoCalibrate() # Autocalibratefrom image
-    # else:
-    #     print(":( Got Bad Calibration Image")
-    #     print(r.text)
-    # input("Waiting >")
-    # while(1):
-    #     r = requests.get("http://localhost:8080")
-    #     if r.status_code == 200:
-    #         print("Got Good Postit Image")
-    #         nparray = np.asarray(bytearray(r.content), dtype="uint8")
-    #         img = cv2.imdecode(nparray,cv2.IMREAD_COLOR)
-    #         boardModel.newRawImage(img, datetime.datetime.now(),update=1)
-    #         boardModel.display()
-    #     else:
-    #         print(":( Got Bad Postit Image")
-    #         print(r.text)
-
-
-    canvImg = cv2.imread('/home/jjs/projects/Minority-Report/src/IMG_20160304_154758.jpg')
     boardModel = Model()
     boardModel.setDebug(False)
-    boardModel.newCalibImage(canvImg)
-    boardModel.runAutoCalibrate(showDebug = False)
-    boardModel.imageSettings(9000,20000,0.4,0.33,64,200,120)
-    image1 = cv2.imread('/home/jjs/projects/Minority-Report/src/IMG_20160304_154813.jpg')
-    boardModel.newRawImage(image1, datetime.datetime.now(), 1)
-    print("1")
-    boardModel.display()
-    image2 = cv2.imread('/home/jjs/projects/Minority-Report/src/IMG_20160304_154821.jpg')
-    boardModel.newRawImage(image2, datetime.datetime.now(),1)
-    print("2")
-    boardModel.display()
-    image3 = cv2.imread('/home/jjs/projects/Minority-Report/src/IMG_20160304_154813b.jpg')
-    boardModel.newRawImage(image3, datetime.datetime.now(),1)
-    print("3")
-    boardModel.display()
-    image4 = cv2.imread('/home/jjs/projects/Minority-Report/src/IMG_20160304_154813c.jpg')
-    boardModel.newRawImage(image4, datetime.datetime.now(),1)
-    print("4")
-    boardModel.display()
-    image5 = cv2.imread('/home/jjs/projects/Minority-Report/src/IMG_20160304_154813d.jpg')
-    boardModel.newRawImage(image5, datetime.datetime.now(),1)
-    print("5")
-    boardModel.display()
+    boardModel.imageSettings(2000,40000,0.4,0.33,64,200,105)
+    input("Waiting for focus >")
+    requests.get("http://localhost:8080/focus")
+    input("Waiting for boarders>")
+    r = requests.get("http://localhost:8080") # Request image from phone
+    # Receiving an image from the request gives code 200, all other returns means that the image has no been obtained
+    if r.status_code == 200:
+        print("Got Good Calibartion Image")
+        nparray = np.asarray(bytearray(r.content), dtype="uint8") # Transform byte array to numpy array
+        canvImg = cv2.imdecode(nparray,cv2.IMREAD_COLOR) # Decode values as openCV colours
+        boardModel.newCalibImage(canvImg) #set as calibration image
+        boardModel.runAutoCalibrate() # Autocalibratefrom image
+    else:
+        print(":( Got Bad Calibration Image")
+        print(r.text)
+    input("Waiting >")
+    while(1):
+        r = requests.get("http://localhost:8080")
+        if r.status_code == 200:
+            print("Got Good Postit Image")
+            nparray = np.asarray(bytearray(r.content), dtype="uint8")
+            img = cv2.imdecode(nparray,cv2.IMREAD_COLOR)
+            boardModel.newRawImage(img, datetime.datetime.now(),update=1)
+            boardModel.display()
+        else:
+            print(":( Got Bad Postit Image")
+            print(r.text)
+
+
+    # canvImg = cv2.imread('/home/jjs/projects/Minority-Report/src/IMG_20160304_154758.jpg')
+    # boardModel = Model()
+    # boardModel.setDebug(False)
+    # boardModel.newCalibImage(canvImg)
+    # boardModel.runAutoCalibrate(showDebug = False)
+    # boardModel.imageSettings(9000,20000,0.4,0.33,64,200,120)
+    # image1 = cv2.imread('/home/jjs/projects/Minority-Report/src/IMG_20160304_154813.jpg')
+    # boardModel.newRawImage(image1, datetime.datetime.now(), 1)
+    # print("1")
+    # boardModel.display()
+    # image2 = cv2.imread('/home/jjs/projects/Minority-Report/src/IMG_20160304_154821.jpg')
+    # boardModel.newRawImage(image2, datetime.datetime.now(),1)
+    # print("2")
+    # boardModel.display()
+    # image3 = cv2.imread('/home/jjs/projects/Minority-Report/src/IMG_20160304_154813b.jpg')
+    # boardModel.newRawImage(image3, datetime.datetime.now(),1)
+    # print("3")
+    # boardModel.display()
+    # image4 = cv2.imread('/home/jjs/projects/Minority-Report/src/IMG_20160304_154813c.jpg')
+    # boardModel.newRawImage(image4, datetime.datetime.now(),1)
+    # print("4")
+    # boardModel.display()
+    # image5 = cv2.imread('/home/jjs/projects/Minority-Report/src/IMG_20160304_154813d.jpg')
+    # boardModel.newRawImage(image5, datetime.datetime.now(),1)
+    # print("5")
+    # boardModel.display()
 
     #boardModel.save("canvas_data")
     #newBoard = Model()

@@ -150,6 +150,8 @@ class GraphExtractor:
         tolerence =40
         for c in cnts:
             postitIdx = [-1,-1]
+            postitIdStart = 0
+            postitIdEnd = 0
 
             startPoint, endPoint = self.findFurthestPair(c)
 
@@ -159,42 +161,38 @@ class GraphExtractor:
                 if postit["position"][0]-tolerence < endPoint[0] < postit["position"][0]+postit["position"][2]+tolerence and postit["position"][1]-tolerence < endPoint[1] < postit["position"][1]+postit["position"][3]+tolerence:
                     postitIdx[1] = idx
 
-            #for idx, postit in enumerate(self.prevPostits):
-            #    if not postit.physical:
-            #        if postit.location[0]-tolerence < startPoint[0] < postit.location[0]+postit.size[0]+tolerence and postit.location[1]-tolerence < startPoint[1] < postit.location[1]+postit.size[1]+tolerence:
-            #            postitIdx[0] = postit.ID
-            #        if postit.location[0]-tolerence < endPoint[0] < postit.location[0]+postit.size[0]+tolerence and postit.location[1]-tolerence < endPoint[1] < postit.location[1]+postit.size[1]+tolerence:
-            #            postitIdx[1] = postit.ID
+            for idx, postit in enumerate(self.prevPostits):
+                if not postit.physical:
+                    if postit.get_position()[0]-tolerence < startPoint[0] < postit.get_position()[0]+postit.get_size()[0]+tolerence and postit.get_position()[1]-tolerence < startPoint[1] < postit.get_position()[1]+postit.get_size()[1]+tolerence:
+                        postitIdStart = postit.get_id()
+                    if postit.get_position()[0]-tolerence < endPoint[0] < postit.get_position()[0]+postit.get_size()[0]+tolerence and postit.get_position()[1]-tolerence < endPoint[1] < postit.get_position()[1]+postit.get_size()[1]+tolerence:
+                        postitIdEnd = postit.get_id()
 
 
-            if postitIdx[0] > -1 and postitIdx[1] > -1 and postitIdx[0] != postitIdx[1]:
+            if postitIdStart and postitIdEnd:
+                foundLine = {
+                        "postitIdStart": postitIdStart,
+                        "postitIdEnd": postitIdEnd
+                        }
+                foundLines.append(foundLine)
+            elif postitIdStart and postitIdx[1] > -1:
+                foundLine = {
+                        "postitIdStart": postitIdStart,
+                        "postitIdx": postitIdx
+                        }
+                foundLines.append(foundLine)
+            elif postitIdEnd and postitIdx[0] > -1:
+                foundLine = {
+                        "postitIdEnd": postitIdEnd,
+                        "postitIdx": postitIdx
+                        }
+                foundLines.append(foundLine)
+            elif postitIdx[0] > -1 and postitIdx[1] > -1 and postitIdx[0] != postitIdx[1]:
                 if not foundLines:
                     foundLine = {
-                        "postitIdx": postitIdx,
-                        "startPoint": startPoint,
-                        "endPoint": endPoint
+                        "postitIdx": postitIdx
                         }
                     foundLines.append(foundLine)
-                else:
-                    inList=0
-                    repeatIdx=-1
-                    for idx, line in enumerate(foundLines):
-                        if line["postitIdx"] == postitIdx:
-                            inList=1
-                            repeatIdx=idx
-                    if not inList:
-                        foundLine = {
-                            "postitIdx": postitIdx,
-                            "startPoint": startPoint,
-                            "endPoint": endPoint
-                            }
-                        foundLines.append(foundLine)
-                    else:
-                        repeatLen = math.hypot(foundLines[repeatIdx]["startPoint"][0]-foundLines[repeatIdx]["endPoint"][0],foundLines[repeatIdx]["startPoint"][1]-foundLines[repeatIdx]["endPoint"][1])
-                        newLen = math.hypot(startPoint[0]-endPoint[0],startPoint[1]-endPoint[1])
-                        if newLen < repeatLen:
-                            foundLines[repeatIdx]["startPoint"]=startPoint
-                            foundLines[repeatIdx]["endPoint"]=endPoint
         return foundLines
 
     def findFurthestPair(self, contour):
