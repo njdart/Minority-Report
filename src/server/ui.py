@@ -5,6 +5,10 @@ from server import (app, socketio)
 def index():
     return render_template('index.html')
 
+@app.route('/canvas')
+def canvas():
+    return render_template('canvas.html')
+
 @app.route('/hud')
 def hud():
     return render_template('hud.html')

@@ -236,7 +236,7 @@ ourw = $(window).innerWidth()-21;
 uuid_to_postit_scaled = {}
 
 $("#picanvas").attr("height", ourh).
-		attr("width", ourw);
+        attr("width", ourw);
 
 // Draw postits
 
@@ -252,10 +252,10 @@ function createPostIt(postit, canvW, canvH) {
     var y = (postit.y/canvH)*ourh;
 
     uuid_to_postit_scaled[postit.uuid] = {
-	    "x": x,
-	    "y": y,
-	    "width": width,
-	    "height": height
+        "x": x,
+        "y": y,
+        "width": width,
+        "height": height
     }
 
     ctx.fillRect(x, y, width, height);
@@ -267,8 +267,8 @@ function drawPostIts() {
     var canvH = canvases[1].height;
     for(i=0;i<postits.length;i++)
     {
-	createPostIt(postits[i], canvW, canvH);
-	console.log(postits[i]);
+    createPostIt(postits[i], canvW, canvH);
+    console.log(postits[i]);
     }
     console.log("End drawPostIts()");
 }
@@ -295,7 +295,7 @@ function drawConnections() {
 
     for(i=0;i<connections.length;i++)
     {
-	createConnection(connections[i]);
+    createConnection(connections[i]);
     }
 }
 
