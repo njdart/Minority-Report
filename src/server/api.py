@@ -5,12 +5,11 @@ import io
 import base64
 import datetime
 from flask_socketio import emit
-from server import (socketio, databaseHandler)
 from src.model.User import User
 from src.model.Image import Image
-
 from flask import send_from_directory
 from server import (app, socketio)
+import os
 
 def npArray2Base64(npArray):
     img = PILImage.fromarray(npArray)
@@ -18,28 +17,28 @@ def npArray2Base64(npArray):
     img.save(buffer, format="JPEG")
     return base64.b64encode(buffer.getvalue()).decode("utf-8")
 
+
 @socketio.on('getUsers')
 def getUsers():
     emit('getUsers', [user.as_object() for user in User.get_all()])
 
+
 @socketio.on('addUser')
 def addUser(details):
-    emit('addUser', User(username=details["username"], databaseHandler=databaseHandler()).create().as_object())
+    emit('addUser', User(username=details["username"]).create().as_object())
+
 
 @socketio.on('getUser')
 def getUser(details):
-    username = details["username"] if "username" in details else None
-    id = details["id"] if "id" in details else None
+    emit('getUser', User.get(id=details["id"]).as_object())
 
-    emit('getUser', [{"username": user[1], "id": user[0]} for user in
-                     databaseHandler().get_user(username=username, id=id)])
 
 @socketio.on('updateUser')
 def updateUser(details):
-    username = details["username"] if "username" in details else None
-    id = details["id"] if "id" in details else None
+    username = details["username"]
+    id = details["id"]
 
-    user = databaseHandler().get_user(id=id)
+    user = User.get(id=id)
 
     if not user:
         emit('updateUser', False)
@@ -51,17 +50,13 @@ def updateUser(details):
 
     emit('updateUser', user.as_object())
 
+
 @socketio.on('deleteUser')
 def deleteUser(details):
     id = details["id"] if "id" in details else None
 
-    user = databaseHandler().get_user(id=id)
+    emit('deleteUser', User.get(id=id).delete().as_object())
 
-    if user:
-        emit('deleteUser', user.delete().as_object())
-
-    else:
-        emit('deleteUser', False)
 
 @socketio.on('addImage')
 def addImage(details):
@@ -75,16 +70,40 @@ def addImage(details):
 
     emit('addImage', Image(user=userId,
                            npArray=npArr,
-                           timestamp=timestamp,
-                           databaseHandler=databaseHandler()).create().as_object())
+                           timestamp=timestamp).create().as_object())
+
 
 @socketio.on('getImages')
 def getImages():
-    emit('getImages', [image.as_object() for image in databaseHandler().get_images()])
+    emit('getImages', [image.as_object() for image in Image.get_all()])
 
-@app.route('/images/<postitId>')
-def getImage(postitId):
-    return send_from_directory("/home/jashan/Minority-Report/src/server/static/", "testPostit1.jpg")
+
+@socketio.on('deleteImage')
+def deleteImage(details):
+    emit('deleteImage', Image.get(details["id"]).delete().as_object())
+
+
+@socketio.on('updateImage')
+def updateImage(details):
+    image = Image.get(details["id"])
+
+    timestamp = datetime.datetime.strptime(details["timestamp"], '%Y-%m-%dT%H:%M:%S.%fZ')
+
+    image.set_timestamp(timestamp)
+    emit('updateImage', image.update().as_object())
+
+
+@app.route('/api/images/<postitId>')
+# @app.route('/api/images/<width>/<height>/<path:postitId>')
+def image_serve(postitId, width=None, height=None):
+
+    root_dir = os.path.dirname(os.path.realpath(__file__))
+
+    path = os.path.join(root_dir, 'static', 'images')
+    file = '{}.jpg'.format(postitId)
+
+    return send_from_directory(path, file, mimetype='image/jpg')
+
 
 @socketio.on('getAll')
 def getAll(request):
@@ -133,6 +152,7 @@ def getAll(request):
         }
     )
 
+
 @socketio.on('getPostits')
 def getPostits(request):
     print("Get Postits" + str(request))
@@ -149,6 +169,7 @@ def getPostits(request):
             ]
         }
     ])
+
 
 
 @socketio.on('getCanvas')
@@ -179,6 +200,7 @@ def getCanvas(request):
             }
         ]
     })
+
 
 @socketio.on('getSettings')
 def getSettings():

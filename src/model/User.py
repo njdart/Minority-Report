@@ -19,9 +19,3 @@ class User(SqliteObject):
 
     def get_id(self):
         return self.id
-
-    def as_object(self):
-        return {
-            "username": self.username,
-            "id": self.id
-        }

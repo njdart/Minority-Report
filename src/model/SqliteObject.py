@@ -1,5 +1,6 @@
 from src.server import databaseHandler
 
+
 class SqliteObject(object):
 
     properties = []
@@ -16,7 +17,7 @@ class SqliteObject(object):
         props = {}
         for prop in self.properties:
             if hasattr(self, prop):
-                props[prop] = getattr(self, prop)
+                props[prop] = str(getattr(self, prop))
 
         return props
 
@@ -46,7 +47,7 @@ class SqliteObject(object):
 
     @classmethod
     def get(cls, id, database=None):
-        query = 'SELECT * FROM {} WHERE id={};'.format(cls.table, id)
+        query = 'SELECT * FROM {} WHERE id=\'{}\';'.format(cls.table, id)
 
         print('Using SELECT query {}'.format(query))
 
@@ -58,48 +59,58 @@ class SqliteObject(object):
         c.execute(query)
         data = c.fetchone()
         props = {}
+        print(data)
+        print(cls.properties)
         for i in range(len(cls.properties)):
-            props[cls.properties[i]] = data[i]
+            props[cls.properties[i]] = str(data[i])
 
         return cls(**props)
 
+    def update(self, database=None):
 
-    def update(self):
-        if not self.databaseHandler:
-            raise Exception('No Database Provided to Update in')
-
-        set = []
+        props = []
         for property in self.properties:
             if property == 'id':
                 continue
 
-            set.append('{}=\'{}\''.format(property, getattr(self, property)))
+            props.append('{}=\'{}\''.format(property, getattr(self, property)))
 
-        query = 'UPDATE {} SET {} WHERE id=?;'.format(self.table, ','.join(set))
+        query = 'UPDATE {} SET {} WHERE id=?;'.format(self.table, ','.join(props))
 
         print('Using UPDATE query \'{}\''.format(query))
-        c = self.databaseHandler.database.cursor()
+
+        if self.database:
+            db = self.database
+        elif database:
+            db = database
+        else:
+            db = databaseHandler().get_database()
+
+        c = db.cursor()
         c.execute(query, (self.id,))
-        self.databaseHandler.database.commit()
+        db.commit()
         return self
 
-    def delete(self):
-        if not self.databaseHandler:
-            raise Exception('No Database Provided to Delete in')
+    def delete(self, database=None):
 
         query = 'DELETE FROM {} WHERE id=?;'.format(self.table)
 
         print('Using DELETE query \'{}\''.format(query))
 
-        c = self.databaseHandler.database.cursor()
+        if self.database:
+            db = self.database
+        elif database:
+            db = database
+        else:
+            db = databaseHandler().get_database()
+
+        c = db.cursor()
         c.execute(query, (self.id,))
-        self.databaseHandler.database.commit()
+        db.commit()
 
         return self
 
-    def create(self, databaseHandler=None):
-        if not databaseHandler and not self.databaseHandler:
-            raise Exception('No Database Provided to create in')
+    def create(self, database=None):
 
         properties = [str(p) for p in self.properties if getattr(self, p) != None]
 
@@ -118,9 +129,16 @@ class SqliteObject(object):
 
         print('Using CREATE query \'{}\''.format(query))
 
-        c = self.databaseHandler.database.cursor()
+        if self.database:
+            db = self.database
+        elif database:
+            db = database
+        else:
+            db = databaseHandler().get_database()
+
+        c = db.cursor()
         c.execute(query)
-        self.databaseHandler.database.commit()
+        db.commit()
         if not self.id:
             self.id = c.lastrowid
 

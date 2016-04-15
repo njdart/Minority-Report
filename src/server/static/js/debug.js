@@ -10,9 +10,6 @@ var images = [];
 function updateUsers() {
     console.log('Updating Users');
     $('.usernames-userRow').remove();
-    $('.user-select').empty().append($('<option></option>')
-        .attr('value', 0)
-        .text('None'));
     var template = $('.usernames-tableBody > .table-row_template');
 
     users.forEach(function(user) {
@@ -43,6 +40,7 @@ function updateImages() {
 
         $(tr).insertBefore(imagesTable.children().last());
         tr.find('.images-id').text(image.id);
+        tr.find('.images-image').attr('src', 'api/images/' + image.id);
         tr.find('.images-user').val(image.user);
         tr.find('.images-timestamp').val(new Date(image.timestamp).toISOString());
     })
@@ -66,11 +64,27 @@ body.on('focusout', '.usernames-username', function(){
     var children = $(this).parent().parent();
 
     var properties = {
-        id: children.find('.usernames-id').val(),
+        id: children.find('.usernames-id').text(),
         username: children.find('.usernames-username').val()
     };
 
+    console.log(properties);
+
     socket.emit('updateUser', properties)
+});
+
+// On username loose focus
+body.on('focusout', '.images-timestamp', function(){
+    var children = $(this).parent().parent();
+
+    var properties = {
+        id: children.find('.images-id').text(),
+        timestamp: children.find('.images-timestamp').val()
+    };
+
+    console.log(properties);
+
+    socket.emit('updateImage', properties)
 });
 
 // on user delete button
@@ -117,6 +131,21 @@ body.on('click', '.images-add', function() {
     console.log(properties);
 });
 
+// on user delete button
+body.on('click', '.images-remove', function() {
+    var row = $(this).parent().parent();
+    var properties = {
+        id: row.find('.images-id').text()
+    };
+    console.log('Deleting image', properties);
+    socket.emit('deleteImage', properties);
+});
+
+// Show image
+body.on('click', '.images-id', function() {
+    $(this).parent().find('.images-image').toggle()
+});
+
 // on getUsers response
 socket.on('getUsers', function(data) {
     console.log('getUsers', arguments);
@@ -155,5 +184,15 @@ socket.on('getImages', function(data) {
     updateImages();
 });
 
+socket.on('updateImage', function(data) {
+    console.log('updateTimestamp', arguments);
+    socket.emit('getImages');
+});
+
+socket.on('deleteImage', function(data) {
+    console.log('deleteImage', arguments);
+    socket.emit('getImages');
+});
+
 socket.emit('getUsers');
-//socket.emit('getImages');
+socket.emit('getImages');
