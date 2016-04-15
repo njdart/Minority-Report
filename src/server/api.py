@@ -116,7 +116,7 @@ def getAll(request):
                   "image": npArray2Base64(cv2.imread('/home/jashan/Minority-Report/src/server/static/testPostit1.jpg')),
                   "connections": []
                 }
-            ]
+            ],
             "connections": {
                 "23a29456-5ded-4b66-b3f0-178b7afdc0e7": [
                     "36afb67b-c127-4fb8-b795-b917c4099742",
