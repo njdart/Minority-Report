@@ -49,8 +49,8 @@ class Model:
         self.canvasBounds = newBounds
 
     # From the current calibImage calculates likely boundaries of the canvas
-    def runAutoCalibrate(self,showDebug=False, canvThresh=150):
-        self.canvasBounds = self.findCanvas(self.calibImage, canvThresh, showDebug)
+    def runAutoCalibrate(self,showDebug=False):
+        self.canvasBounds = self.findCanvas(self.calibImage, showDebug)
 
     # Returns position of postits and relationships of current graph
     def getAbstractGraph(self):
@@ -180,9 +180,9 @@ class Model:
             self.update()
 
     # From calibImage find likely canvasBounds
-    def findCanvas(self, image, thresh, showDebug):
-        (__, board) = cv2.threshold(image,thresh,255,cv2.THRESH_TOZERO)
-        grayBoard = cv2.cvtColor(board, cv2.COLOR_RGB2GRAY)
+    def findCanvas(self, image, showDebug):
+        smoothImg = self.bwSmooth(image)
+        (__, grayBoard) = cv2.threshold(smoothImg,250,255,cv2.THRESH_OTSU)
 
         (__, boardContours, __) = cv2.findContours(grayBoard, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
         areas = [cv2.contourArea(c) for c in boardContours]
@@ -191,29 +191,130 @@ class Model:
         canvasContour = boardContours[max_index]
         canvasBounds = cv2.boundingRect(canvasContour)
 
+        fCanvasContours = canvasContour.flatten()
+        canvX = np.zeros([int(len(fCanvasContours)/2),1])
+        canvY = np.zeros([int(len(fCanvasContours)/2),1])
+        l1 = np.zeros(int(len(fCanvasContours)/2))
+        l2 = np.zeros(int(len(fCanvasContours)/2))
+        l3 = np.zeros(int(len(fCanvasContours)/2))
+        l4 = np.zeros(int(len(fCanvasContours)/2))
+        for i in range(0,len(fCanvasContours),2):
+            canvX[int(i/2)] =  fCanvasContours[i]
+            canvY[int(i/2)] =  fCanvasContours[i+1]
+        xmax = np.max(canvX)
+        ymax = np.max(canvY)
+        xmin = np.min(canvX)
+        ymin = np.min(canvY)
+        for n in range(0,len(canvX)):
+            lx = ((canvX[n]-xmin) / (xmax-xmin))
+            ly = ((canvY[n]-ymin) / (ymax-ymin))
+            l1[n] = lx+ly
+            l2[n] = (1-lx)+ly
+            l3[n] = lx+(1-ly)
+            l4[n] = (1-lx)+(1-ly)
+        max1 = np.argmax(l1)
+        max2 = np.argmax(l2)
+        max3 = np.argmax(l3)
+        max4 = np.argmax(l4)
+        print(str(canvX[max1])+","+str(canvY[max1]))
+        print(str(canvX[max2])+","+str(canvY[max2]))
+        print(str(canvX[max3])+","+str(canvY[max3]))
+        print(str(canvX[max4])+","+str(canvY[max4]))
+        canvasPts = [(canvX[max1][0], canvY[max1][0]), (canvX[max2][0], canvY[max2][0]), (canvX[max3][0], canvY[max3][0]), (canvX[max4][0], canvY[max4][0])]
+        self.canvasPts = np.array(canvasPts)
         if showDebug:
             debugImage = image.copy()
             for c in boardContours:
                 rect = cv2.minAreaRect(c)
                 box = cv2.boxPoints(rect)
                 box = np.int0(box)
-                cv2.drawContours(debugImage,[box],0,(0,0,255),2)
-            cv2.imshow("debug",debugImage)
+                cv2.drawContours(debugImage,boardContours,max_index,(0,0,255),2)
+                cv2.circle(debugImage,(canvX[max1],canvY[max1]),4,(0,255,0), thickness=5)
+                cv2.circle(debugImage,(canvX[max2],canvY[max2]),4,(0,255,0), thickness=5)
+                cv2.circle(debugImage,(canvX[max3],canvY[max3]),4,(0,255,0), thickness=5)
+                cv2.circle(debugImage,(canvX[max4],canvY[max4]),4,(0,255,0), thickness=5)
+            cv2.imshow("debug",cv2.resize(debugImage,None,fx=0.25,fy=0.25))
+            #cv2.imshow("debug",debugImage)
             cv2.waitKey(0)
 
         return canvasBounds
 
+    def four_point_transform(self, image, pts):
+        # obtain a consistent order of the points and unpack them
+        # individually
+        rect = self.order_points(pts)
+        (tl, tr, br, bl) = rect
+
+        # compute the width of the new image, which will be the
+        # maximum distance between bottom-right and bottom-left
+        # x-coordiates or the top-right and top-left x-coordinates
+        widthA = np.sqrt(((br[0] - bl[0]) ** 2) + ((br[1] - bl[1]) ** 2))
+        widthB = np.sqrt(((tr[0] - tl[0]) ** 2) + ((tr[1] - tl[1]) ** 2))
+        maxWidth = max(int(widthA), int(widthB))
+
+        # compute the height of the new image, which will be the
+        # maximum distance between the top-right and bottom-right
+        # y-coordinates or the top-left and bottom-left y-coordinates
+        heightA = np.sqrt(((tr[0] - br[0]) ** 2) + ((tr[1] - br[1]) ** 2))
+        heightB = np.sqrt(((tl[0] - bl[0]) ** 2) + ((tl[1] - bl[1]) ** 2))
+        maxHeight = max(int(heightA), int(heightB))
+
+        # now that we have the dimensions of the new image, construct
+        # the set of destination points to obtain a "birds eye view",
+        # (i.e. top-down view) of the image, again specifying points
+        # in the top-left, top-right, bottom-right, and bottom-left
+        # order
+        dst = np.array([
+            [0, 0],
+            [maxWidth - 1, 0],
+            [maxWidth - 1, maxHeight - 1],
+            [0, maxHeight - 1]], dtype = "float32")
+
+        # compute the perspective transform matrix and then apply it
+        M = cv2.getPerspectiveTransform(rect, dst)
+        warped = cv2.warpPerspective(image, M, (maxWidth, maxHeight))
+
+        # return the warped image
+        return warped
+
+    def order_points(self, pts):
+        # initialzie a list of coordinates that will be ordered
+        # such that the first entry in the list is the top-left,
+        # the second entry is the top-right, the third is the
+        # bottom-right, and the fourth is the bottom-left
+        rect = np.zeros((4, 2), dtype = "float32")
+
+        # the top-left point will have the smallest sum, whereas
+        # the bottom-right point will have the largest sum
+        s = pts.sum(axis = 1)
+        rect[0] = pts[np.argmin(s)]
+        rect[2] = pts[np.argmax(s)]
+
+        # now, compute the difference between the points, the
+        # top-right point will have the smallest difference,
+        # whereas the bottom-left will have the largest difference
+        diff = np.diff(pts, axis = 1)
+        rect[1] = pts[np.argmin(diff)]
+        rect[3] = pts[np.argmax(diff)]
+
+        # return the ordered coordinates
+        return rect
+
     # Using canvasBounds on rawImage extract an image of the canvas
     def getCanvasImage(self):
-        canvasStartX = self.canvasBounds[0]
-        canvasStartY = self.canvasBounds[1]
-        canvasEndX = self.canvasBounds[0]+self.canvasBounds[2]
-        canvasEndY = self.canvasBounds[1]+self.canvasBounds[3]
-        return self.rawImage[canvasStartY:canvasEndY, canvasStartX:canvasEndX]
+        #canvasStartX = self.canvasBounds[0]
+        #canvasStartY = self.canvasBounds[1]
+        #canvasEndX = self.canvasBounds[0]+self.canvasBounds[2]
+        #canvasEndY = self.canvasBounds[1]+self.canvasBounds[3]
+        #return self.rawImage[canvasStartY:canvasEndY, canvasStartX:canvasEndX]
+        return self.four_point_transform(self.rawImage,self.canvasPts)
 
-    def getPrevCanvasImage(self):
-        canvas = self.getCanvas(self.prevCanvasID)
-        return canvas.getImage(canvas.rawImage)
+    def getPrevCanvasImage(self, ID):
+        if ID == self.newID:
+            return self.getCanvasImage()
+        else:
+            canvas = self.getCanvas(ID)
+            return self.four_point_transform(canvas.rawImage, self.canvasPts)
 
     # Compare current graph with previous graph
     def comparePrev(self,newGraph):
@@ -233,8 +334,8 @@ class Model:
             IDs = []
             for p, oldPostit in enumerate(self.activePostits):
 
-                oim = oldPostit.getImage(self.getPrevCanvasImage())
-                nim = newPostit["image"]
+                oim = self.bwSmooth(oldPostit.getImage(self.getPrevCanvasImage(oldPostit.last_canvas_ID)))
+                nim = self.bwSmooth(newPostit["image"])
                 # Initiate SIFT detector
                 sift = cv2.xfeatures2d.SIFT_create()
 
@@ -257,12 +358,14 @@ class Model:
                         if m.distance <(0.75*n.distance):
                             good[p] = good[p] + 1
                 else:
-                    pass
                     #print("here")
-                    #cv2.imshow("thing",oim)
-                    #cv2.waitKey(0)
+                    img = self.getPrevCanvasImage()
+                    cv2.imshow("thing",cv2.resize(img,None,fx=0.5,fy=0.5))
+                    cv2.waitKey(0)
+                    cv2.imshow("thing",oim)
+                    cv2.waitKey(0)
 
-            print(good)
+            #print(good)
             try:
                 if max(good)>10:
                     maxidx = np.argmax(good)
@@ -315,6 +418,13 @@ class Model:
     def setDebug(self, state):
         self.debug = state
 
+    def bwSmooth(self, image):
+        clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8,8))
+        grayImg = cv2.cvtColor(image, cv2.COLOR_RGB2GRAY)
+        normImg = clahe.apply(grayImg)
+        smoothImg = cv2.bilateralFilter(normImg,9,75,75)
+        return smoothImg
+
     # Main update loop using the current settings to extract data from current rawImage
     def update(self):
         canvasImage = self.getCanvasImage()
@@ -350,12 +460,12 @@ class Model:
                     cv2.rectangle(dispImage,(x1,y1),(x2,y2),(0,0,0),thickness=cv2.FILLED)
                     for canvas in self.canvasList:
                         if canvas.ID == postit.last_canvas_ID:
-                            postitImage = postit.getImage(canvas.getImage(self.rawImage))
+                            postitImage = postit.getImage(self.four_point_transform(canvas.rawImage, self.canvasPts))
                             dispImage[y1:y1+postitImage.shape[0], x1:x1+postitImage.shape[1]] = postitImage
                             cv2.rectangle(dispImage,(x1,y1),(x2,y2),(0,200,200),thickness=4)
 
-            r = 720 / dispImage.shape[1]
-            dim = (720, int(dispImage.shape[0] * r))
+            r = 1920 / dispImage.shape[1]
+            dim = (1920, int(dispImage.shape[0] * r))
 
             # perform the actual resizing of the image and show it
             dispImage = cv2.resize(dispImage, dim, interpolation = cv2.INTER_AREA)
@@ -394,7 +504,7 @@ if __name__ == "__main__":
     #     nparray = np.asarray(bytearray(r.content), dtype="uint8") # Transform byte array to numpy array
     #     canvImg = cv2.imdecode(nparray,cv2.IMREAD_COLOR) # Decode values as openCV colours
     #     boardModel.newCalibImage(canvImg) #set as calibration image
-    #     boardModel.runAutoCalibrate(canvThresh=150) # Autocalibratefrom image
+    #     boardModel.runAutoCalibrate() # Autocalibratefrom image
     # else:
     #     print(":( Got Bad Calibration Image")
     #     print(r.text)
@@ -416,8 +526,8 @@ if __name__ == "__main__":
     boardModel = Model()
     boardModel.setDebug(False)
     boardModel.newCalibImage(canvImg)
-    boardModel.runAutoCalibrate(showDebug = False, canvThresh=100)
-    boardModel.imageSettings(5000,50000,0.4,0.33,64,200,120)
+    boardModel.runAutoCalibrate(showDebug = False)
+    boardModel.imageSettings(9000,20000,0.4,0.33,64,200,120)
     image1 = cv2.imread('/home/jjs/projects/Minority-Report/src/IMG_20160304_154813.jpg')
     boardModel.newRawImage(image1, datetime.datetime.now(), 1)
     print("1")
@@ -429,6 +539,14 @@ if __name__ == "__main__":
     image3 = cv2.imread('/home/jjs/projects/Minority-Report/src/IMG_20160304_154813b.jpg')
     boardModel.newRawImage(image3, datetime.datetime.now(),1)
     print("3")
+    boardModel.display()
+    image4 = cv2.imread('/home/jjs/projects/Minority-Report/src/IMG_20160304_154813c.jpg')
+    boardModel.newRawImage(image4, datetime.datetime.now(),1)
+    print("4")
+    boardModel.display()
+    image5 = cv2.imread('/home/jjs/projects/Minority-Report/src/IMG_20160304_154813d.jpg')
+    boardModel.newRawImage(image5, datetime.datetime.now(),1)
+    print("5")
     boardModel.display()
 
     #boardModel.save("canvas_data")

@@ -50,7 +50,6 @@ class GraphExtractor:
             },
         }
 
-
     def extractGraph(self, showDebug, minPostitArea, maxPostitArea, lenTolerence, minColourThresh, maxColourThresh, postitThresh):
         postits = self.extractPostits(showDebug, minPostitArea, maxPostitArea, lenTolerence, minColourThresh, maxColourThresh, postitThresh)
         lines =  self.extractLines(postits, showDebug)
@@ -65,7 +64,8 @@ class GraphExtractor:
         foundPostits = []
         img = self.image
         boxedimg = img.copy()
-        edgegray = self.edge(img, False, showDebug,postitThresh)
+
+        edgegray = self.edge(img, False, showDebug, postitThresh)
         (_,cnts, _) = cv2.findContours(edgegray.copy(), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
         for c in cnts:
             box = cv2.boxPoints(cv2.minAreaRect(c))
@@ -109,14 +109,15 @@ class GraphExtractor:
             bAvg = bTotal / count
 
             guessedColour = self.guess_colour(rAvg, gAvg, bAvg)
-            self.postitColour.append(guessedColour)
+            if guessedColour != None:
+                self.postitColour.append(guessedColour)
 
-            foundPostit = {
-                "image": postit,
-                "colour": guessedColour,
-                "position": self.postitPos[idx]
-            }
-            foundPostits.append(foundPostit)
+                foundPostit = {
+                    "image": postit,
+                    "colour": guessedColour,
+                    "position": self.postitPos[idx]
+                }
+                foundPostits.append(foundPostit)
 
         return foundPostits
 
