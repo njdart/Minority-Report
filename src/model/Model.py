@@ -216,10 +216,10 @@ class Model:
         max2 = np.argmax(l2)
         max3 = np.argmax(l3)
         max4 = np.argmax(l4)
-        print(str(canvX[max1])+","+str(canvY[max1]))
-        print(str(canvX[max2])+","+str(canvY[max2]))
-        print(str(canvX[max3])+","+str(canvY[max3]))
-        print(str(canvX[max4])+","+str(canvY[max4]))
+        #print(str(canvX[max1])+","+str(canvY[max1]))
+        #print(str(canvX[max2])+","+str(canvY[max2]))
+        #print(str(canvX[max3])+","+str(canvY[max3]))
+        #print(str(canvX[max4])+","+str(canvY[max4]))
         canvasPts = [(canvX[max1][0], canvY[max1][0]), (canvX[max2][0], canvY[max2][0]), (canvX[max3][0], canvY[max3][0]), (canvX[max4][0], canvY[max4][0])]
         self.canvasPts = np.array(canvasPts)
         if showDebug:
@@ -323,7 +323,6 @@ class Model:
 
     # Compare a new list of postits to the list of known active postits
     def updatePostits(self,newPostits):
-        bf = cv2.BFMatcher()
         postitIDs = []
         activePostitsFound = []
         newUniquePostits = []
@@ -333,9 +332,13 @@ class Model:
             #print(len(self.activePostits))
             IDs = []
             for p, oldPostit in enumerate(self.activePostits):
-
                 oim = self.bwSmooth(oldPostit.getImage(self.getPrevCanvasImage(oldPostit.last_canvas_ID)))
                 nim = self.bwSmooth(newPostit["image"])
+                #cv2.imshow("nimR",oldPostit.getImage(self.getPrevCanvasImage(oldPostit.last_canvas_ID)))
+                #cv2.imshow("nim",nim)
+                #cv2.imshow("oimR",newPostit["image"])
+                #cv2.imshow("oim",oim)
+                #cv2.waitKey(0)
                 # Initiate SIFT detector
                 sift = cv2.xfeatures2d.SIFT_create()
 
@@ -359,13 +362,10 @@ class Model:
                             good[p] = good[p] + 1
                 else:
                     #print("here")
-                    img = self.getPrevCanvasImage()
-                    cv2.imshow("thing",cv2.resize(img,None,fx=0.5,fy=0.5))
-                    cv2.waitKey(0)
                     cv2.imshow("thing",oim)
                     cv2.waitKey(0)
 
-            #print(good)
+            print(good)
             try:
                 if max(good)>10:
                     maxidx = np.argmax(good)
@@ -386,7 +386,7 @@ class Model:
                 updatingPostit = self.activePostits.pop(maxidx)
                 postitIDs.append(updatingPostit.getID())
                 activePostitsFound.append(updatingPostit.getID())
-                updatingPostit.update(newPostit,self.newID)
+                updatingPostit.update(newPostit,self.newID, True)
                 self.activePostits.insert(maxidx,updatingPostit)
 
         for p, oldPostit in enumerate(self.activePostits):
@@ -422,13 +422,13 @@ class Model:
         clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8,8))
         grayImg = cv2.cvtColor(image, cv2.COLOR_RGB2GRAY)
         normImg = clahe.apply(grayImg)
-        smoothImg = cv2.bilateralFilter(normImg,9,75,75)
+        smoothImg = cv2.bilateralFilter(normImg,3,75,75)
         return smoothImg
 
     # Main update loop using the current settings to extract data from current rawImage
     def update(self):
         canvasImage = self.getCanvasImage()
-        extractor = GraphExtractor(canvasImage)
+        extractor = GraphExtractor(canvasImage, self.activePostits)
         graph = extractor.extractGraph(self.debug, self.minPostitArea,self.maxPostitArea, self.lenTolerence,
                                        self.minColourThresh, self.maxColourThresh, self.postitThresh)
         self.newID = uuid.uuid4()
@@ -495,8 +495,13 @@ if __name__ == "__main__":
     #   - Postit not found
     #       ~ Cause : Brightness in the room differs from test conditions
     #       ~ Fix   : Change find postit threshold
-    ######
+    #####
     # boardModel = Model()
+    # boardModel.setDebug(False)
+    # boardModel.imageSettings(2000,40000,0.4,0.33,64,200,105)
+    # input("Waiting for focus >")
+    # requests.get("http://localhost:8080/focus")
+    # input("Waiting for boarders>")
     # r = requests.get("http://localhost:8080") # Request image from phone
     # # Receiving an image from the request gives code 200, all other returns means that the image has no been obtained
     # if r.status_code == 200:

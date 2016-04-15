@@ -11,12 +11,13 @@ class Postit:
         self.physical = physical
         self.last_canvas_ID = last_canvas_ID
 
-    def update(self, postitdata,new_canvas_ID):
+    def update(self, postitdata,new_canvas_ID ,state):
         self.location = [postitdata["position"][0], postitdata["position"][1]]
         self.size = [postitdata["position"][2], postitdata["position"][3]]
         self.image = postitdata["image"]
         self.colour = postitdata["colour"]
         self.last_canvas_ID = new_canvas_ID
+        self.physical = state
 
     def getID(self):
         return self.ID
