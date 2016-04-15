@@ -1,10 +1,20 @@
 import cv2
 import numpy as np
+from PIL import Image as PILImage
+import io
+import base64
 import datetime
 from flask_socketio import emit
 from server import (socketio, databaseHandler)
 from src.model.User import User
 from src.model.Image import Image
+
+
+def npArray2Base64(npArray):
+    img = PILImage.fromarray(npArray)
+    buffer = io.BytesIO()
+    img.save(buffer, format="JPEG")
+    return base64.b64encode(buffer.getvalue()).decode("utf-8")
 
 @socketio.on('getUsers')
 def getUsers():
@@ -85,10 +95,6 @@ def getAll(request):
                   "realY": 450,
                   "colour": "red",
                   "image": npArray2Base64(cv2.imread('/home/jashan/Minority-Report/src/server/static/testPostit1.jpg')),
-                  "connections": [
-                    "36afb67b-c127-4fb8-b795-b917c4099742",
-                    "3fb558b4-5c5c-42a1-98db-84267c470a47"
-                    ]
                 },
 
                 {
@@ -111,6 +117,17 @@ def getAll(request):
                   "connections": []
                 }
             ]
+            "connections": {
+                "23a29456-5ded-4b66-b3f0-178b7afdc0e7": [
+                    "36afb67b-c127-4fb8-b795-b917c4099742",
+                    "3fb558b4-5c5c-42a1-98db-84267c470a47"
+                ],
+                "36afb67b-c127-4fb8-b795-b917c4099742": [
+                    "23a29456-5ded-4b66-b3f0-178b7afdc0e7"
+                ],
+                "3fb558b4-5c5c-42a1-98db-84267c470a47": [
+                ]
+            }
         }
     )
 
