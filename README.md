@@ -25,10 +25,7 @@ Enter Minority Report. The ultimate goal of this ambitious project is to enginee
 
 ### TODO:
 
-- Consider [python multiprocessing](https://docs.python.org/2/library/multiprocessing.html) for slow/expensive operations?
-- Android set individual settings (contrast, resolution, exposure)?
-- Feature Matching: find a postit from previous frame if not found in current frame (and not binned)
-- kinect integration and client taking to python web server
+See issues
  
 ### Definitions
 
