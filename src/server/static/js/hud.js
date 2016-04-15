@@ -26,28 +26,15 @@ $(function()
 function processResponse(received)
 {
   latestReceived = received;
-  console.log(received, "\n");
+  console.log(latestReceived, "\n");
   idToPostitCoords = {};
 
-  for (var i = 0; i < received.postits.length; i++) {
-    //console.log(received.postits[i]);
-    drawPostit(received.postits[i]);
-  }
+  mapPostits();
 
-  for (var j = 0; j < received.connections.length; j++) {
-    var conn = received.connections[j];
-    //console.log(conn);
-    //drawConnection(conn)
-  }
 
-  $.each(received.connections, function(id1, conns)
-  {
-    $.each(conns, function(_, id2)
-    {
-      //console.log("links: ", id1, id2);
-      drawConnection(idToPostitCoords[id1], idToPostitCoords[id2]);
-    });
-  });
+  drawPostits();
+
+  drawConnections();
 
  /* $.each(idToPostitCoords, function(id, coords)
   {
@@ -59,25 +46,39 @@ function processResponse(received)
   
 }
 
-function drawPostit(p)
+function drawPostits()
 {
-  sX = (p.realX/displayWidth)*scaleFactor;
-  sY = (p.realY/displayHeight)*scaleFactor;
-  hudContext.fillStyle = p.colour;
-  //hudContext.rect(sY, sX, POSTIT_SIZE, POSTIT_SIZE)
-  //console.log("Coords - x: " + sX + ", y: " + sY);
-  hudContext.stroke();
-  hudContext.fillRect(sY, sX, POSTIT_SIZE, POSTIT_SIZE);
-  idToPostitCoords[p.postitId] = {"x":sX, "y":sY};
+  $.each(latestReceived.postits, function(_, p){
+    hudContext.fillStyle = p.colour;
+    //hudContext.stroke();
+    hudContext.fillRect(idToPostitCoords[p.postitId]["y"], idToPostitCoords[p.postitId]["x"], POSTIT_SIZE, POSTIT_SIZE);
+  });
 }
 
-function drawConnection(postitCoords1, postitCoords2)
+function drawConnections()
 {
-  console.log(postitCoords1, postitCoords2);
-  hudContext.lineWidth = 5;
-  hudContext.moveTo(postitCoords1["y"] + POSTIT_SIZE/2, postitCoords1["x"] + POSTIT_SIZE/2);
-  hudContext.lineTo(postitCoords2["y"] + POSTIT_SIZE/2, postitCoords2["x"] + POSTIT_SIZE/2);
-  hudContext.stroke();
+  $.each(latestReceived.connections, function(postitId1, conns)
+  {
+    $.each(conns, function(_, postitId2)
+    {
+      console.log(postitId1, postitId2);
+      hudContext.lineWidth = 5;
+      hudContext.strokeStyle = "#000000";
+      hudContext.moveTo(idToPostitCoords[postitId1]["y"] + POSTIT_SIZE/2, idToPostitCoords[postitId1]["x"] + POSTIT_SIZE/2);
+      hudContext.lineTo(idToPostitCoords[postitId2]["y"] + POSTIT_SIZE/2, idToPostitCoords[postitId2]["x"] + POSTIT_SIZE/2);
+      hudContext.stroke();
+    });
+  });
+}
+
+function mapPostits()
+{
+  idToPostitCoords = {};
+  $.each(latestReceived.postits, function(_, p){
+    sX = (p.realX/displayWidth)*scaleFactor;
+    sY = (p.realY/displayHeight)*scaleFactor;
+    idToPostitCoords[p.postitId] = {"x":sX, "y":sY};
+  });
 }
 
 function resetCanvasSize()
