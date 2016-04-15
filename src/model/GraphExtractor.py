@@ -6,9 +6,10 @@ from PIL import Image
 
 class GraphExtractor:
     """Get postits from a board image"""
-    def __init__(self, image):
+    def __init__(self, image, previousPostits):
         self.DEBUG_PLOT = False
         self.rawImage = image
+        self.prevPostits = previousPostits
         self.image = image
         self.postitPos = []
         self.postitImage = []
@@ -50,7 +51,6 @@ class GraphExtractor:
             },
         }
 
-
     def extractGraph(self, showDebug, minPostitArea, maxPostitArea, lenTolerence, minColourThresh, maxColourThresh, postitThresh):
         postits = self.extractPostits(showDebug, minPostitArea, maxPostitArea, lenTolerence, minColourThresh, maxColourThresh, postitThresh)
         lines =  self.extractLines(postits, showDebug)
@@ -65,7 +65,8 @@ class GraphExtractor:
         foundPostits = []
         img = self.image
         boxedimg = img.copy()
-        edgegray = self.edge(img, False, showDebug,postitThresh)
+
+        edgegray = self.edge(img, False, showDebug, postitThresh)
         (_,cnts, _) = cv2.findContours(edgegray.copy(), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
         for c in cnts:
             box = cv2.boxPoints(cv2.minAreaRect(c))
@@ -109,14 +110,15 @@ class GraphExtractor:
             bAvg = bTotal / count
 
             guessedColour = self.guess_colour(rAvg, gAvg, bAvg)
-            self.postitColour.append(guessedColour)
+            if guessedColour != None:
+                self.postitColour.append(guessedColour)
 
-            foundPostit = {
-                "image": postit,
-                "colour": guessedColour,
-                "position": self.postitPos[idx]
-            }
-            foundPostits.append(foundPostit)
+                foundPostit = {
+                    "image": postit,
+                    "colour": guessedColour,
+                    "position": self.postitPos[idx]
+                }
+                foundPostits.append(foundPostit)
 
         return foundPostits
 
@@ -151,13 +153,18 @@ class GraphExtractor:
 
             startPoint, endPoint = self.findFurthestPair(c)
 
-            for idxstart, postit in enumerate(postits):
+            for idx, postit in enumerate(postits):
                 if postit["position"][0]-tolerence < startPoint[0] < postit["position"][0]+postit["position"][2]+tolerence and postit["position"][1]-tolerence < startPoint[1] < postit["position"][1]+postit["position"][3]+tolerence:
-                    postitIdx[0] = idxstart
-
-            for idxend, postit in enumerate(postits):
+                    postitIdx[0] = idx
                 if postit["position"][0]-tolerence < endPoint[0] < postit["position"][0]+postit["position"][2]+tolerence and postit["position"][1]-tolerence < endPoint[1] < postit["position"][1]+postit["position"][3]+tolerence:
-                    postitIdx[1] = idxend
+                    postitIdx[1] = idx
+
+
+            #for idxend, postit in enumerate(postits):
+            #    if postit["position"][0]-tolerence < endPoint[0] < postit["position"][0]+postit["position"][2]+tolerence and postit["position"][1]-tolerence < endPoint[1] < postit["position"][1]+postit["position"][3]+tolerence:
+            #        postitIdx[1] = idxend
+
+
 
             if postitIdx[0] > -1 and postitIdx[1] > -1 and postitIdx[0] != postitIdx[1]:
                 if not foundLines:
