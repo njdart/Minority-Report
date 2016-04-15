@@ -13,6 +13,7 @@ class Canvas(SqliteObject):
                  canvasBounds,
                  id=uuid.uuid4(),
                  postits=[],
+                 connections=[],
                  derivedFrom=None,
                  derivedAt=datetime.datetime.now(),
                  databaseHandler=None):
@@ -21,6 +22,7 @@ class Canvas(SqliteObject):
         :param canvasBounds list of (x, y) tuples in the order [topLeft, topRight, bottomRight, bottomLeft]
         :param id UUID v4
         :param postits list of postit objects or UUID v4s
+        :param connections list of (postit/postitUUID, postit/postitUUID) tuples
         :param derivedFrom canvas object or ID this object derives from
         """
         super(Canvas, self).__init__(id=id,
@@ -58,6 +60,7 @@ class Canvas(SqliteObject):
         self.canvasBottomLeftY = canvasBottomLeft[1]
 
         self.postits = postits
+        self.connections = connections
         self.derivedFrom = derivedFrom
         self.derivedAt = derivedAt
 
@@ -70,6 +73,9 @@ class Canvas(SqliteObject):
             elif postit.get_id() == id:
                 return postit
         return None
+
+    def add_connection(self, start, end):
+        self.connections.append((start, end))
 
     def get_image(self):
         return self.image
