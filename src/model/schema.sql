@@ -30,23 +30,24 @@ CREATE TABLE IF NOT EXISTS canvases (
 
 CREATE TABLE IF NOT EXISTS connections (
   id                 STRING PRIMARY KEY,
-  from               STRING NOT NULL,
-  to                 STRING NOT NULL,
+  start              STRING NOT NULL,
+  finish             STRING NOT NULL,
+  canvas             string NOT NULL,
   type               STRING,
 
-  FOREIGN KEY(from) REFERENCES postits(id),
-  FOREIGN Key(to) REFERENCES postits(id)
-)
+  FOREIGN KEY(start) REFERENCES postits(id),
+  FOREIGN Key(finish) REFERENCES postits(id),
+  Foreign Key(canvas) REFERENCES canvases(id)
+);
 
 CREATE TABLE IF NOT EXISTS postits (
-    id     STRING PRIMARY KEY,
-    canvas STRING,
-    height INTEGER NOT NULL,
-    width  INTEGER NOT NULL,
-    realX  INTEGER NOT NULL,
-    realY  INTEGER NOT NULL,
-    colour STRING NOT NULL,
-
+  id     STRING PRIMARY KEY,
+  canvas STRING,
+  height INTEGER NOT NULL,
+  width  INTEGER NOT NULL,
+  realX  INTEGER NOT NULL,
+  realY  INTEGER NOT NULL,
+  colour STRING NOT NULL,
 
     FOREIGN KEY(canvas) REFERENCES canvases(id)
 );

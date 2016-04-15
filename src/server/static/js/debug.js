@@ -156,4 +156,4 @@ socket.on('getImages', function(data) {
 });
 
 socket.emit('getUsers');
-socket.emit('getImages');
+//socket.emit('getImages');

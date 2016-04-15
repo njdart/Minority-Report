@@ -1,19 +1,68 @@
-class SqliteObject(object):
-    def __init__(self, properties, table, id=None, databaseHandler=None):
-        self.properties = properties
-        self.table = table
-        self.databaseHandler = databaseHandler
-        self.id = id
+from src.server import databaseHandler
 
-    @staticmethod
-    def from_database_tuple(tuple, databaseHandler):
-        raise NotImplementedError('Abstract SQL Object cannot be made from a tuple')
+class SqliteObject(object):
+
+    properties = []
+    table = ""
+
+    def __init__(self, id=None, database=None):
+        self.id = id
+        self.database = database
 
     def get_id(self):
         return id
 
     def as_object(self):
-        raise NotImplementedError('Abstract SQL Object cannot be represented as an object')
+        props = {}
+        for prop in self.properties:
+            if hasattr(self, prop):
+                props[prop] = getattr(self, prop)
+
+        return props
+
+    @classmethod
+    def get_all(cls, database=None):
+        query = 'SELECT * FROM {};'.format(cls.table)
+
+        print('Using SELECT query {}'.format(query))
+
+        if database:
+            c = database.cursor()
+        else:
+            c = databaseHandler().get_database().cursor()
+
+        c.execute(query)
+        found = []
+        rows = c.fetchall()
+        for row in rows:
+            props = {}
+
+            for i in range(len(cls.properties)):
+                props[cls.properties[i]] = row[i]
+
+            found.append(cls(**props))
+
+        return found
+
+    @classmethod
+    def get(cls, id, database=None):
+        query = 'SELECT * FROM {} WHERE id={};'.format(cls.table, id)
+
+        print('Using SELECT query {}'.format(query))
+
+        if database:
+            c = database.cursor()
+        else:
+            c = databaseHandler().get_database().cursor()
+
+        c.execute(query)
+        data = c.fetchone()
+        props = {}
+        for i in range(len(cls.properties)):
+            props[cls.properties[i]] = data[i]
+
+        return cls(**props)
+
 
     def update(self):
         if not self.databaseHandler:

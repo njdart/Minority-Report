@@ -18,8 +18,7 @@ def npArray2Base64(npArray):
 
 @socketio.on('getUsers')
 def getUsers():
-    emit('getUsers', [user.as_object() for user in databaseHandler().get_users()])
-
+    emit('getUsers', [user.as_object() for user in User.get_all()])
 
 @socketio.on('addUser')
 def addUser(details):
