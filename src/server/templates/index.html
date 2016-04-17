@@ -8,7 +8,9 @@
 
         <!-- Bootstrap CSS -->
         <link rel="stylesheet" href="http://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap.min.css">
-        <link rel="stylesheet" href="static/styles/index.css">
+        
+        <link rel="stylesheet" href="../static/styles/index.css">
+        
         
     </head>
   <body>
@@ -38,12 +40,12 @@
                 <div>
                     <img class="img-responsive" src="http://media4.popsugar-assets.com/files/2014/08/08/878/n/1922507/caef16ec354ca23b_thumb_temp_cover_file32304521407524949.xxxlarge/i/Funny-Cat-GIFs.jpg">
                 
-                    <a href="#" data-toggle="modal" data-target="#imageModal" class="btn btn-default btn-block">Edit canvas</a>
+                    <a id="editCanvasBtn" href="#" data-toggle="modal" data-target="#imageModal" class="btn btn-default btn-block">Edit canvas</a>
                 </div>
             </div>
         </div>
 
-        <!-- image modal -->
+        <!-- raw whole image modal -->
         <div id="imageModal" class="modal fade">
             <div class="modal-dialog modal-lg">
                 <div class="modal-content">
@@ -55,8 +57,10 @@
                     </div>
                 
 
-                    <div class="modal-body">
-                        <img id="canvasSelectImage" class="img-responsive" src="http://media4.popsugar-assets.com/files/2014/08/08/878/n/1922507/caef16ec354ca23b_thumb_temp_cover_file32304521407524949.xxxlarge/i/Funny-Cat-GIFs.jpg">
+                    <div class="modal-body" id="imageModalContent">
+                        <div >
+                          <img id="canvasSelectImage" class="img-responsive" src="http://media4.popsugar-assets.com/files/2014/08/08/878/n/1922507/caef16ec354ca23b_thumb_temp_cover_file32304521407524949.xxxlarge/i/Funny-Cat-GIFs.jpg">
+                        </div>
                     </div>
 
                     <div class="modal-footer">
@@ -114,16 +118,53 @@
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/2.1.4/jquery.min.js"></script>
     <script src="http://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/js/bootstrap.min.js"></script>
     <script type="text/javascript">
-        $(function() {
+        
+        
+        $("#editCanvasBtn").on("click", function() {
             
-            $("#canvasSelectImage").on("mousedown", function(event){
-                var xVal = event.pageX;
-                var yVal = event.pageY;
-                
-                
+            //remove draggabe from image
+            $("img").on("dragstart", function(event){
+                event.preventDefault();
             });
             
-        })
+            var $selection = $("<div>").addClass("selection-box");
+            
+            
+            $("#canvasSelectImage").on("mousedown", function(event){
+                
+                $selection.remove();
+                
+                var xVal = event.pageX - $("#canvasSelectImage").offset().left + $("#canvasSelectImage").position().left;
+                var yVal = event.pageY - $("#canvasSelectImage").offset().top + $("#canvasSelectImage").position().top;
+                
+                
+                $selection.appendTo($("#imageModalContent"));
+                
+                
+                $("#canvasSelectImage").on('mousemove', function(e) {
+                    var xPos = e.pageX - $("#canvasSelectImage").offset().left + $("#canvasSelectImage").position().left,
+                        yPos = e.pageY - $("#canvasSelectImage").offset().top + $("#canvasSelectImage").position().top,
+                        width  = Math.abs(xPos - xVal),
+                        height = Math.abs(yPos - yVal),
+                        new_x,
+                        new_y;
+                    
+
+                    new_x = (xPos < xVal) ? (xVal - width) : xVal;
+                    new_y = (yPos < yVal) ? (yVal - height) : yVal;
+
+                    $selection.css({
+                        'width': width,
+                        'height': height,
+                        'top': new_y,
+                        'left': new_x
+                    });
+                    
+                }).on("mouseup", function(){
+                    $("#canvasSelectImage").off("mousemove");
+                }); 
+            }); 
+        });
         
 
     </script>
