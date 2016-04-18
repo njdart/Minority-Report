@@ -377,11 +377,18 @@ class Model:
             if (maxidx == -1):
                 # Create new entry on list of active postits and then add ID to list
                 newID = uuid.uuid4()
-
                 createdPostit =  Postit(x=newPostit["position"][0],
                                         y=newPostit["position"][1],
                                         width=newPostit["position"][2],
                                         height=newPostit["position"][3],
+                                        pnt1X=newPostit["points"][0][0],
+                                        pnt1Y=newPostit["points"][0][1],
+                                        pnt2X=newPostit["points"][1][0],
+                                        pnt2Y=newPostit["points"][1][1],
+                                        pnt3X=newPostit["points"][2][0],
+                                        pnt3Y=newPostit["points"][2][1],
+                                        pnt4X=newPostit["points"][3][0],
+                                        pnt4Y=newPostit["points"][3][1],
                                         colour=newPostit["colour"],
                                         id=newID,
                                         canvas=self.newID
@@ -398,6 +405,14 @@ class Model:
                                         y=newPostit["position"][1],
                                         width=newPostit["position"][2],
                                         height=newPostit["position"][3],
+                                        pnt1X=newPostit["points"][0][0],
+                                        pnt1Y=newPostit["points"][0][1],
+                                        pnt2X=newPostit["points"][1][0],
+                                        pnt2Y=newPostit["points"][1][1],
+                                        pnt3X=newPostit["points"][2][0],
+                                        pnt3Y=newPostit["points"][2][1],
+                                        pnt4X=newPostit["points"][3][0],
+                                        pnt4Y=newPostit["points"][3][1],
                                         colour=newPostit["colour"],
                                         canvas=self.newID,
                                         physical=True
@@ -480,6 +495,9 @@ class Model:
                             int(lastCanvas.get_postit(line[1]).get_position()[1]+(lastCanvas.get_postit(line[1]).get_size()[1])/2))
                 cv2.line(dispImage, startPoint, endPoint, [255,0,0], thickness=4)
             for postit in lastCanvas.postits:
+                for canvas in self.canvasList:
+                    if canvas.get_id() == postit.get_canvas():
+                        postitImage = postit.get_postit_image(self.four_point_transform(canvas.image, self.canvasBounds))
                 x1 = postit.get_position()[0]
                 y1 = postit.get_position()[1]
                 x2 = postit.get_position()[0]+postit.get_size()[0]
@@ -488,15 +506,20 @@ class Model:
                     cv2.rectangle(dispImage,(x1,y1),(x2,y2),(0,0,0),thickness=cv2.FILLED)
                     cv2.rectangle(dispImage,(x1,y1),(x2,y2),(0,255,0),thickness=4)
                 elif postit.physical == 0:
-                    cv2.rectangle(dispImage,(x1,y1),(x2,y2),(0,0,0),thickness=cv2.FILLED)
-                    for canvas in self.canvasList:
-                        if canvas.get_id() == postit.get_canvas():
-                            postitImage = postit.get_postit_image(self.four_point_transform(canvas.image, self.canvasBounds))
-                            dispImage[y1:y1+postitImage.shape[0], x1:x1+postitImage.shape[1]] = postitImage
-                            cv2.rectangle(dispImage,(x1,y1),(x2,y2),(0,200,200),thickness=4)
+                    cv2.rectangle(dispImage,
+                                  (x1,y1),
+                                  (x1+postitImage.shape[1],y1+postitImage.shape[0]),
+                                  (0,0,0),
+                                  thickness=cv2.FILLED)
+                    dispImage[y1:y1+postitImage.shape[0], x1:x1+postitImage.shape[1]] = postitImage
+                    cv2.rectangle(dispImage,
+                                  (x1,y1),
+                                  (x1+postitImage.shape[1],y1+postitImage.shape[0]),
+                                  (0,200,200),
+                                  thickness=4)
 
-            r = 1920 / dispImage.shape[1]
-            dim = (1920, int(dispImage.shape[0] * r))
+            r = 720 / dispImage.shape[1]
+            dim = (720, int(dispImage.shape[0] * r))
 
             # perform the actual resizing of the image and show it
             dispImage = cv2.resize(dispImage, dim, interpolation = cv2.INTER_AREA)
@@ -527,63 +550,63 @@ if __name__ == "__main__":
     #       ~ Cause : Brightness in the room differs from test conditions
     #       ~ Fix   : Change find postit threshold
     #####
-    boardModel = Model()
-    boardModel.setDebug(False)
-    boardModel.imageSettings(2000,40000,0.4,0.33,64,200,105)
-    input("Waiting for focus >")
-    requests.get("http://localhost:8080/focus")
-    input("Waiting for boarders>")
-    r = requests.get("http://localhost:8080") # Request image from phone
-    # Receiving an image from the request gives code 200, all other returns means that the image has no been obtained
-    if r.status_code == 200:
-        print("Got Good Calibartion Image")
-        nparray = np.asarray(bytearray(r.content), dtype="uint8") # Transform byte array to numpy array
-        canvImg = cv2.imdecode(nparray,cv2.IMREAD_COLOR) # Decode values as openCV colours
-        boardModel.newCalibImage(canvImg) #set as calibration image
-        boardModel.runAutoCalibrate() # Autocalibratefrom image
-    else:
-        print(":( Got Bad Calibration Image")
-        print(r.text)
-    input("Waiting >")
-    while(1):
-        r = requests.get("http://localhost:8080")
-        if r.status_code == 200:
-            print("Got Good Postit Image")
-            nparray = np.asarray(bytearray(r.content), dtype="uint8")
-            img = cv2.imdecode(nparray,cv2.IMREAD_COLOR)
-            boardModel.newRawImage(img, datetime.datetime.now(),update=1)
-            boardModel.display()
-        else:
-            print(":( Got Bad Postit Image")
-            print(r.text)
-
-
-    # canvImg = cv2.imread('/home/jjs/projects/Minority-Report/src/IMG_20160304_154758.jpg')
     # boardModel = Model()
     # boardModel.setDebug(False)
-    # boardModel.newCalibImage(canvImg)
-    # boardModel.runAutoCalibrate(showDebug = False)
-    # boardModel.imageSettings(9000,20000,0.4,0.33,64,200,120)
-    # image1 = cv2.imread('/home/jjs/projects/Minority-Report/src/IMG_20160304_154813.jpg')
-    # boardModel.newRawImage(image1, datetime.datetime.now(), 1)
-    # print("1")
-    # boardModel.display()
-    # image2 = cv2.imread('/home/jjs/projects/Minority-Report/src/IMG_20160304_154821.jpg')
-    # boardModel.newRawImage(image2, datetime.datetime.now(),1)
-    # print("2")
-    # boardModel.display()
-    # image3 = cv2.imread('/home/jjs/projects/Minority-Report/src/IMG_20160304_154813b.jpg')
-    # boardModel.newRawImage(image3, datetime.datetime.now(),1)
-    # print("3")
-    # boardModel.display()
-    # image4 = cv2.imread('/home/jjs/projects/Minority-Report/src/IMG_20160304_154813c.jpg')
-    # boardModel.newRawImage(image4, datetime.datetime.now(),1)
-    # print("4")
-    # boardModel.display()
-    # image5 = cv2.imread('/home/jjs/projects/Minority-Report/src/IMG_20160304_154813d.jpg')
-    # boardModel.newRawImage(image5, datetime.datetime.now(),1)
-    # print("5")
-    # boardModel.display()
+    # boardModel.imageSettings(2000,40000,0.4,0.33,64,200,105)
+    # input("Waiting for focus >")
+    # requests.get("http://localhost:8080/focus")
+    # input("Waiting for boarders>")
+    # r = requests.get("http://localhost:8080") # Request image from phone
+    # # Receiving an image from the request gives code 200, all other returns means that the image has no been obtained
+    # if r.status_code == 200:
+    #     print("Got Good Calibartion Image")
+    #     nparray = np.asarray(bytearray(r.content), dtype="uint8") # Transform byte array to numpy array
+    #     canvImg = cv2.imdecode(nparray,cv2.IMREAD_COLOR) # Decode values as openCV colours
+    #     boardModel.newCalibImage(canvImg) #set as calibration image
+    #     boardModel.runAutoCalibrate() # Autocalibratefrom image
+    # else:
+    #     print(":( Got Bad Calibration Image")
+    #     print(r.text)
+    # input("Waiting >")
+    # while(1):
+    #     r = requests.get("http://localhost:8080")
+    #     if r.status_code == 200:
+    #         print("Got Good Postit Image")
+    #         nparray = np.asarray(bytearray(r.content), dtype="uint8")
+    #         img = cv2.imdecode(nparray,cv2.IMREAD_COLOR)
+    #         boardModel.newRawImage(img, datetime.datetime.now(),update=1)
+    #         boardModel.display()
+    #     else:
+    #         print(":( Got Bad Postit Image")
+    #         print(r.text)
+
+
+    canvImg = cv2.imread('/home/jjs/projects/Minority-Report/src/IMG_20160304_154758.jpg')
+    boardModel = Model()
+    boardModel.setDebug(False)
+    boardModel.newCalibImage(canvImg)
+    boardModel.runAutoCalibrate(showDebug = False)
+    boardModel.imageSettings(9000,20000,0.4,0.33,64,200,120)
+    image1 = cv2.imread('/home/jjs/projects/Minority-Report/src/IMG_20160304_154813.jpg')
+    boardModel.newRawImage(image1, datetime.datetime.now(), 1)
+    print("1")
+    boardModel.display()
+    image2 = cv2.imread('/home/jjs/projects/Minority-Report/src/IMG_20160304_154821.jpg')
+    boardModel.newRawImage(image2, datetime.datetime.now(),1)
+    print("2")
+    boardModel.display()
+    image3 = cv2.imread('/home/jjs/projects/Minority-Report/src/IMG_20160304_154813b.jpg')
+    boardModel.newRawImage(image3, datetime.datetime.now(),1)
+    print("3")
+    boardModel.display()
+    image4 = cv2.imread('/home/jjs/projects/Minority-Report/src/IMG_20160304_154813c.jpg')
+    boardModel.newRawImage(image4, datetime.datetime.now(),1)
+    print("4")
+    boardModel.display()
+    image5 = cv2.imread('/home/jjs/projects/Minority-Report/src/IMG_20160304_154813d.jpg')
+    boardModel.newRawImage(image5, datetime.datetime.now(),1)
+    print("5")
+    boardModel.display()
 
     #boardModel.save("canvas_data")
     #newBoard = Model()
