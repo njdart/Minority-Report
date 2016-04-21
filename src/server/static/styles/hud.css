@@ -1,12 +1,10 @@
-.node
-{
+.node {
     fill: #ccc;
     stroke: #fff;
     stroke-width: 2px;
 }
 
-.link
-{
+.link {
     stroke: #777;
     stroke-width: 2px;
     transform: translate(50px,50px);

@@ -1,7 +1,5 @@
 import os
 import sqlite3
-from src.model.Image import Image
-from src.model.User import User
 
 
 class ModelDatabase(object):
@@ -18,6 +16,9 @@ class ModelDatabase(object):
 
         with open(os.path.join(os.getcwd(), './model/schema.sql')) as schema:
             self.database.executescript(schema.read())
+
+    def get_database(self):
+        return self.database
 
     def create_user(self, username):
         """

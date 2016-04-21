@@ -1,0 +1,7 @@
+.selection-box {
+    position: absolute;
+    background: transparent;
+    border: 1px dotted #000;
+    border-color: red;
+    border-width: thick;   
+}

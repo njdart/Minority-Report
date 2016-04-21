@@ -1,12 +1,172 @@
-<html>
+<!DOCTYPE html>
+<html lang="en">
     <head>
+        <!-- Required meta tags always come first -->
         <meta charset="utf-8">
-        <title>Minority Report</title>
+        <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+        <meta http-equiv="x-ua-compatible" content="ie=edge">
 
-        <script src="https://code.jquery.com/jquery-2.2.2.min.js"></script>
-        <script src="https://cdn.socket.io/socket.io-1.4.5.js"></script>
+        <!-- Bootstrap CSS -->
+        <link rel="stylesheet" href="http://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap.min.css">
+        
+        <link rel="stylesheet" href="../static/styles/index.css">
+        
+        
     </head>
+  <body>
 
-    <body>
+    <div class="container">
+        <div class="header clearfix">
+            <nav>
+                <ul class="nav nav-pills pull-xs-right">
+                    <li class="nav-item active">
+                        <a class="nav-link" href="#">Home <span class="sr-only">(current)</span></a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#">About</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#">Contact</a>
+                    </li>
+                </ul>
+            </nav>
+            <h3 class="text-muted">Minority Report</h3>
+        </div>
+
+
+          <!-- raw whole image -->
+        <div class="jumbotron">
+            <div class="row">
+                <div>
+                    <img class="img-responsive" src="http://media4.popsugar-assets.com/files/2014/08/08/878/n/1922507/caef16ec354ca23b_thumb_temp_cover_file32304521407524949.xxxlarge/i/Funny-Cat-GIFs.jpg">
+                
+                    <a id="editCanvasBtn" href="#" data-toggle="modal" data-target="#imageModal" class="btn btn-default btn-block">Edit canvas</a>
+                </div>
+            </div>
+        </div>
+
+        <!-- raw whole image modal -->
+        <div id="imageModal" class="modal fade">
+            <div class="modal-dialog modal-lg">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                            <span aria-hidden="true">&times;</span>
+                        </button>
+                        <h4 class="modal-title" id="myModalLabel">Canvas Location</h4>
+                    </div>
+                
+
+                    <div class="modal-body" id="imageModalContent">
+                        <div >
+                          <img id="canvasSelectImage" class="img-responsive" src="http://media4.popsugar-assets.com/files/2014/08/08/878/n/1922507/caef16ec354ca23b_thumb_temp_cover_file32304521407524949.xxxlarge/i/Funny-Cat-GIFs.jpg">
+                        </div>
+                    </div>
+
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+                        <button type="button" class="btn btn-primary" data-dismiss="modal">Save changes</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+
+        <!-- raw canvas -->
+        <div class="jumbotron">
+            <div class="row">
+                <div>
+                    <img class="img-responsive" src="http://media4.popsugar-assets.com/files/2014/08/08/878/n/1922507/caef16ec354ca23b_thumb_temp_cover_file32304521407524949.xxxlarge/i/Funny-Cat-GIFs.jpg">
+                </div>
+
+                <div class="">
+                    <div class="btn-group btn-group-justified" data-toggle="buttons">
+                        <label class="btn btn-default active">
+                            <input type="checkbox" checked>Show lines</label>
+                        </label>
+                        <label class="btn btn-default active">
+                            <input type="checkbox" checked>Show postits</button>
+                        </label>
+                    </div>
+
+                    <div class="btn-group btn-group-justified">
+                        <a href="#" class="btn btn-default">Add line</a>
+                        <a href="#" class="btn btn-default">Add postit</a>
+                    </div>
+                </div>    
+            </div>
+        </div>
+
+        <!-- Directed graph (D3) -->
+        <div class="jumbotron">
+            <div class="row">
+                <div>
+                    <img class="img-responsive" src="http://media4.popsugar-assets.com/files/2014/08/08/878/n/1922507/caef16ec354ca23b_thumb_temp_cover_file32304521407524949.xxxlarge/i/Funny-Cat-GIFs.jpg">
+                </div>
+            </div>
+        </div>
+
+
+
+    </div>
+    
+
+    
+
+
+    <!-- jQuery first, then Bootstrap JS. -->
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/2.1.4/jquery.min.js"></script>
+    <script src="http://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/js/bootstrap.min.js"></script>
+    <script type="text/javascript">
+        
+        
+        $("#editCanvasBtn").on("click", function() {
+            
+            //remove draggabe from image
+            $("img").on("dragstart", function(event){
+                event.preventDefault();
+            });
+            
+            var $selection = $("<div>").addClass("selection-box");
+            
+            
+            $("#canvasSelectImage").on("mousedown", function(event){
+                
+                $selection.remove();
+                
+                var xVal = event.pageX - $("#canvasSelectImage").offset().left + $("#canvasSelectImage").position().left;
+                var yVal = event.pageY - $("#canvasSelectImage").offset().top + $("#canvasSelectImage").position().top;
+                
+                
+                $selection.appendTo($("#imageModalContent"));
+                
+                
+                $("#canvasSelectImage").on('mousemove', function(e) {
+                    var xPos = e.pageX - $("#canvasSelectImage").offset().left + $("#canvasSelectImage").position().left,
+                        yPos = e.pageY - $("#canvasSelectImage").offset().top + $("#canvasSelectImage").position().top,
+                        width  = Math.abs(xPos - xVal),
+                        height = Math.abs(yPos - yVal),
+                        new_x,
+                        new_y;
+                    
+
+                    new_x = (xPos < xVal) ? (xVal - width) : xVal;
+                    new_y = (yPos < yVal) ? (yVal - height) : yVal;
+
+                    $selection.css({
+                        'width': width,
+                        'height': height,
+                        'top': new_y,
+                        'left': new_x
+                    });
+                    
+                }).on("mouseup", function(){
+                    $("#canvasSelectImage").off("mousemove");
+                }); 
+            }); 
+        });
+        
+
+    </script>
     </body>
 </html>

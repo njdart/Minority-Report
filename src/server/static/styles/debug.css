@@ -27,3 +27,8 @@ tbody > tr:nth-child(even) {
 .table-row_template {
     display: none;
 }
+
+.images-image {
+    display: none;
+    max-width: 480px;
+}

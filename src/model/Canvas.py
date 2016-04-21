@@ -2,11 +2,26 @@ from src.model.SqliteObject import SqliteObject
 import uuid
 import datetime
 
-
 class Canvas(SqliteObject):
     """
     A Canvas object relating an image to it's canvas bounds
     """
+
+    properties = [
+        "image",
+        "derivedFrom",
+        "derivedAt",
+        "canvasTopLeftX",
+        "canvasTopLeftY",
+        "canvasTopRightX",
+        "canvasTopRightY",
+        "canvasBottomLeftX",
+        "canvasBottomLeftY",
+        "canvasBottomRightX",
+        "canvasBottomRightY"
+    ]
+
+    table = "canvas"
 
     def __init__(self,
                  image,
@@ -15,8 +30,7 @@ class Canvas(SqliteObject):
                  postits=[],
                  connections=[],
                  derivedFrom=None,
-                 derivedAt=datetime.datetime.now(),
-                 databaseHandler=None):
+                 derivedAt=datetime.datetime.now()):
         """
         :param image OpenCV Numpy array
         :param canvasBounds list of (x, y) tuples in the order [topLeft, topRight, bottomRight, bottomLeft]
@@ -25,22 +39,7 @@ class Canvas(SqliteObject):
         :param connections list of (postit/postitUUID, postit/postitUUID) tuples
         :param derivedFrom canvas object or ID this object derives from
         """
-        super(Canvas, self).__init__(id=id,
-                                     properties=[
-                                         "image",
-                                         "derivedFrom",
-                                         "derivedAt",
-                                         "canvasTopLeftX",
-                                         "canvasTopLeftY",
-                                         "canvasTopRightX",
-                                         "canvasTopRightY",
-                                         "canvasBottomLeftX",
-                                         "canvasBottomLeftY",
-                                         "canvasBottomRightX",
-                                         "canvasBottomRightY"
-                                     ],
-                                     table="canvas",
-                                     databaseHandler=databaseHandler)
+        super(Canvas, self).__init__(id=id)
         self.image = image
 
         canvasTopLeft = canvasBounds[0]
@@ -85,3 +84,21 @@ class Canvas(SqliteObject):
 
     def get_canvas_unkeystoned(self):
         return self.image[self.canvasTopLeftY:self.canvasBottomRightY, self.canvasTopLeftX:self.canvasBottomRightX]
+
+    # @staticmethod
+    # def get(self, id, database=None):
+
+
+    def from_database_tuple(tuple, databaseHandler):
+        return Canvas(id=tuple[0],
+                      image=tuple[1],
+                      derivedFrom=tuple[2],
+                      derivedAt=tuple[3],
+                      canvasBounds=[
+                          (tuple[4], tuple[5]),
+                          (tuple[6], tuple[7]),
+                          (tuple[8], tuple[9]),
+                          (tuple[10], tuple[11])
+                      ]#,
+                      #connections=
+                     )
