@@ -66,8 +66,33 @@ class GraphExtractor:
         foundPostits = []
         img = self.image
         boxedimg = img.copy()
+        testimg1 = img.copy()
 
-        edgegray = self.edge(img, False, showDebug, postitThresh)
+        # kernel = np.ones((3,3),np.uint8)
+        # testimg1 = cv2.dilate(testimg1,kernel,iterations = 3)
+        # testimg2 = cv2.dilate(testimg2,kernel,iterations = 3)
+        # self.display("debug",testimg2)
+        # testimg1[:,:,0] = testimg2[:,:,0]-(0.1*testimg2[:,:,1]+0.1*testimg2[:,:,2])
+        # testimg1[:,:,1] = testimg2[:,:,1]-(0.1*testimg2[:,:,0]+0.1*testimg2[:,:,2])
+        # testimg1[:,:,2] = testimg2[:,:,2]-(0.1*testimg2[:,:,1]+0.1*testimg2[:,:,0])
+        # testimg2[np.where((testimg1 > 90).all(axis=2))] = [0,0,0]
+        # self.display("debug",testimg1)
+        # self.display("debug",testimg2)
+
+        #edgegray = self.edge(testimg1, False, showDebug, postitThresh)
+
+        newimg = cv2.cvtColor(testimg1,cv2.COLOR_BGR2HSV)
+        satmax = newimg[..., 0].max()
+        satmin = newimg[..., 0].min()
+        satthresh = ((100/256)*(satmax-satmin))+satmin
+        print(satthresh)
+        newimg[np.where((newimg < [255,satthresh,255]).all(axis=2))] = [0,0,0]
+        newimg = cv2.cvtColor(newimg,cv2.COLOR_HSV2BGR)
+        #self.display("debug",newimg)
+        gray = cv2.cvtColor(newimg, cv2.COLOR_BGR2GRAY)
+        edgegray = cv2.Canny(gray, 1, 30)
+
+        #self.display("debug",edgegray)
         (_,cnts, _) = cv2.findContours(edgegray.copy(), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
         for c in cnts:
             box = cv2.boxPoints(cv2.minAreaRect(c))
@@ -313,15 +338,15 @@ class GraphExtractor:
 
     def edge(self,img,line, showDebug, thresh):
         kernel = np.ones((5,5),np.uint8)
-        img = cv2.medianBlur(img,7)
+        img = cv2.medianBlur(img,9)
         #if showDebug:
         #   self.display("blurred",img)
         if not line:
             img = cv2.dilate(img,kernel,iterations = 3)
+            self.display("debug",img)
             imgcopy = img.copy()
             __,img = cv2.threshold(imgcopy,thresh,255,cv2.THRESH_BINARY)
-            if showDebug:
-                self.display("Threshed",img)
+            self.display("debug",img)
 
         gray = cv2.cvtColor(img, cv2.COLOR_RGB2GRAY)
         #if showDebug:
@@ -329,7 +354,7 @@ class GraphExtractor:
 
         edged = cv2.Canny(gray, 1, 30)
         if showDebug:
-            self.display("edged", edged)
+            self.display("debug", edged)
 
         return edged
 

@@ -518,8 +518,8 @@ class Model:
                                   (0,200,200),
                                   thickness=4)
 
-            r = 720 / dispImage.shape[1]
-            dim = (720, int(dispImage.shape[0] * r))
+            r = 1024 / dispImage.shape[1]
+            dim = (1024, int(dispImage.shape[0] * r))
 
             # perform the actual resizing of the image and show it
             dispImage = cv2.resize(dispImage, dim, interpolation = cv2.INTER_AREA)
