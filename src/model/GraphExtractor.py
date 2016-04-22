@@ -89,7 +89,7 @@ class GraphExtractor:
         #print(satthresh)
         newimg[np.where((newimg < [255,satthresh,255]).all(axis=2))] = [0,0,0]
         newimg = cv2.cvtColor(newimg,cv2.COLOR_HSV2BGR)
-        self.display("debug",newimg)
+        #self.display("debug",newimg)
         gray = cv2.cvtColor(newimg, cv2.COLOR_BGR2GRAY)
         edgegray = cv2.Canny(gray, 1, 30)
 
@@ -174,7 +174,7 @@ class GraphExtractor:
             bAvg = bTotal / count
 
             guessedColour = self.guess_colour(rAvg, gAvg, bAvg)
-            print(guessedColour)
+            #print(guessedColour)
             if guessedColour != None:
                 self.postitColour.append(guessedColour)
 
@@ -257,9 +257,9 @@ class GraphExtractor:
         rg = r - g
         rb = r - b
         gb = g - b
-        print(rg)
-        print(rb)
-        print(gb)
+        #print(rg)
+        #print(rb)
+        #print(gb)
         for colour in self.ColourThresholds:
             if ((rg >= self.ColourThresholds[colour]["min_rg"]) and
                     (rg <= self.ColourThresholds[colour]["max_rg"]) and

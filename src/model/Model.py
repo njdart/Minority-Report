@@ -367,7 +367,7 @@ class Model:
                     cv2.imshow("thing",oim)
                     cv2.waitKey(0)
 
-            print(good)
+            #print(good)
             try:
                 if max(good)>10:
                     maxidx = np.argmax(good)
