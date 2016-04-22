@@ -7,7 +7,7 @@ import cv2
 import os
 import requests
 import numpy
-from src.model.SqliteObject import SqliteObject
+from SqliteObject import SqliteObject
 from src.model.User import User
 
 

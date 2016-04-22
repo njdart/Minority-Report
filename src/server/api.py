@@ -8,7 +8,7 @@ from flask_socketio import emit
 from src.model.User import User
 from src.model.Image import Image
 from flask import send_from_directory
-from server import (app, socketio)
+from src.server import (app, socketio)
 import os
 
 def npArray2Base64(npArray):

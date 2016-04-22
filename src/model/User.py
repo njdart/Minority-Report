@@ -1,4 +1,4 @@
-from src.model.SqliteObject import SqliteObject
+from SqliteObject import SqliteObject
 
 
 class User(SqliteObject):

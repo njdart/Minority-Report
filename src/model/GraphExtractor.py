@@ -20,9 +20,9 @@ class GraphExtractor:
         self.ColourThresholds = {
             "ORANGE": {
                 "min_rg": 0,
-                "max_rg": 70,
+                "max_rg": 90,
                 "min_rb": 60,
-                "max_rb": 150,
+                "max_rb": 160,
                 "min_gb": 25,
                 "max_gb": 100
             },
@@ -30,14 +30,14 @@ class GraphExtractor:
                 "min_rg": -30,
                 "max_rg": 15,
                 "min_rb": 35,
-                "max_rb": 120,
+                "max_rb": 140,
                 "min_gb": 40,
-                "max_gb": 125
+                "max_gb": 140
             },
             "BLUE": {
-                "min_rg": -80,
+                "min_rg": -110,
                 "max_rg": -20,
-                "min_rb": -120,
+                "min_rb": -140,
                 "max_rb": -40,
                 "min_gb": -45,
                 "max_gb":   0
@@ -46,7 +46,7 @@ class GraphExtractor:
                 "min_rg": 40,
                 "max_rg": 135,
                 "min_rb": 25,
-                "max_rb": 90,
+                "max_rb": 100,
                 "min_gb": -55,
                 "max_gb": -10
             },
@@ -82,13 +82,14 @@ class GraphExtractor:
         #edgegray = self.edge(testimg1, False, showDebug, postitThresh)
 
         newimg = cv2.cvtColor(testimg1,cv2.COLOR_BGR2HSV)
-        satmax = newimg[..., 0].max()
-        satmin = newimg[..., 0].min()
+        satmax = newimg[..., 1].max()
+        satmin = newimg[..., 1].min()
         satthresh = ((100/256)*(satmax-satmin))+satmin
-        print(satthresh)
+        #satthresh = 110
+        #print(satthresh)
         newimg[np.where((newimg < [255,satthresh,255]).all(axis=2))] = [0,0,0]
         newimg = cv2.cvtColor(newimg,cv2.COLOR_HSV2BGR)
-        #self.display("debug",newimg)
+        self.display("debug",newimg)
         gray = cv2.cvtColor(newimg, cv2.COLOR_BGR2GRAY)
         edgegray = cv2.Canny(gray, 1, 30)
 
@@ -98,14 +99,16 @@ class GraphExtractor:
             box = cv2.boxPoints(cv2.minAreaRect(c))
             box = np.int0(box)
             cv2.drawContours(boxedimg, [box], 0, (0, 255, 0), 3)
+            #print(cv2.contourArea(box))
             if showDebug:
                 print(cv2.contourArea(box))
                 cv2.imshow("Debug",boxedimg)
             if ((cv2.contourArea(box) > minPostitArea) and (cv2.contourArea(box) < maxPostitArea)):
-                #print("here")
+                #print("Here")
                 length = math.hypot(box[0,0]-box[1,0], box[0,1]-box[1,1])
                 height = math.hypot(box[2,0]-box[1,0], box[2,1]-box[1,1])
                 if (length*(2-lenTolerence) < length+height < length*(2+lenTolerence)):
+                    #print("There")
                     Rectangle = cv2.boundingRect(c)
 
                     fContour = c.flatten()
@@ -171,6 +174,7 @@ class GraphExtractor:
             bAvg = bTotal / count
 
             guessedColour = self.guess_colour(rAvg, gAvg, bAvg)
+            print(guessedColour)
             if guessedColour != None:
                 self.postitColour.append(guessedColour)
 
@@ -249,9 +253,13 @@ class GraphExtractor:
         r = int(r)
         g = int(g)
         b = int(b)
+
         rg = r - g
         rb = r - b
         gb = g - b
+        print(rg)
+        print(rb)
+        print(gb)
         for colour in self.ColourThresholds:
             if ((rg >= self.ColourThresholds[colour]["min_rg"]) and
                     (rg <= self.ColourThresholds[colour]["max_rg"]) and
@@ -270,14 +278,18 @@ class GraphExtractor:
         edged = self.edge(img, True, showDebug, 0)
 
         (_,cnts, _) = cv2.findContours(edged.copy(), cv2.RETR_TREE, cv2.CHAIN_APPROX_NONE)
-        tolerence =40
+        tolerence =50
         for c in cnts:
             postitIdx = [-1,-1]
             postitIdStart = 0
             postitIdEnd = 0
 
+            testImg = cv2.drawContours(img.copy(),c,-1,[255,0,255],thickness=4)
+            #self.display("debug",testImg)
+
             startPoint, endPoint = self.findFurthestPair(c)
 
+            #print("#~~~~~~~~~~~~~~~#")
             for idx, postit in enumerate(postits):
                 if postit["position"][0]-tolerence < startPoint[0] < postit["position"][0]+postit["position"][2]+tolerence and postit["position"][1]-tolerence < startPoint[1] < postit["position"][1]+postit["position"][3]+tolerence:
                     postitIdx[0] = idx
@@ -293,29 +305,37 @@ class GraphExtractor:
 
 
             if postitIdStart and postitIdEnd:
+                #print("start is digi")
+                #print("End is digi")
                 foundLine = {
                         "postitIdStart": postitIdStart,
                         "postitIdEnd": postitIdEnd
                         }
                 foundLines.append(foundLine)
             elif postitIdStart and postitIdx[1] > -1:
+                #print("start is digi")
+                #print("End is phys")
                 foundLine = {
                         "postitIdStart": postitIdStart,
                         "postitIdx": postitIdx
                         }
                 foundLines.append(foundLine)
             elif postitIdEnd and postitIdx[0] > -1:
+                #print("start is phys")
+                #print("End is digi")
                 foundLine = {
                         "postitIdEnd": postitIdEnd,
                         "postitIdx": postitIdx
                         }
                 foundLines.append(foundLine)
             elif postitIdx[0] > -1 and postitIdx[1] > -1 and postitIdx[0] != postitIdx[1]:
-                if not foundLines:
-                    foundLine = {
-                        "postitIdx": postitIdx
-                        }
-                    foundLines.append(foundLine)
+                #print("start is phys")
+                #print("End is phys")
+                #if not foundLines:
+                foundLine = {
+                    "postitIdx": postitIdx
+                    }
+                foundLines.append(foundLine)
         return foundLines
 
     def findFurthestPair(self, contour):

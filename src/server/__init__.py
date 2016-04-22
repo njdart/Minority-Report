@@ -11,8 +11,8 @@ def databaseHandler():
         g.databaseHandler = ModelDatabase
     return g.databaseHandler()
 
-from src.server import ui
-from src.server import kinect
+import src.server.ui
+import src.server.kinect
 from src.server import api
 
 def run_server():
