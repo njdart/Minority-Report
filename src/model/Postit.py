@@ -17,7 +17,15 @@ class Postit(SqliteObject):
         "width",
         "realX",
         "realY",
-        "colour"
+        "colour",
+        "keystone1X",
+        "keystone1Y",
+        "keystone2X",
+        "keystone2Y",
+        "keystone3X",
+        "keystone3Y",
+        "keystone4X",
+        "keystone4Y"
     ]
 
     table = "postits"
@@ -29,14 +37,14 @@ class Postit(SqliteObject):
                  height,
                  colour,
                  canvas,
-                 pnt1X=None,
-                 pnt1Y=None,
-                 pnt2X=None,
-                 pnt2Y=None,
-                 pnt3X=None,
-                 pnt3Y=None,
-                 pnt4X=None,
-                 pnt4Y=None,
+                 keystone1X,
+                 keystone1Y,
+                 keystone2X,
+                 keystone2Y,
+                 keystone3X,
+                 keystone3Y,
+                 keystone4X,
+                 keystone4Y,
                  physical=True,
                  id=uuid.uuid4(),
                  database=None):
@@ -46,14 +54,14 @@ class Postit(SqliteObject):
         self.realY = int(realY)
         self.width = int(width)
         self.height = int(height)
-        self.pnt1X = pnt1X
-        self.pnt1Y = pnt1Y
-        self.pnt2X = pnt2X
-        self.pnt2Y = pnt2Y
-        self.pnt3X = pnt3X
-        self.pnt3Y = pnt3Y
-        self.pnt4X = pnt4X
-        self.pnt4Y = pnt4Y
+        self.keystone1X = keystone1X
+        self.keystone1Y = keystone1Y
+        self.keystone2X = keystone2X
+        self.keystone2Y = keystone2Y
+        self.keystone3X = keystone3X
+        self.keystone3Y = keystone3Y
+        self.keystone4X = keystone4X
+        self.keystone4Y = keystone4Y
         self.colour = colour
         self.physical = physical
         self.canvas = canvas
@@ -65,10 +73,10 @@ class Postit(SqliteObject):
         return (self.width, self.height)
 
     def get_points(self):
-        return [(self.pnt1X, self.pnt1Y),
-                (self.pnt2X, self.pnt2Y),
-                (self.pnt3X, self.pnt3Y),
-                (self.pnt4X, self.pnt4Y)]
+        return [(self.keystone1X, self.keystone1Y),
+                (self.keystone2X, self.keystone2Y),
+                (self.keystone3X, self.keystone3Y),
+                (self.keystone4X, self.keystone4Y)]
 
     def get_color(self):
         return self.colour
@@ -112,10 +120,10 @@ class Postit(SqliteObject):
 
         postit = image[y:y + self.height, x:x + self.width]
 
-        # postitPoints = [(self.pnt1X, self.pnt1Y),
-        #                 (self.pnt2X, self.pnt2Y),
-        #                 (self.pnt3X, self.pnt3Y),
-        #                 (self.pnt4X, self.pnt4Y)]
+        # postitPoints = [(self.keystone1X, self.keystone1Y),
+        #                 (self.keystone2X, self.keystone2Y),
+        #                 (self.keystone3X, self.keystone3Y),
+        #                 (self.keystone4X, self.keystone4Y)]
 
         # postit = self.four_point_transform(canvas, np.array(postitPoints))
         return postit
@@ -186,14 +194,14 @@ class Postit(SqliteObject):
                       y,
                       width,
                       height,
-                      pnt1X,
-                      pnt1Y,
-                      pnt2X,
-                      pnt2Y,
-                      pnt3X,
-                      pnt3Y,
-                      pnt4X,
-                      pnt4Y,
+                      keystone1X,
+                      keystone1Y,
+                      keystone2X,
+                      keystone2Y,
+                      keystone3X,
+                      keystone3Y,
+                      keystone4X,
+                      keystone4Y,
                       colour,
                       canvas,
                       physical):
@@ -202,14 +210,14 @@ class Postit(SqliteObject):
         self.realY = y
         self.width = width
         self.height = height
-        self.pnt1X = pnt1X
-        self.pnt1Y = pnt1Y
-        self.pnt2X = pnt2X
-        self.pnt2Y = pnt2Y
-        self.pnt3X = pnt3X
-        self.pnt3Y = pnt3Y
-        self.pnt4X = pnt4X
-        self.pnt4Y = pnt4Y
+        self.keystone1X = keystone1X
+        self.keystone1Y = keystone1Y
+        self.keystone2X = keystone2X
+        self.keystone2Y = keystone2Y
+        self.keystone3X = keystone3X
+        self.keystone3Y = keystone3Y
+        self.keystone4X = keystone4X
+        self.keystone4Y = keystone4Y
         self.colour = colour
         self.physical = physical
         self.canvas = canvas

@@ -48,6 +48,14 @@ CREATE TABLE IF NOT EXISTS postits (
   realX  INTEGER NOT NULL,
   realY  INTEGER NOT NULL,
   colour STRING NOT NULL,
+  keystone1X NOT NULL,
+  keystone1Y NOT NULL,
+  keystone2X NOT NULL,
+  keystone2Y NOT NULL,
+  keystone3X NOT NULL,
+  keystone3Y NOT NULL,
+  keystone4X NOT NULL,
+  keystone4Y NOT NULL,
 
     FOREIGN KEY(canvas) REFERENCES canvases(id)
 );
