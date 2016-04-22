@@ -3,9 +3,13 @@ var socket = io();
 var body = $('body');
 var usernamesTable = $('.usernames-tableBody');
 var imagesTable = $('.images-tableBody');
+var canvasesTable = $('.canvases-tableBody');
+var postitsTable = $('.postits-tableBody');
 
 var users = [];
 var images = [];
+var canvases = [];
+var postits = [];
 
 function updateUsers() {
     console.log('Updating Users');
@@ -25,7 +29,7 @@ function updateUsers() {
         $('.user-select').append($('<option></option>')
             .attr('value', user.id)
             .text(user.username));
-    })
+    });
 }
 
 function updateImages() {
@@ -43,7 +47,85 @@ function updateImages() {
         tr.find('.images-image').attr('src', 'api/image/' + image.id);
         tr.find('.images-user').val(image.user);
         tr.find('.images-timestamp').val(new Date(image.timestamp).toISOString());
-    })
+
+        $('.image-select').append($('<option></option>')
+            .attr('value', image.id)
+            .text(image.id))
+    });
+}
+
+function updateCanvases() {
+    console.log('Updating Canvases');
+    $('.canvases-canvasRow').remove();
+    var template = $('.canvases-tableBody > .canvases-row_template');
+
+    canvases.forEach(function(canvas) {
+        var tr = template.clone();
+        tr.removeClass('table-row_template');
+        tr.addClass('canvases-canvasRow');
+
+        $(tr).insertBefore(canvasesTable.children().last());
+        tr.find('.canvases-id').text(canvas.id);
+        tr.find('.canvases-image').attr('src', 'api/canvas/' + canvas.id);
+        tr.find('.canvases-derivedFrom').val(canvas.derivedFrom);
+        tr.find('.canvases-derivedAt').val(canvas.derivedAt);
+
+        tr.find('.canvases-topLeftX').val(canvas.canvasTopLeftX);
+        tr.find('.canvases-topLeftY').val(canvas.canvasTopLeftY);
+
+        tr.find('.canvases-topRightX').val(canvas.canvasTopRightX);
+        tr.find('.canvases-topRightY').val(canvas.canvasTopRightY);
+
+        tr.find('.canvases-topLeftX').val(canvas.canvasTopLeftX);
+        tr.find('.canvases-topLeftY').val(canvas.canvasTopLeftY);
+
+        tr.find('.canvases-bottomLeftX').val(canvas.canvasBottomLeftX);
+        tr.find('.canvases-bottomLeftY').val(canvas.canvasBottomLeftY);
+
+        tr.find('.canvases-bottomRightX').val(canvas.canvasBottomRightX);
+        tr.find('.canvases-bottomRightY').val(canvas.canvasBottomRightY);
+
+        $('.canvas-select').append($('<option></option>')
+            .attr('value', canvas.id)
+            .text(canvas.id))
+    });
+}
+
+function updatePostits() {
+    console.log('Updating Postits');
+    $('.postits-PostitRow').remove();
+    var template = $('.postits-tableBody > .postits-row_template');
+
+    postits.forEach(function(postit) {
+        var tr = template.clone();
+        tr.removeClass('table-row_template');
+        tr.addClass('postits-postitRow');
+
+        $(tr).insertBefore(postitsTable.children().last());
+        tr.find('.postits-id').text(postit.id);
+        tr.find('.postits-image').attr('src', 'api/postit/' + postit.id);
+//        tr.find('.canvases-derivedFrom').val(canvas.derivedFrom);
+//        tr.find('.canvases-derivedAt').val(canvas.derivedAt);
+//
+//        tr.find('.canvases-topLeftX').val(canvas.canvasTopLeftX);
+//        tr.find('.canvases-topLeftY').val(canvas.canvasTopLeftY);
+//
+//        tr.find('.canvases-topRightX').val(canvas.canvasTopRightX);
+//        tr.find('.canvases-topRightY').val(canvas.canvasTopRightY);
+//
+//        tr.find('.canvases-topLeftX').val(canvas.canvasTopLeftX);
+//        tr.find('.canvases-topLeftY').val(canvas.canvasTopLeftY);
+//
+//        tr.find('.canvases-bottomLeftX').val(canvas.canvasBottomLeftX);
+//        tr.find('.canvases-bottomLeftY').val(canvas.canvasBottomLeftY);
+//
+//        tr.find('.canvases-bottomRightX').val(canvas.canvasBottomRightX);
+//        tr.find('.canvases-bottomRightY').val(canvas.canvasBottomRightY);
+
+//        $('.canvas-select').append($('<option></option>')
+//            .attr('value', canvas.id)
+//            .text(canvas.id))
+    });
 }
 
 body.on("click", ".force-canvas-send", function()
@@ -151,6 +233,16 @@ body.on('click', '.images-id', function() {
     $(this).parent().find('.images-image').toggle()
 });
 
+// Show canvas
+body.on('click', '.canvases-id', function() {
+    $(this).parent().find('.canvases-image').toggle()
+});
+
+// Show Postit
+body.on('click', '.postits-id', function() {
+    $(this).parent().find('.postits-image').toggle()
+})
+
 // on getUsers response
 socket.on('getUsers', function(data) {
     console.log('getUsers', arguments);
@@ -199,5 +291,19 @@ socket.on('deleteImage', function(data) {
     socket.emit('getImages');
 });
 
+socket.on('getCanvases', function(data) {
+    console.log('getCanvases', arguments)
+    canvases = data
+    updateCanvases();
+});
+
+socket.on('getPostits', function(data) {
+    console.log('GetPostits', arguments)
+    postits = data
+    updatePostits();
+})
+
 socket.emit('getUsers');
 socket.emit('getImages');
+socket.emit('getCanvases');
+socket.emit('getPostits');

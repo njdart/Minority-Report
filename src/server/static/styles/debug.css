@@ -28,7 +28,7 @@ tbody > tr:nth-child(even) {
     display: none;
 }
 
-.images-image {
+.images-image, .canvases-image, .postits-image{
     display: none;
     max-width: 480px;
 }

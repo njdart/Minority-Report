@@ -89,6 +89,16 @@ def updateImage(details):
     emit('updateImage', image.update().as_object())
 
 
+@socketio.on('getCanvases')
+def getCanvases():
+    emit('getCanvases', [canvas.as_object() for canvas in Canvas.get_all()])
+
+
+@socketio.on('getPostits')
+def getPostits():
+    emit('getPostits', [postit.as_object() for postit in Postit.get_all()])
+
+
 @app.route('/api/image/<imageId>')
 def image_serve(imageId):
 
@@ -182,23 +192,6 @@ def getAll(request):
         }
     )
 
-
-@socketio.on('getPostits')
-def getPostits(request):
-    print("Get Postits" + str(request))
-    emit('getPostits', [
-        {
-            "canvas": "de305d54-75b4-431b-adb2-eb6b9e546014",
-            "id": "23a29456-5ded-4b66-b3f0-178b7afdc0e7",
-            "realX": 10,
-            "realY": 10,
-            "colour": "red",
-            "connections": [
-                "36afb67b-c127-4fb8-b795-b917c4099742",
-                "3fb558b4-5c5c-42a1-98db-84267c470a47"
-            ]
-        }
-    ])
 
 canvasjson = {
         "id": "de305d54-75b4-431b-adb2-eb6b9e546014",
