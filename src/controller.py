@@ -3,7 +3,8 @@ This is the top-level module of the application, containing the Controller
 class.
 """
 
-import server
+from src import server
+
 
 class MinorityReportController(object):
     """

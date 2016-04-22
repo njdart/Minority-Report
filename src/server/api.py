@@ -1,21 +1,17 @@
-import cv2
-import numpy as np
-from PIL import Image as PILImage
 import io
-import base64
+
+import cv2
+import numpy
 import datetime
 from flask_socketio import emit
+from src.model.Canvas import Canvas
 from src.model.User import User
+from src.model.Postit import Postit
 from src.model.Image import Image
-from flask import send_from_directory
-from server import (app, socketio)
+from flask import send_from_directory, send_file
+from werkzeug.exceptions import NotFound
+from src.server import (app, socketio)
 import os
-
-def npArray2Base64(npArray):
-    img = PILImage.fromarray(npArray)
-    buffer = io.BytesIO()
-    img.save(buffer, format="JPEG")
-    return base64.b64encode(buffer.getvalue()).decode("utf-8")
 
 
 @socketio.on('getUsers')
@@ -65,7 +61,7 @@ def addImage(details):
     timestamp = datetime.datetime.strptime(details["timestamp"], '%Y-%m-%dT%H:%M:%S.%fZ')
     file = details["file"]
 
-    arr = np.fromstring(file, np.uint8)
+    arr = numpy.fromstring(file, numpy.uint8)
     npArr = cv2.imdecode(arr, cv2.IMREAD_COLOR)
 
     emit('addImage', Image(user=userId,
@@ -93,17 +89,48 @@ def updateImage(details):
     emit('updateImage', image.update().as_object())
 
 
-@app.route('/api/images/<postitId>')
-# @app.route('/api/images/<width>/<height>/<path:postitId>')
-def image_serve(postitId, width=None, height=None):
+@app.route('/api/image/<imageId>')
+def image_serve(imageId):
 
     root_dir = os.path.dirname(os.path.realpath(__file__))
 
     path = os.path.join(root_dir, 'static', 'images')
-    file = '{}.jpg'.format(postitId)
+    file = '{}.jpg'.format(imageId)
 
     return send_from_directory(path, file, mimetype='image/jpg')
 
+
+@app.route('/api/canvas/<canvasId>')
+def canvas_serve(canvasId):
+
+    canvas = Canvas.get(id=canvasId)
+
+    if canvas is None:
+        raise NotFound()
+
+    image = canvas.get_canvas_unkeystoned()
+
+    if image is None:
+        raise NotFound()
+
+    i = cv2.imencode('.jpg', image)[1].tostring()
+    return send_file(io.BytesIO(i), mimetype='image/jpg')
+
+@app.route('/api/postit/<postitId>')
+def postit_serve(postitId):
+
+    postit = Postit.get(id=postitId)
+
+    if postit is None:
+        raise NotFound()
+
+    image = postit.get_postit_image()
+
+    if image is None:
+        raise NotFound()
+
+    i = cv2.imencode('.jpg', image)[1].tostring()
+    return send_file(io.BytesIO(i), mimetype='image/jpg')
 
 @socketio.on('getAll')
 def getAll(request):

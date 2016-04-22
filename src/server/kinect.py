@@ -1,4 +1,4 @@
-from server import app
+from src.server import app
 from flask import request
 
 @app.route("/kinect/body", methods=["POST"])

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 import sys
-from controller import MinorityReportController
+from src.controller import MinorityReportController
 
 if __name__ == "__main__":
 
