@@ -40,7 +40,7 @@ function updateImages() {
 
         $(tr).insertBefore(imagesTable.children().last());
         tr.find('.images-id').text(image.id);
-        tr.find('.images-image').attr('src', 'api/images/' + image.id);
+        tr.find('.images-image').attr('src', 'api/image/' + image.id);
         tr.find('.images-user').val(image.user);
         tr.find('.images-timestamp').val(new Date(image.timestamp).toISOString());
     })
