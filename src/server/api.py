@@ -1,16 +1,14 @@
-import io
-
 import cv2
 import numpy as np
+from PIL import Image as PILImage
+import io
+import base64
 import datetime
 from flask_socketio import emit
-from src.model.Canvas import Canvas
 from src.model.User import User
-from src.model.Postit import Postit
 from src.model.Image import Image
-from flask import send_from_directory, send_file
-from werkzeug.exceptions import NotFound
-from src.server import (app, socketio)
+from flask import send_from_directory
+from server import (app, socketio)
 import os
 
 def npArray2Base64(npArray):

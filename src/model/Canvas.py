@@ -1,5 +1,3 @@
-from src.model.Image import Image
-from src.model.Postit import Postit
 from src.model.SqliteObject import SqliteObject
 import uuid
 import datetime
@@ -10,39 +8,15 @@ class Canvas(SqliteObject):
     A Canvas object relating an image to it's canvas bounds
     """
 
-    properties = [
-        "id",
-        "image",
-        "derivedFrom",
-        "derivedAt",
-        "canvasTopLeftX",
-        "canvasTopLeftY",
-        "canvasTopRightX",
-        "canvasTopRightY",
-        "canvasBottomLeftX",
-        "canvasBottomLeftY",
-        "canvasBottomRightX",
-        "canvasBottomRightY"
-    ]
-
-    table = "canvases"
-
     def __init__(self,
                  image,
-                 canvasTopLeftX=None,
-                 canvasTopLeftY=None,
-                 canvasTopRightX=None,
-                 canvasTopRightY=None,
-                 canvasBottomLeftX=None,
-                 canvasBottomLeftY=None,
-                 canvasBottomRightX=None,
-                 canvasBottomRightY=None,
-                 canvasBounds=None,
+                 canvasBounds,
                  id=uuid.uuid4(),
                  postits=[],
                  connections=[],
                  derivedFrom=None,
-                 derivedAt=datetime.datetime.now()):
+                 derivedAt=datetime.datetime.now(),
+                 databaseHandler=None):
         """
         :param image OpenCV Numpy array
         :param canvasBounds list of (x, y) tuples in the order [topLeft, topRight, bottomRight, bottomLeft]
@@ -51,34 +25,39 @@ class Canvas(SqliteObject):
         :param connections list of (postit/postitUUID, postit/postitUUID) tuples
         :param derivedFrom canvas object or ID this object derives from
         """
-        super(Canvas, self).__init__(id=id)
+        super(Canvas, self).__init__(id=id,
+                                     properties=[
+                                         "image",
+                                         "derivedFrom",
+                                         "derivedAt",
+                                         "canvasTopLeftX",
+                                         "canvasTopLeftY",
+                                         "canvasTopRightX",
+                                         "canvasTopRightY",
+                                         "canvasBottomLeftX",
+                                         "canvasBottomLeftY",
+                                         "canvasBottomRightX",
+                                         "canvasBottomRightY"
+                                     ],
+                                     table="canvas",
+                                     databaseHandler=databaseHandler)
         self.image = image
-        if canvasBounds is not None:
-            canvasTopLeft = canvasBounds[0]
-            self.canvasTopLeftX = int(canvasTopLeft[0])
-            self.canvasTopLeftY = int(canvasTopLeft[1])
 
-            canvasTopRight = canvasBounds[1]
-            self.canvasTopRightX = int(canvasTopRight[0])
-            self.canvasTopRightY = int(canvasTopRight[1])
+        canvasTopLeft = canvasBounds[0]
+        self.canvasTopLeftX = canvasTopLeft[0]
+        self.canvasTopLeftY = canvasTopLeft[1]
 
-            canvasBottomRight = canvasBounds[2]
-            self.canvasBottomRightX = int(canvasBottomRight[0])
-            self.canvasBottomRightY = int(canvasBottomRight[1])
+        canvasTopRight = canvasBounds[1]
+        self.canvasTopRightX = canvasTopRight[0]
+        self.canvasTopRightY = canvasTopRight[1]
 
-            canvasBottomLeft = canvasBounds[3]
-            self.canvasBottomLeftX = int(canvasBottomLeft[0])
-            self.canvasBottomLeftY = int(canvasBottomLeft[1])
+        canvasBottomRight = canvasBounds[2]
+        self.canvasBottomRightX = canvasBottomRight[0]
+        self.canvasBottomRightY = canvasBottomRight[1]
 
-        else:
-            self.canvasTopLeftX = int(canvasTopLeftX)
-            self.canvasTopLeftY = int(canvasTopLeftY)
-            self.canvasTopRightX = int(canvasTopRightX)
-            self.canvasTopRightY = int(canvasTopRightY)
-            self.canvasBottomRightX = int(canvasBottomRightX)
-            self.canvasBottomRightY = int(canvasBottomRightY)
-            self.canvasBottomLeftX = int(canvasBottomLeftX)
-            self.canvasBottomLeftY = int(canvasBottomLeftY)
+        canvasBottomLeft = canvasBounds[3]
+        self.canvasBottomLeftX = canvasBottomLeft[0]
+        self.canvasBottomLeftY = canvasBottomLeft[1]
 
         self.postits = postits
         self.connections = connections
@@ -90,7 +69,7 @@ class Canvas(SqliteObject):
         get a postit by it's id"""
         for postit in self.postits:
             if type(postit) == int and postit == id:
-                return Postit.get(id)
+                return self.databaseHandler.get_postit(id)
             elif postit.get_id() == id:
                 return postit
         return None
@@ -99,27 +78,10 @@ class Canvas(SqliteObject):
         self.connections.append((start, end))
 
     def get_image(self):
-        if type(self.image) == str:
-            return Image.get(self.image)
-        else:
-            return self.image
+        return self.image
 
     def get_canvas_keystoned(self):
         raise Exception('Not Implemented ... Josh?')
 
-    def get_canvas_bounds(self):
-        return ((self.canvasTopLeftX, self.canvasTopLeftY),
-                (self.canvasBottomRightX, self.canvasBottomRightY))
-
     def get_canvas_unkeystoned(self):
-        imgClass = self.get_image()
-
-        if imgClass is None:
-            return None
-        else:
-            image = imgClass.get_image()
-            print(self.canvasTopLeftY)
-            print(self.canvasBottomRightY)
-            print(self.canvasTopLeftX)
-            print(self.canvasBottomRightX)
-            return image[self.canvasTopLeftY:self.canvasBottomRightY, self.canvasTopLeftX:self.canvasBottomRightX]
+        return self.image[self.canvasTopLeftY:self.canvasBottomRightY, self.canvasTopLeftX:self.canvasBottomRightX]

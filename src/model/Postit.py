@@ -1,7 +1,6 @@
 import cv2
 import uuid
 import numpy as np
-
 from src.model.SqliteObject import SqliteObject
 
 
@@ -10,42 +9,40 @@ class Postit(SqliteObject):
     Represents a postit in a canvas
     """
 
-    properties = [
-        "id",
-        "canvas",
-        "height",
-        "width",
-        "realX",
-        "realY",
-        "colour"
-    ]
-
-    table = "postits"
-
     def __init__(self,
-                 realX,
-                 realY,
+                 x,
+                 y,
                  width,
                  height,
+                 pnt1X,
+                 pnt1Y,
+                 pnt2X,
+                 pnt2Y,
+                 pnt3X,
+                 pnt3Y,
+                 pnt4X,
+                 pnt4Y,
                  colour,
                  canvas,
-                 pnt1X=None,
-                 pnt1Y=None,
-                 pnt2X=None,
-                 pnt2Y=None,
-                 pnt3X=None,
-                 pnt3Y=None,
-                 pnt4X=None,
-                 pnt4Y=None,
                  physical=True,
                  id=uuid.uuid4(),
-                 database=None):
+                 databaseHandler=None):
         super(Postit, self).__init__(id=id,
-                                     database=database)
-        self.realX = int(realX)
-        self.realY = int(realY)
-        self.width = int(width)
-        self.height = int(height)
+                                     properties=[
+                                         "id",
+                                         "canvas",
+                                         "height",
+                                         "width",
+                                         "realX",
+                                         "realY",
+                                         "colour"
+                                     ],
+                                     table="postits",
+                                     databaseHandler=databaseHandler)
+        self.realX = x
+        self.realY = y
+        self.width = width
+        self.height = height
         self.pnt1X = pnt1X
         self.pnt1Y = pnt1Y
         self.pnt2X = pnt2X
@@ -80,44 +77,23 @@ class Postit(SqliteObject):
         sift = cv2.xfeatures2d.SIFT_create()
         postit = self.getImage(canvasImage)
         gray = cv2.cvtColor(postit, cv2.COLOR_BGR2GRAY)
-        keypoints, descriptors = sift.detectAndCompute(gray, None)
+        keypoints, descriptors = sift.detectAndCompute(gray,None)
         return descriptors
 
     def get_canvas(self):
-        if type(self.canvas) is uuid.UUID or type(self.canvas) is str:
-            from src.model.Canvas import Canvas
-            canvas = Canvas.get(self.canvas)
-            if canvas is None:
-                return None
-            self.canvas = canvas
+        #if type(self.canvas) == uuid.UUID:
+        #    return self.databaseHandler.get_canvas(self.canvas)
+        #else:
+            return self.canvas
 
-        return self.canvas
+    def get_postit_image(self, canvasImage):
+        postitPoints = [(self.pnt1X, self.pnt1Y),
+                        (self.pnt2X, self.pnt2Y),
+                        (self.pnt3X, self.pnt3Y),
+                        (self.pnt4X, self.pnt4Y)]
 
-    def get_postit_image(self):
-        canvas = self.get_canvas()
-
-        ((canvasX, canvasY), _) = canvas.get_canvas_bounds()
-        image_class = canvas.get_image()
-
-        if image_class is None:
-            return None
-
-        image = image_class.get_image()
-
-        if image is None:
-            return None
-
-        x = canvasX + self.realX
-        y = canvasY + self.realY
-
-        postit = image[y:y + self.height, x:x + self.width]
-
-        # postitPoints = [(self.pnt1X, self.pnt1Y),
-        #                 (self.pnt2X, self.pnt2Y),
-        #                 (self.pnt3X, self.pnt3Y),
-        #                 (self.pnt4X, self.pnt4Y)]
-
-        # postit = self.four_point_transform(canvas, np.array(postitPoints))
+        postit = self.four_point_transform(canvasImage, np.array(postitPoints))
+        #postit = canvasImage[self.realY:(self.realY+self.height), self.realX:(self.realX+self.width)]
         return postit
 
     def four_point_transform(self, image, pts):
@@ -149,7 +125,7 @@ class Postit(SqliteObject):
             [0, 0],
             [maxWidth - 1, 0],
             [maxWidth - 1, maxHeight - 1],
-            [0, maxHeight - 1]], dtype="float32")
+            [0, maxHeight - 1]], dtype = "float32")
 
         # compute the perspective transform matrix and then apply it
         M = cv2.getPerspectiveTransform(rect, dst)
@@ -163,18 +139,18 @@ class Postit(SqliteObject):
         # such that the first entry in the list is the top-left,
         # the second entry is the top-right, the third is the
         # bottom-right, and the fourth is the bottom-left
-        rect = np.zeros((4, 2), dtype="float32")
+        rect = np.zeros((4, 2), dtype = "float32")
 
         # the top-left point will have the smallest sum, whereas
         # the bottom-right point will have the largest sum
-        s = pts.sum(axis=1)
+        s = pts.sum(axis = 1)
         rect[0] = pts[np.argmin(s)]
         rect[2] = pts[np.argmax(s)]
 
         # now, compute the difference between the points, the
         # top-right point will have the smallest difference,
         # whereas the bottom-left will have the largest difference
-        diff = np.diff(pts, axis=1)
+        diff = np.diff(pts, axis = 1)
         rect[1] = pts[np.argmin(diff)]
         rect[3] = pts[np.argmax(diff)]
 
@@ -182,21 +158,21 @@ class Postit(SqliteObject):
         return rect
 
     def update_postit(self,
-                      x,
-                      y,
-                      width,
-                      height,
-                      pnt1X,
-                      pnt1Y,
-                      pnt2X,
-                      pnt2Y,
-                      pnt3X,
-                      pnt3Y,
-                      pnt4X,
-                      pnt4Y,
-                      colour,
-                      canvas,
-                      physical):
+                x,
+                y,
+                width,
+                height,
+                pnt1X,
+                pnt1Y,
+                pnt2X,
+                pnt2Y,
+                pnt3X,
+                pnt3Y,
+                pnt4X,
+                pnt4Y,
+                colour,
+                canvas,
+                physical):
 
         self.realX = x
         self.realY = y
@@ -213,3 +189,4 @@ class Postit(SqliteObject):
         self.colour = colour
         self.physical = physical
         self.canvas = canvas
+

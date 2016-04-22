@@ -466,6 +466,22 @@ class Model:
         smoothImg = cv2.bilateralFilter(normImg,3,75,75)
         return smoothImg
 
+    def deleteBinned(self,x1 = 0,y1 = 0,x2 = 200,y2 = 200):
+        delPostits = []
+        for postit in self.activePostits:
+            postPos = postit.get_position()
+            if (x1 < postPos[0] < x2 and y1 < postPos[1] < y2 ):
+                delPostits.append(postit)
+        for delPostit in delPostits:
+            delcxns = []
+            for cxn in self.postitConnections:
+                if (cxn[0]==postit.get_id() or cxn[1]==postit.get_id()):
+                    delcxns.append(cxn)
+            for delcxn in delcxns:
+                self.postitConnections.remove(delcxn)
+            self.activePostits.remove(delPostit)
+
+
     # Main update loop using the current settings to extract data from current rawImage
     def update(self):
         canvasImage = self.getCanvasImage()
@@ -474,6 +490,7 @@ class Model:
                                        self.minColourThresh, self.maxColourThresh, self.postitThresh)
         self.newID = uuid.uuid4()
         self.comparePrev(graph)
+        self.deleteBinned()
         newCanvas = Canvas(image=self.rawImage,
                            canvasBounds=self.canvasBounds,
                            id=self.newID,
@@ -491,6 +508,12 @@ class Model:
         if len(self.canvasList):
             lastCanvas = self.canvasList[-1]
             dispImage = np.zeros((self.simpleBounds[3], self.simpleBounds[2], 3), np.uint8)
+            cv2.line(dispImage,(0,0),(200,200),[150,150,150],thickness=4)
+            cv2.line(dispImage,(0,200),(200,0),[150,150,150],thickness=4)
+            cv2.line(dispImage,(0,0),(200,0),[150,150,150],thickness=4)
+            cv2.line(dispImage,(0,0),(0,200),[150,150,150],thickness=4)
+            cv2.line(dispImage,(200,200),(200,0),[150,150,150],thickness=4)
+            cv2.line(dispImage,(200,200),(0,200),[150,150,150],thickness=4)
             for line in lastCanvas.connections:
                 startPoint = (int(lastCanvas.get_postit(line[0]).get_position()[0]+(lastCanvas.get_postit(line[0]).get_size()[0])/2),
                               int(lastCanvas.get_postit(line[0]).get_position()[1]+(lastCanvas.get_postit(line[0]).get_size()[1])/2))
