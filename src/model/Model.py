@@ -475,7 +475,7 @@ class Model:
         for delPostit in delPostits:
             delcxns = []
             for cxn in self.postitConnections:
-                if (cxn[0]==postit.get_id() or cxn[1]==postit.get_id()):
+                if (cxn[0]==delPostit.get_id() or cxn[1]==delPostit.get_id()):
                     delcxns.append(cxn)
             for delcxn in delcxns:
                 self.postitConnections.remove(delcxn)
