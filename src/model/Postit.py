@@ -9,6 +9,18 @@ class Postit(SqliteObject):
     Represents a postit in a canvas
     """
 
+    properties = [
+        "id",
+        "canvas",
+        "height",
+        "width",
+        "realX",
+        "realY",
+        "colour"
+    ]
+
+    table = "postits"
+
     def __init__(self,
                  x,
                  y,
@@ -26,19 +38,9 @@ class Postit(SqliteObject):
                  canvas,
                  physical=True,
                  id=uuid.uuid4(),
-                 databaseHandler=None):
+                 database=None):
         super(Postit, self).__init__(id=id,
-                                     properties=[
-                                         "id",
-                                         "canvas",
-                                         "height",
-                                         "width",
-                                         "realX",
-                                         "realY",
-                                         "colour"
-                                     ],
-                                     table="postits",
-                                     databaseHandler=databaseHandler)
+                                     database=database)
         self.realX = x
         self.realY = y
         self.width = width
