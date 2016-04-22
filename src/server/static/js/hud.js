@@ -6,6 +6,9 @@ var POSTIT_SIZE = 100;
 socket.on("getAll", processResponse);
 socket.emit("getAll", []);
 
+socket.on("updateCanvas", updateCanvas);
+
+
 
 var hudContext;
 var displayHeight;
@@ -33,8 +36,18 @@ function processResponse(received)
 
   drawConnections();
 
-  drawPostits();
-  
+  drawPostits(); 
+}
+
+function updateCanvas(received)
+{
+  latestReceived = received;
+  //console.log(latestReceived, "\n");
+  idToPostitCoords = {};
+
+  mapPostits();
+  drawConnections();
+  drawPostits(); 
 }
 
 function drawPostits()
@@ -42,7 +55,7 @@ function drawPostits()
   $.each(latestReceived.postits, function(_, p){
     hudContext.fillStyle = p.colour;
     var img = new Image();
-    img.src = "http://0.0.0.0:8088/images/" + p.postitId + ".jpg";
+    img.src = "http://0.0.0.0:8088/api/images/" + p.postitId;
     hudContext.drawImage(img, idToPostitCoords[p.postitId]["y"], idToPostitCoords[p.postitId]["x"], POSTIT_SIZE, POSTIT_SIZE);
     //hudContext.stroke();
     //hudContext.fillRect(idToPostitCoords[p.postitId]["y"], idToPostitCoords[p.postitId]["x"], POSTIT_SIZE, POSTIT_SIZE);
@@ -67,6 +80,7 @@ function drawConnections()
 
 function mapPostits()
 {
+  //map the id of each posit to an X,Y coordinate on the canvas
   idToPostitCoords = {};
   $.each(latestReceived.postits, function(_, p){
     sX = (p.realX/displayWidth)*scaleFactor;
@@ -89,9 +103,8 @@ function resetCanvasSize()
 }
 
 $(window).resize(function() {
-  resetCanvasSize()
-  for (var i = 0; i < latestReceived.postits.length; i++)
-  {
-    drawPostit(latestReceived.postits[i]);
-  }
+  resetCanvasSize();
+  drawConnections();
+  drawPostits();
+
 });

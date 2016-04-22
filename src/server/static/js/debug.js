@@ -46,6 +46,11 @@ function updateImages() {
     })
 }
 
+body.on("click", ".force-canvas-send", function()
+{
+    socket.emit("updateCanvas", {});
+});
+
 // On add user button
 body.on('click', '.usernames-add', function() {
 

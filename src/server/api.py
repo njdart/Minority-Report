@@ -102,7 +102,10 @@ def image_serve(postitId, width=None, height=None):
     path = os.path.join(root_dir, 'static', 'images')
     file = '{}.jpg'.format(postitId)
 
-    return send_from_directory(path, file, mimetype='image/jpg')
+    try:
+        return send_from_directory(path, file, mimetype='image/jpg')
+    except:
+        return send_from_directory(path, "testPostit1.jpg", mimetype="image/jpg")
 
 
 @socketio.on('getAll')
@@ -170,12 +173,7 @@ def getPostits(request):
         }
     ])
 
-
-
-@socketio.on('getCanvas')
-def getCanvas(request):
-    print("Get Canvas" + str(request))
-    emit('getCanvas', {
+canvasjson = {
         "id": "de305d54-75b4-431b-adb2-eb6b9e546014",
         "timestamp": "2016-03-18T14:02:56.541Z",
         "postits": [
@@ -199,7 +197,17 @@ def getCanvas(request):
                 ]
             }
         ]
-    })
+    }
+
+@socketio.on('getCanvas')
+def getCanvas(request):
+    print("Get Canvas" + str(request))
+    emit('getCanvas', canvasjson)
+
+@socketio.on("updateCanvas")
+def updateCanvas(request):
+    print("Update Canvas " + str(request))
+    socketio.emit("updateCanvas", canvasjson, broadcast=True)
 
 
 @socketio.on('getSettings')
