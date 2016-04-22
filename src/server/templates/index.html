@@ -8,6 +8,7 @@
 
         <!-- Bootstrap CSS -->
         <link rel="stylesheet" href="http://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap.min.css">
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropper/2.3.0/cropper.min.css">
         
         <link rel="stylesheet" href="../static/styles/index.css">
         
@@ -59,13 +60,13 @@
 
                     <div class="modal-body" id="imageModalContent">
                         <div >
-                          <img id="canvasSelectImage" class="img-responsive" src="http://media4.popsugar-assets.com/files/2014/08/08/878/n/1922507/caef16ec354ca23b_thumb_temp_cover_file32304521407524949.xxxlarge/i/Funny-Cat-GIFs.jpg">
+                          <img id="modalImage" class="img-responsive">
                         </div>
                     </div>
 
                     <div class="modal-footer">
-                        <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
-                        <button type="button" class="btn btn-primary" data-dismiss="modal">Save changes</button>
+                        <button type="button" class="btn btn-default closeb" data-dismiss="modal">Close</button>
+                        <button type="button" class="btn btn-primary" data-dismiss="modal" id="imageSave">Save changes</button>
                     </div>
                 </div>
             </div>
@@ -76,7 +77,7 @@
         <div class="jumbotron">
             <div class="row">
                 <div>
-                    <img class="img-responsive" src="http://media4.popsugar-assets.com/files/2014/08/08/878/n/1922507/caef16ec354ca23b_thumb_temp_cover_file32304521407524949.xxxlarge/i/Funny-Cat-GIFs.jpg">
+                    <img class="img-responsive" src="http://i.huffpost.com/gen/1975176/images/o-SLEEPY-CAT-WATERMELON-facebook.jpg">
                 </div>
 
                 <div class="">
@@ -90,8 +91,8 @@
                     </div>
 
                     <div class="btn-group btn-group-justified">
-                        <a href="#" class="btn btn-default">Add line</a>
-                        <a href="#" class="btn btn-default">Add postit</a>
+                        <a href="#" class="btn btn-default" id="lineChange" data-toggle="modal" data-target="#imageModal">Add line</a>
+                        <a href="#" class="btn btn-default" id="postitChange" data-toggle="modal" data-target="#imageModal">Add postit</a>
                     </div>
                 </div>    
             </div>
@@ -117,33 +118,45 @@
     <!-- jQuery first, then Bootstrap JS. -->
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/2.1.4/jquery.min.js"></script>
     <script src="http://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/js/bootstrap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/cropper/2.3.0/cropper.min.js"></script>
+
+    
     <script type="text/javascript">
         
+        var wholeImage = "http://media4.popsugar-assets.com/files/2014/08/08/878/n/1922507/caef16ec354ca23b_thumb_temp_cover_file32304521407524949.xxxlarge/i/Funny-Cat-GIFs.jpg",
+            canvasImage = "http://i.huffpost.com/gen/1975176/images/o-SLEEPY-CAT-WATERMELON-facebook.jpg";
         
         $("#editCanvasBtn").on("click", function() {
+            
+            //adds the correct image
+            $("#modalImage").attr("src", wholeImage);
             
             //remove draggabe from image
             $("img").on("dragstart", function(event){
                 event.preventDefault();
             });
             
-            var $selection = $("<div>").addClass("selection-box");
+            var $selection = $("<div>").addClass("selection-box"),
+                topLeft,
+                topRight,
+                width,
+                height;
             
             
-            $("#canvasSelectImage").on("mousedown", function(event){
+            $("#modalImage").on("mousedown", function(event){
                 
                 $selection.remove();
                 
-                var xVal = event.pageX - $("#canvasSelectImage").offset().left + $("#canvasSelectImage").position().left;
-                var yVal = event.pageY - $("#canvasSelectImage").offset().top + $("#canvasSelectImage").position().top;
+                var xVal = event.pageX - $("#modalImage").offset().left + $("#modalImage").position().left;
+                var yVal = event.pageY - $("#modalImage").offset().top + $("#modalImage").position().top;
                 
                 
                 $selection.appendTo($("#imageModalContent"));
                 
                 
-                $("#canvasSelectImage").on('mousemove', function(e) {
-                    var xPos = e.pageX - $("#canvasSelectImage").offset().left + $("#canvasSelectImage").position().left,
-                        yPos = e.pageY - $("#canvasSelectImage").offset().top + $("#canvasSelectImage").position().top,
+                $("#modalImage").on('mousemove', function(e) {
+                    var xPos = e.pageX - $("#modalImage").offset().left + $("#modalImage").position().left,
+                        yPos = e.pageY - $("#modalImage").offset().top + $("#modalImage").position().top,
                         width  = Math.abs(xPos - xVal),
                         height = Math.abs(yPos - yVal),
                         new_x,
@@ -160,12 +173,39 @@
                         'left': new_x
                     });
                     
-                }).on("mouseup", function(){
-                    $("#canvasSelectImage").off("mousemove");
+                });
+                
+                $(document).on("mouseup", function(){
+                    $("#modalImage").off("mousemove");
                 }); 
-            }); 
+            });
+            $(".closeb").click(function() {
+                $(".selection-box").remove();
+            });
+            $("#imageSave").click(function() {
+                /*
+                todo: passing topLeft, topRight, height, width to nic
+                get the new canvas image from nic
+                set the new image
+                */
+                
+            });
         });
         
+        $("#lineChange").on("click", function() {
+            //the canvas image
+            $("#modalImage").attr("src", canvasImage);
+            
+            
+            
+            
+        });
+        
+        
+        
+        
+        
+
 
     </script>
     </body>
