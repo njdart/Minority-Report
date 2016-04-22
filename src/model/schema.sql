@@ -57,5 +57,5 @@ CREATE TABLE IF NOT EXISTS postits (
   keystone4X NOT NULL,
   keystone4Y NOT NULL,
 
-    FOREIGN KEY(canvas) REFERENCES canvases(id)
+  FOREIGN KEY(canvas) REFERENCES canvases(id)
 );
