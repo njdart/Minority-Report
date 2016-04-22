@@ -59,8 +59,10 @@ class SqliteObject(object):
         c.execute(query)
         data = c.fetchone()
         props = {}
-        print(data)
-        print(cls.properties)
+
+        if data is None:
+            return None
+
         for i in range(len(cls.properties)):
             props[cls.properties[i]] = str(data[i])
 
@@ -143,3 +145,6 @@ class SqliteObject(object):
             self.id = c.lastrowid
 
         return self
+
+    def __str__(self):
+        return self.table + " row object with id " + str(self.get_id())
