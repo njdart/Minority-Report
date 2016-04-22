@@ -104,27 +104,19 @@ function updatePostits() {
         $(tr).insertBefore(postitsTable.children().last());
         tr.find('.postits-id').text(postit.id);
         tr.find('.postits-image').attr('src', 'api/postit/' + postit.id);
-//        tr.find('.canvases-derivedFrom').val(canvas.derivedFrom);
-//        tr.find('.canvases-derivedAt').val(canvas.derivedAt);
-//
-//        tr.find('.canvases-topLeftX').val(canvas.canvasTopLeftX);
-//        tr.find('.canvases-topLeftY').val(canvas.canvasTopLeftY);
-//
-//        tr.find('.canvases-topRightX').val(canvas.canvasTopRightX);
-//        tr.find('.canvases-topRightY').val(canvas.canvasTopRightY);
-//
-//        tr.find('.canvases-topLeftX').val(canvas.canvasTopLeftX);
-//        tr.find('.canvases-topLeftY').val(canvas.canvasTopLeftY);
-//
-//        tr.find('.canvases-bottomLeftX').val(canvas.canvasBottomLeftX);
-//        tr.find('.canvases-bottomLeftY').val(canvas.canvasBottomLeftY);
-//
-//        tr.find('.canvases-bottomRightX').val(canvas.canvasBottomRightX);
-//        tr.find('.canvases-bottomRightY').val(canvas.canvasBottomRightY);
+        tr.find('.postits-x').val(postit.realX);
+        tr.find('.postits-y').val(postit.realY);
+        tr.find('.postits-width').val(postit.width);
+        tr.find('.postits-height').val(postit.height);
 
-//        $('.canvas-select').append($('<option></option>')
-//            .attr('value', canvas.id)
-//            .text(canvas.id))
+        tr.find('.postits-keystone-x1').val(postit.keystone1X);
+        tr.find('.postits-keystone-y1').val(postit.keystone1Y);
+        tr.find('.postits-keystone-x2').val(postit.keystone2X);
+        tr.find('.postits-keystone-y2').val(postit.keystone2Y);
+        tr.find('.postits-keystone-x3').val(postit.keystone3X);
+        tr.find('.postits-keystone-y3').val(postit.keystone3Y);
+        tr.find('.postits-keystone-x4').val(postit.keystone4X);
+        tr.find('.postits-keystone-y4').val(postit.keystone4Y);
     });
 }
 
