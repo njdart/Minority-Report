@@ -8,7 +8,9 @@ from src.model.Canvas import Canvas
 from src.model.Postit import Postit
 import zipfile
 import os
+from PIL import Image
 import requests
+import pytesseract
 
 
 class Model:
@@ -322,20 +324,20 @@ class Model:
 
     # Using canvasBounds on rawImage extract an image of the canvas
     def get_canvas_image(self):
-        return self.four_point_transform(self.raw_image, self.canvasBounds)
+        return self.four_point_transform(image=self.raw_image, pts=self.canvasBounds)
 
     # Get the image of a previous canvas
     def get_prev_canvas_image(self, ID):
         if ID == self.new_id:
             return self.get_canvas_image()
         else:
-            canvas = self.get_canvas(ID)
-            return self.four_point_transform(canvas.image, self.canvasBounds)
+            canvas = self.get_canvas(canv_id=ID)
+            return self.four_point_transform(image=canvas.image, pts=self.canvasBounds)
 
     # Compare current graph with previous graph
     def compare_prev(self, newGraph):
-        postit_ids = self.update_postits(newGraph["postits"])
-        self.update_lines(postit_ids, newGraph["lines"])
+        postit_ids = self.update_postits(new_postits=newGraph["postits"])
+        self.update_lines(postit_ids=postit_ids, lines=newGraph["lines"])
 
     # Compare a new list of postits to the list of known active postits
     def update_postits(self, new_postits):
@@ -348,8 +350,8 @@ class Model:
 
             IDs = []
             for p, oldPostit in enumerate(self.activePostits):
-                oim = self.bw_smooth(oldPostit.get_postit_image(self.get_prev_canvas_image(oldPostit.get_canvas())))
-                nim = self.bw_smooth(newPostit["image"])
+                oim = self.bw_smooth(image=oldPostit.get_postit_image(self.get_prev_canvas_image(oldPostit.get_canvas())))
+                nim = self.bw_smooth(image=newPostit["image"])
                 # Initiate SIFT detector
                 sift = cv2.xfeatures2d.SIFT_create()
 
@@ -433,9 +435,6 @@ class Model:
     # Compare lines found with know list of connections
     def update_lines(self, postit_ids, lines):
         for cxn in lines:
-            # print(cxn)
-            # print(cxn["postitIdx"][0])
-            # print(len(postit_ids))
             if "postitIdStart" in cxn.keys():
                 start = cxn["postitIdStart"]
             else:
@@ -489,15 +488,15 @@ class Model:
     # Main update loop using the current settings to extract data from current rawImage
     def update(self):
         canvas_image = self.get_canvas_image()
-        extractor = GraphExtractor(canvas_image, self.activePostits)
-        graph = extractor.extract_graph(self.debug,
-                                        self.minPostitArea,
-                                        self.maxPostitArea,
-                                        self.lenTolerence,
-                                        self.minColourThresh,
-                                        self.maxColourThresh)
+        extractor = GraphExtractor(image=canvas_image, previous_postits=self.activePostits)
+        graph = extractor.extract_graph(show_debug=self.debug,
+                                        min_postit_area=self.minPostitArea,
+                                        max_postit_area=self.maxPostitArea,
+                                        len_tolerence=self.lenTolerence,
+                                        min_colour_thresh=self.minColourThresh,
+                                        max_colour_thresh=self.maxColourThresh)
         self.new_id = uuid.uuid4()
-        self.compare_prev(graph)
+        self.compare_prev(newGraph=graph)
         self.delete_binned()
         new_canvas = Canvas(image=self.raw_image,
                             canvasBounds=self.canvasBounds,
@@ -538,7 +537,7 @@ class Model:
                 for canvas in self.canvasList:
                     if canvas.get_id() == postit.get_canvas():
                         postitImage = postit.get_postit_image(
-                            self.four_point_transform(canvas.image, self.canvasBounds)
+                            self.four_point_transform(image=canvas.image, pts=self.canvasBounds)
                         )
                 x1 = postit.get_position()[0]
                 y1 = postit.get_position()[1]
@@ -553,6 +552,42 @@ class Model:
                                   (x1 + postitImage.shape[1], y1 + postitImage.shape[0]),
                                   (0, 0, 0),
                                   thickness=cv2.FILLED)
+
+                    postitImageTest = postitImage.copy()
+
+                    Z = postitImageTest.reshape((-1,3))
+                    # convert to np.float32
+                    Z = np.float32(Z)
+                    # define criteria, number of clusters(K) and apply kmeans()
+                    criteria = (cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, 10, 1.0)
+                    K = 2
+                    ret,label,center = cv2.kmeans(data=Z, K=K, bestLabels=None, criteria=criteria, attempts=10, flags=cv2.KMEANS_RANDOM_CENTERS)
+                    # Now convert back into uint8, and make original image
+                    center = np.uint8(center)
+                    res = center[label.flatten()]
+                    res2 = res.reshape((postitImageTest.shape))
+                    #cv2.imshow('res2',res2)
+
+                    bmin = res2[..., 0].min()
+                    gmin = res2[..., 1].min()
+                    rmin = res2[..., 2].min()
+
+                    if postit.colour == "ORANGE":
+                        postitImage[np.where((res2 > [0, 0, 0]).all(axis=2))] = [0, 0, 0]
+                        postitImage[np.where((res2 > [bmin, gmin, rmin]).all(axis=2))] = [36, 170, 255]
+                    elif postit.colour == "YELLOW":
+                        postitImage[np.where((res2 > [0, 0, 0]).all(axis=2))] = [0, 0,0]
+                        postitImage[np.where((res2 > [bmin, gmin, rmin]).all(axis=2))] = [82, 242, 224]
+                    elif postit.colour == "BLUE":
+                        postitImage[np.where((res2 > [0, 0, 0]).all(axis=2))] = [0, 0, 0]
+                        postitImage[np.where((res2 > [bmin, gmin, rmin]).all(axis=2))] = [215, 160, 1]
+                    elif postit.colour == "MAGENTA":
+                        postitImage[np.where((res2 > [0, 0, 0]).all(axis=2))] = [0, 0, 0]
+                        postitImage[np.where((res2 > [bmin, gmin, rmin]).all(axis=2))] = [182, 90, 255]
+                    #cv2.imwrite("test.png",postitImageTest)
+                    #print(pytesseract.image_to_string(Image.open("test.png")))
+                    #cv2.imshow("debugC", postitImage)
+                    #cv2.waitKey(0)
                     disp_image[y1:y1 + postitImage.shape[0], x1:x1 + postitImage.shape[1]] = postitImage
                     cv2.rectangle(disp_image,
                                   (x1, y1),
@@ -560,8 +595,8 @@ class Model:
                                   (0, 200, 200),
                                   thickness=4)
 
-            r = 720 / disp_image.shape[1]
-            dim = (720, int(disp_image.shape[0] * r))
+            r = 1920 / disp_image.shape[1]
+            dim = (1920, int(disp_image.shape[0] * r))
 
             # perform the actual resizing of the image and show it
             disp_image = cv2.resize(disp_image, dim, interpolation=cv2.INTER_AREA)
@@ -593,8 +628,8 @@ if __name__ == "__main__":
     #       ~ Fix   : Change find postit threshold
     #####
     # boardModel = Model()
-    # boardModel.set_debug(False)
-    # boardModel.image_settings(2000,40000,0.4,0.33,64,200,105)
+    # boardModel.set_debug(state=False)
+    # boardModel.image_settings(mipa=2000, mapa=40000, lento=0.4, sig=0.33, mico=64, maco=200, poth=105)
     # #input("Waiting for focus >")
     # #requests.get("http://localhost:8080/focus")
     # input("Waiting for boarders>")
@@ -604,7 +639,7 @@ if __name__ == "__main__":
     #     print("Got Good Calibartion Image")
     #     nparray = np.asarray(bytearray(r.content), dtype="uint8") # Transform byte array to numpy array
     #     canvImg = cv2.imdecode(nparray,cv2.IMREAD_COLOR) # Decode values as openCV colours
-    #     boardModel.new_calib_image(canvImg) #set as calibration image
+    #     boardModel.new_calib_image(image=canvImg) #set as calibration image
     #     boardModel.runAutoCalibrate() # Autocalibratefrom image
     # else:
     #     print(":( Got Bad Calibration Image")
@@ -624,28 +659,28 @@ if __name__ == "__main__":
 
     canvImg = cv2.imread('/home/jjs/projects/Minority-Report/src/IMG_20160304_154758.jpg')
     boardModel = Model()
-    boardModel.set_debug(False)
-    boardModel.new_calib_image(canvImg)
+    boardModel.set_debug(state=False)
+    boardModel.new_calib_image(image=canvImg)
     boardModel.run_auto_calibrate(show_debug=False)
-    boardModel.image_settings(9000, 20000, 0.4, 0.33, 64, 200, 120)
+    boardModel.image_settings(mipa=9000, mapa=20000, lento=0.4, sig=0.33, mico=64, maco=200, poth=120)
     image1 = cv2.imread('/home/jjs/projects/Minority-Report/src/IMG_20160304_154813.jpg')
-    boardModel.new_raw_image(image1, datetime.datetime.now(), 1)
+    boardModel.new_raw_image(image=image1, time=datetime.datetime.now(), update=1)
     print("1")
     boardModel.display()
     image2 = cv2.imread('/home/jjs/projects/Minority-Report/src/IMG_20160304_154821.jpg')
-    boardModel.new_raw_image(image2, datetime.datetime.now(), 1)
+    boardModel.new_raw_image(image=image2, time=datetime.datetime.now(), update=1)
     print("2")
     boardModel.display()
     image3 = cv2.imread('/home/jjs/projects/Minority-Report/src/IMG_20160304_154813b.jpg')
-    boardModel.new_raw_image(image3, datetime.datetime.now(), 1)
+    boardModel.new_raw_image(image=image3, time=datetime.datetime.now(), update=1)
     print("3")
     boardModel.display()
     image4 = cv2.imread('/home/jjs/projects/Minority-Report/src/IMG_20160304_154813c.jpg')
-    boardModel.new_raw_image(image4, datetime.datetime.now(), 1)
+    boardModel.new_raw_image(image=image4, time=datetime.datetime.now(), update=1)
     print("4")
     boardModel.display()
     image5 = cv2.imread('/home/jjs/projects/Minority-Report/src/IMG_20160304_154813d.jpg')
-    boardModel.new_raw_image(image5, datetime.datetime.now(), 1)
+    boardModel.new_raw_image(image=image5, time=datetime.datetime.now(), update=1)
     print("5")
     boardModel.display()
 

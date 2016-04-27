@@ -63,13 +63,13 @@ class GraphExtractor:
                       len_tolerence,
                       min_colour_thresh,
                       max_colour_thresh):
-        postits = self.extract_postits(show_debug,
-                                       min_postit_area,
-                                       max_postit_area,
-                                       len_tolerence,
-                                       min_colour_thresh,
-                                       max_colour_thresh)
-        lines = self.extract_lines(postits, show_debug)
+        postits = self.extract_postits(show_debug=show_debug,
+                                       min_postit_area=min_postit_area,
+                                       max_postit_area=max_postit_area,
+                                       len_tolerence=len_tolerence,
+                                       min_colour_thresh=min_colour_thresh,
+                                       max_colour_thresh=max_colour_thresh)
+        lines = self.extract_lines(postits=postits, show_debug=show_debug)
         graph = {
                 "postits": postits,
                 "lines": lines
@@ -98,7 +98,7 @@ class GraphExtractor:
         # print(satthresh)
         newimg[np.where((newimg < [255,satthresh,255]).all(axis=2))] = [0,0,0]
         newimg = cv2.cvtColor(newimg, cv2.COLOR_HSV2BGR)
-        display("debug", newimg)
+        #display("debug", newimg)
         gray_img = cv2.cvtColor(newimg, cv2.COLOR_BGR2GRAY)
         edgegray = cv2.Canny(gray_img, 1, 30)
         # display("debug",edgegray)
