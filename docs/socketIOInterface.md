@@ -242,7 +242,7 @@ Request a canvas from its uuid. Same data structure as updateCanvasGraph
     "id": "de305d54-75b4-431b-adb2-eb6b9e546014",
     "timestamp": "2016-03-18T14:02:56.541Z",
     "width": 3000,
-    "height", 1500,
+    "height": 1500,
     "postits": [
         {
             "id": "23a29456-5ded-4b66-b3f0-178b7afdc0e7",
