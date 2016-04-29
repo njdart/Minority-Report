@@ -142,30 +142,30 @@
                 width,
                 height;
             
-            
-            $("#modalImage").on("mousedown", function(event){
-                
+            $("#imageModalContent").on("mousedown", function(event){
+
                 $selection.remove();
-                
+
+                // coordinates of mouse relative to image
                 var xVal = event.pageX - $("#modalImage").offset().left + $("#modalImage").position().left;
                 var yVal = event.pageY - $("#modalImage").offset().top + $("#modalImage").position().top;
                 
-                
+		// add selection box to screen
                 $selection.appendTo($("#imageModalContent"));
                 
-                
-                $("#modalImage").on('mousemove', function(e) {
+                $("#imageModalContent").on('mousemove', function(e) {
                     var xPos = e.pageX - $("#modalImage").offset().left + $("#modalImage").position().left,
                         yPos = e.pageY - $("#modalImage").offset().top + $("#modalImage").position().top,
                         width  = Math.abs(xPos - xVal),
                         height = Math.abs(yPos - yVal),
                         new_x,
                         new_y;
-                    
+
+		    console.log(width.toString() + " " + height.toString());
 
                     new_x = (xPos < xVal) ? (xVal - width) : xVal;
                     new_y = (yPos < yVal) ? (yVal - height) : yVal;
-
+	
                     $selection.css({
                         'width': width,
                         'height': height,
@@ -176,7 +176,7 @@
                 });
                 
                 $(document).on("mouseup", function(){
-                    $("#modalImage").off("mousemove");
+                    $("#imageModalContent").off("mousemove");
                 }); 
             });
             $(".closeb").click(function() {
@@ -188,25 +188,13 @@
                 get the new canvas image from nic
                 set the new image
                 */
-                
             });
         });
         
         $("#lineChange").on("click", function() {
             //the canvas image
             $("#modalImage").attr("src", canvasImage);
-            
-            
-            
-            
         });
-        
-        
-        
-        
-        
-
-
     </script>
     </body>
 </html>
