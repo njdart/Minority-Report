@@ -69,7 +69,8 @@ class GraphExtractor:
                                        len_tolerence=len_tolerence,
                                        min_colour_thresh=min_colour_thresh,
                                        max_colour_thresh=max_colour_thresh)
-        lines = self.extract_lines(postits=postits, show_debug=show_debug)
+        lines = self.extract_lines(postits=postits,
+                                   show_debug=show_debug)
         graph = {
                 "postits": postits,
                 "lines": lines
@@ -93,12 +94,12 @@ class GraphExtractor:
         newimg = cv2.cvtColor(testimg1, cv2.COLOR_BGR2HSV)
         satmax = newimg[..., 1].max()
         satmin = newimg[..., 1].min()
-        satthresh = ((50/256)*(satmax-satmin))+satmin
-
+        # satthresh = ((50/256)*(satmax-satmin))+satmin
+        satthresh = 80
         # print(satthresh)
         newimg[np.where((newimg < [255,satthresh,255]).all(axis=2))] = [0,0,0]
         newimg = cv2.cvtColor(newimg, cv2.COLOR_HSV2BGR)
-        #display("debug", newimg)
+        # display("debug", newimg)
         gray_img = cv2.cvtColor(newimg, cv2.COLOR_BGR2GRAY)
         edgegray = cv2.Canny(gray_img, 1, 30)
         # display("debug",edgegray)
@@ -283,62 +284,69 @@ class GraphExtractor:
         edged = self.edge(img, True, show_debug, 0)
 
         (_, cnts, _) = cv2.findContours(edged.copy(), cv2.RETR_TREE, cv2.CHAIN_APPROX_NONE)
+
         tolerence = 50
         for c in cnts:
-            postit_idx = [-1, -1]
-            postit_id_start = 0
-            postit_id_end = 0
+            if cv2.arcLength(c,True) > 300:
+                array = []
+                for point in c:
+                    for idx, ipostit in enumerate(postits):
+                        if ipostit["position"][0]-tolerence < point[0][0]\
+                                < ipostit["position"][0]+ipostit["position"][2]+tolerence\
+                                and ipostit["position"][1]-tolerence < point[0][1]\
+                                < ipostit["position"][1]+ipostit["position"][3]+tolerence:
+                            if not array:
+                                array.append(idx)
+                            elif idx is not array[-1]:
+                                array.append(idx)
 
-            start_point, end_point = self.find_furthest_pair(c)
+                    for idx, jpostit in enumerate(self.prevPostits):
+                        if not jpostit.physical:
+                            if jpostit.get_position()[0]-tolerence < point[0][0] \
+                                    < jpostit.get_position()[0]+jpostit.get_size()[0]+tolerence \
+                                    and jpostit.get_position()[1]-tolerence < point[0][1] \
+                                    < jpostit.get_position()[1]+jpostit.get_size()[1]+tolerence:
+                                if not array:
+                                    array.append(jpostit.get_id())
+                                elif jpostit.get_id() is not array[-1]:
+                                    array.append(jpostit.get_id())
 
-            for idx, ipostit in enumerate(postits):
-                if ipostit["position"][0]-tolerence < start_point[0]\
-                        < ipostit["position"][0]+ipostit["position"][2]+tolerence\
-                        and ipostit["position"][1]-tolerence < start_point[1]\
-                        < ipostit["position"][1]+ipostit["position"][3]+tolerence:
-                    postit_idx[0] = idx
-                if ipostit["position"][0]-tolerence < end_point[0] \
-                        < ipostit["position"][0]+ipostit["position"][2]+tolerence \
-                        and ipostit["position"][1]-tolerence < end_point[1] \
-                        < ipostit["position"][1]+ipostit["position"][3]+tolerence:
-                    postit_idx[1] = idx
-
-            for idx, jpostit in enumerate(self.prevPostits):
-                if not jpostit.physical:
-                    if jpostit.get_position()[0]-tolerence < start_point[0] \
-                            < jpostit.get_position()[0]+jpostit.get_size()[0]+tolerence \
-                            and jpostit.get_position()[1]-tolerence < start_point[1] \
-                            < jpostit.get_position()[1]+jpostit.get_size()[1]+tolerence:
-                        postit_id_start = jpostit.get_id()
-                    if jpostit.get_position()[0]-tolerence < end_point[0] \
-                            < jpostit.get_position()[0]+jpostit.get_size()[0]+tolerence \
-                            and jpostit.get_position()[1]-tolerence < end_point[1] \
-                            < jpostit.get_position()[1]+jpostit.get_size()[1]+tolerence:
-                        postit_id_end = jpostit.get_id()
-
-            if postit_id_start and postit_id_end:
-                found_line = {
-                        "postitIdStart": postit_id_start,
-                        "postitIdEnd": postit_id_end
-                        }
-                found_lines.append(found_line)
-            elif postit_id_start and postit_idx[1] > -1:
-                found_line = {
-                        "postitIdStart": postit_id_start,
-                        "postitIdx": postit_idx
-                        }
-                found_lines.append(found_line)
-            elif postit_id_end and postit_idx[0] > -1:
-                found_line = {
-                        "postitIdEnd": postit_id_end,
-                        "postitIdx": postit_idx
-                        }
-                found_lines.append(found_line)
-            elif postit_idx[0] > -1 and postit_idx[1] > -1 and postit_idx[0] != postit_idx[1]:
-                found_line = {
-                    "postitIdx": postit_idx
-                    }
-                found_lines.append(found_line)
+                if len(array) > 1:
+                    for i in range(0, len(array)-1):
+                        postit_idx = [-1, -1]
+                        postit_id_start = 0
+                        postit_id_end = 0
+                        if len(str(array[i])) == 36:
+                            postit_id_start = array[i]
+                        else:
+                            postit_idx[0] = array[i]
+                        if len(str(array[i+1])) == 36:
+                            postit_id_end = array[i+1]
+                        else:
+                            postit_idx[1] = array[i+1]
+                        if postit_id_start and postit_id_end:
+                            found_line = {
+                                    "postitIdStart": postit_id_start,
+                                    "postitIdEnd": postit_id_end
+                                    }
+                            found_lines.append(found_line)
+                        elif postit_id_start and postit_idx[1] > -1:
+                            found_line = {
+                                    "postitIdStart": postit_id_start,
+                                    "postitIdx": postit_idx
+                                    }
+                            found_lines.append(found_line)
+                        elif postit_id_end and postit_idx[0] > -1:
+                            found_line = {
+                                    "postitIdEnd": postit_id_end,
+                                    "postitIdx": postit_idx
+                                    }
+                            found_lines.append(found_line)
+                        elif postit_idx[0] > -1 and postit_idx[1] > -1:
+                            found_line = {
+                                "postitIdx": postit_idx
+                                }
+                            found_lines.append(found_line)
         return found_lines
 
     # Find the pair of points in a contour that are furthest apart
@@ -381,7 +389,7 @@ class GraphExtractor:
 
 # Display image at half size
 def display(name, img):
-        img = cv2.resize(img, None, fx=0.5, fy=0.5, interpolation=cv2.INTER_AREA)
+        img = cv2.resize(img, None, fx=0.3, fy=0.3, interpolation=cv2.INTER_AREA)
         cv2.imshow(name, img)
         cv2.waitKey(0)
 

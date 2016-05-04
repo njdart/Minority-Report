@@ -8,9 +8,7 @@ from src.model.Canvas import Canvas
 from src.model.Postit import Postit
 import zipfile
 import os
-from PIL import Image
 import requests
-import pytesseract
 
 
 class Model:
@@ -212,7 +210,6 @@ class Model:
         max_index = np.argmax(areas)
         canvas_contour = board_contours[max_index]
         self.simpleBounds = cv2.boundingRect(canvas_contour)
-
         fcanvas_contours = canvas_contour.flatten()
         canvx = np.zeros([int(len(fcanvas_contours) / 2), 1])
         canvy = np.zeros([int(len(fcanvas_contours) / 2), 1])
@@ -566,28 +563,29 @@ class Model:
                     center = np.uint8(center)
                     res = center[label.flatten()]
                     res2 = res.reshape((postitImageTest.shape))
-                    #cv2.imshow('res2',res2)
+                    # cv2.imshow('res2',res2)
 
                     bmin = res2[..., 0].min()
                     gmin = res2[..., 1].min()
                     rmin = res2[..., 2].min()
-
                     if postit.colour == "ORANGE":
                         postitImage[np.where((res2 > [0, 0, 0]).all(axis=2))] = [0, 0, 0]
-                        postitImage[np.where((res2 > [bmin, gmin, rmin]).all(axis=2))] = [36, 170, 255]
+                        postitImage[np.where((res2 > [bmin, gmin, rmin]).all(axis=2))] = [26, 160, 255]
                     elif postit.colour == "YELLOW":
-                        postitImage[np.where((res2 > [0, 0, 0]).all(axis=2))] = [0, 0,0]
-                        postitImage[np.where((res2 > [bmin, gmin, rmin]).all(axis=2))] = [82, 242, 224]
+                        postitImage[np.where((res2 > [0, 0, 0]).all(axis=2))] = [0, 0, 0]
+                        postitImage[np.where((res2 > [bmin, gmin, rmin]).all(axis=2))] = [93, 255, 237]
                     elif postit.colour == "BLUE":
                         postitImage[np.where((res2 > [0, 0, 0]).all(axis=2))] = [0, 0, 0]
-                        postitImage[np.where((res2 > [bmin, gmin, rmin]).all(axis=2))] = [215, 160, 1]
+                        postitImage[np.where((res2 > [bmin, gmin, rmin]).all(axis=2))] = [255, 200, 41]
                     elif postit.colour == "MAGENTA":
                         postitImage[np.where((res2 > [0, 0, 0]).all(axis=2))] = [0, 0, 0]
                         postitImage[np.where((res2 > [bmin, gmin, rmin]).all(axis=2))] = [182, 90, 255]
                     #cv2.imwrite("test.png",postitImageTest)
                     #print(pytesseract.image_to_string(Image.open("test.png")))
-                    #cv2.imshow("debugC", postitImage)
-                    #cv2.waitKey(0)
+
+
+                    # cv2.imshow("debugC", postitImage)
+                    # cv2.waitKey(0)
                     disp_image[y1:y1 + postitImage.shape[0], x1:x1 + postitImage.shape[1]] = postitImage
                     cv2.rectangle(disp_image,
                                   (x1, y1),
@@ -595,8 +593,8 @@ class Model:
                                   (0, 200, 200),
                                   thickness=4)
 
-            r = 1920 / disp_image.shape[1]
-            dim = (1920, int(disp_image.shape[0] * r))
+            r = 720 / disp_image.shape[1]
+            dim = (720, int(disp_image.shape[0] * r))
 
             # perform the actual resizing of the image and show it
             disp_image = cv2.resize(disp_image, dim, interpolation=cv2.INTER_AREA)
@@ -627,6 +625,18 @@ if __name__ == "__main__":
     #       ~ Cause : Brightness in the room differs from test conditions
     #       ~ Fix   : Change find postit threshold
     #####
+
+    canvImg = cv2.imread('/home/jjs/projects/Minority-Report/src/IMG_20160304_154758.jpg')
+    boardModel = Model()
+    boardModel.set_debug(state=False)
+    boardModel.new_calib_image(image=canvImg)
+    boardModel.run_auto_calibrate(show_debug=False)
+    boardModel.image_settings(mipa=9000, mapa=20000, lento=0.4, sig=0.33, mico=64, maco=200, poth=120)
+    for idx in range(0,len(os.listdir ('/home/jjs/projects/Minority-Report/src/testImg/'))):
+        image = cv2.imread('/home/jjs/projects/Minority-Report/src/testImg/' + str(idx) + '.png')
+        boardModel.new_raw_image(image=image, time=datetime.datetime.now(), update=1)
+        boardModel.display()
+
     # boardModel = Model()
     # boardModel.set_debug(state=False)
     # boardModel.image_settings(mipa=2000, mapa=40000, lento=0.4, sig=0.33, mico=64, maco=200, poth=105)
@@ -640,7 +650,7 @@ if __name__ == "__main__":
     #     nparray = np.asarray(bytearray(r.content), dtype="uint8") # Transform byte array to numpy array
     #     canvImg = cv2.imdecode(nparray,cv2.IMREAD_COLOR) # Decode values as openCV colours
     #     boardModel.new_calib_image(image=canvImg) #set as calibration image
-    #     boardModel.runAutoCalibrate() # Autocalibratefrom image
+    #     boardModel.run_auto_calibrate() # Autocalibratefrom image
     # else:
     #     print(":( Got Bad Calibration Image")
     #     print(r.text)
@@ -651,40 +661,9 @@ if __name__ == "__main__":
     #         print("Got Good Postit Image")
     #         nparray = np.asarray(bytearray(r.content), dtype="uint8")
     #         img = cv2.imdecode(nparray,cv2.IMREAD_COLOR)
-    #         boardModel.newRawImage(img, datetime.datetime.now(),update=1)
+    #         boardModel.new_raw_image(img, datetime.datetime.now(),update=1)
     #         boardModel.display()
     #     else:
     #         print(":( Got Bad Postit Image")
     #         print(r.text)
 
-    canvImg = cv2.imread('/home/jjs/projects/Minority-Report/src/IMG_20160304_154758.jpg')
-    boardModel = Model()
-    boardModel.set_debug(state=False)
-    boardModel.new_calib_image(image=canvImg)
-    boardModel.run_auto_calibrate(show_debug=False)
-    boardModel.image_settings(mipa=9000, mapa=20000, lento=0.4, sig=0.33, mico=64, maco=200, poth=120)
-    image1 = cv2.imread('/home/jjs/projects/Minority-Report/src/IMG_20160304_154813.jpg')
-    boardModel.new_raw_image(image=image1, time=datetime.datetime.now(), update=1)
-    print("1")
-    boardModel.display()
-    image2 = cv2.imread('/home/jjs/projects/Minority-Report/src/IMG_20160304_154821.jpg')
-    boardModel.new_raw_image(image=image2, time=datetime.datetime.now(), update=1)
-    print("2")
-    boardModel.display()
-    image3 = cv2.imread('/home/jjs/projects/Minority-Report/src/IMG_20160304_154813b.jpg')
-    boardModel.new_raw_image(image=image3, time=datetime.datetime.now(), update=1)
-    print("3")
-    boardModel.display()
-    image4 = cv2.imread('/home/jjs/projects/Minority-Report/src/IMG_20160304_154813c.jpg')
-    boardModel.new_raw_image(image=image4, time=datetime.datetime.now(), update=1)
-    print("4")
-    boardModel.display()
-    image5 = cv2.imread('/home/jjs/projects/Minority-Report/src/IMG_20160304_154813d.jpg')
-    boardModel.new_raw_image(image=image5, time=datetime.datetime.now(), update=1)
-    print("5")
-    boardModel.display()
-
-    # boardModel.save("canvas_data")
-    # newBoard = Model()
-    # newBoard.load("canvas_data")
-    # newBoard.display()
