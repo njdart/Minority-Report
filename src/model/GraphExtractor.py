@@ -285,20 +285,31 @@ class GraphExtractor:
 
         (_, cnts, _) = cv2.findContours(edged.copy(), cv2.RETR_TREE, cv2.CHAIN_APPROX_NONE)
 
-        tolerence = 50
+        tolerence = 30
         for c in cnts:
             if cv2.arcLength(c,True) > 300:
                 array = []
                 for point in c:
                     for idx, ipostit in enumerate(postits):
-                        if ipostit["position"][0]-tolerence < point[0][0]\
-                                < ipostit["position"][0]+ipostit["position"][2]+tolerence\
-                                and ipostit["position"][1]-tolerence < point[0][1]\
-                                < ipostit["position"][1]+ipostit["position"][3]+tolerence:
+
+                        if (ipostit["position"][0]-tolerence < point[0][0]
+                                < ipostit["position"][0]+ipostit["position"][2]+tolerence)\
+                                and (ipostit["position"][1]-tolerence < point[0][1]
+                                < ipostit["position"][1]+ipostit["position"][3]+tolerence)\
+                                and not((ipostit["position"][0]-10 < point[0][0]
+                                < ipostit["position"][0]+ipostit["position"][2]+10)
+                                and (ipostit["position"][1]-10 < point[0][1]
+                                < ipostit["position"][1]+ipostit["position"][3]+10)):
                             if not array:
                                 array.append(idx)
                             elif idx is not array[-1]:
                                 array.append(idx)
+
+                            # cimg = cv2.drawContours(self.image.copy(),c,-1,[0,0,255],thickness=6)
+                            # cimg = cv2.rectangle(cimg,(ipostit["position"][0]-tolerence,ipostit["position"][1]-tolerence),((ipostit["position"][0]+ipostit["position"][2]+tolerence),(ipostit["position"][1]+ipostit["position"][3]+tolerence)),[0,200,0],thickness=5)
+                            # cimg = cv2.rectangle(cimg,(ipostit["position"][0],ipostit["position"][1]),((ipostit["position"][0]+ipostit["position"][2]),(ipostit["position"][1]+ipostit["position"][3])),[200,0,200],thickness=5)
+                            # cimg = cv2.circle(cimg, (point[0][0],point[0][1]),2,[255,200,0],thickness=6)
+                            # display("debug",cimg)
 
                     for idx, jpostit in enumerate(self.prevPostits):
                         if not jpostit.physical:
