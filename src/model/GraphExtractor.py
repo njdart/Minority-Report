@@ -9,6 +9,7 @@ class GraphExtractor:
     """
     Get postits from a board image
     """
+
     def __init__(self, image, previous_postits):
         self.DEBUG_PLOT = False
         self.rawImage = image
@@ -43,7 +44,7 @@ class GraphExtractor:
                 "min_rb": -140,
                 "max_rb": -40,
                 "min_gb": -45,
-                "max_gb":   0
+                "max_gb": 0
             },
             "MAGENTA": {
                 "min_rg": 40,
@@ -72,9 +73,9 @@ class GraphExtractor:
         lines = self.extract_lines(postits=postits,
                                    show_debug=show_debug)
         graph = {
-                "postits": postits,
-                "lines": lines
-            }
+            "postits": postits,
+            "lines": lines
+        }
         return graph
 
     # Extracts a representation of the postits
@@ -97,7 +98,7 @@ class GraphExtractor:
         # satthresh = ((50/256)*(satmax-satmin))+satmin
         satthresh = 80
         # print(satthresh)
-        newimg[np.where((newimg < [255,satthresh,255]).all(axis=2))] = [0,0,0]
+        newimg[np.where((newimg < [255, satthresh, 255]).all(axis=2))] = [0, 0, 0]
         newimg = cv2.cvtColor(newimg, cv2.COLOR_HSV2BGR)
         # display("debug", newimg)
         gray_img = cv2.cvtColor(newimg, cv2.COLOR_BGR2GRAY)
@@ -113,32 +114,32 @@ class GraphExtractor:
                 print(cv2.contourArea(box))
                 cv2.imshow("Debug", boxedimg)
             if (cv2.contourArea(box) > min_postit_area) and (cv2.contourArea(box) < max_postit_area):
-                length = math.hypot(box[0, 0]-box[1, 0], box[0, 1]-box[1, 1])
-                height = math.hypot(box[2, 0]-box[1, 0], box[2, 1]-box[1, 1])
-                if length*(2-len_tolerence) < length+height < length*(2+len_tolerence):
+                length = math.hypot(box[0, 0] - box[1, 0], box[0, 1] - box[1, 1])
+                height = math.hypot(box[2, 0] - box[1, 0], box[2, 1] - box[1, 1])
+                if length * (2 - len_tolerence) < length + height < length * (2 + len_tolerence):
                     rectangle = cv2.boundingRect(c)
 
                     flat_contour = c.flatten()
-                    canvx = np.zeros([int(len(flat_contour)/2), 1])
-                    canvy = np.zeros([int(len(flat_contour)/2), 1])
-                    l1 = np.zeros(int(len(flat_contour)/2))
-                    l2 = np.zeros(int(len(flat_contour)/2))
-                    l3 = np.zeros(int(len(flat_contour)/2))
-                    l4 = np.zeros(int(len(flat_contour)/2))
+                    canvx = np.zeros([int(len(flat_contour) / 2), 1])
+                    canvy = np.zeros([int(len(flat_contour) / 2), 1])
+                    l1 = np.zeros(int(len(flat_contour) / 2))
+                    l2 = np.zeros(int(len(flat_contour) / 2))
+                    l3 = np.zeros(int(len(flat_contour) / 2))
+                    l4 = np.zeros(int(len(flat_contour) / 2))
                     for i in range(0, len(flat_contour), 2):
-                        canvx[int(i/2)] = flat_contour[i]
-                        canvy[int(i/2)] = flat_contour[i+1]
+                        canvx[int(i / 2)] = flat_contour[i]
+                        canvy[int(i / 2)] = flat_contour[i + 1]
                     xmax = np.max(canvx)
                     ymax = np.max(canvy)
                     xmin = np.min(canvx)
                     ymin = np.min(canvy)
                     for idx in range(0, len(canvx)):
-                        lx = ((canvx[idx]-xmin) / (xmax-xmin))
-                        ly = ((canvy[idx]-ymin) / (ymax-ymin))
-                        l1[idx] = lx+ly
-                        l2[idx] = (1-lx)+ly
-                        l3[idx] = lx+(1-ly)
-                        l4[idx] = (1-lx)+(1-ly)
+                        lx = ((canvx[idx] - xmin) / (xmax - xmin))
+                        ly = ((canvy[idx] - ymin) / (ymax - ymin))
+                        l1[idx] = lx + ly
+                        l2[idx] = (1 - lx) + ly
+                        l3[idx] = lx + (1 - ly)
+                        l4[idx] = (1 - lx) + (1 - ly)
                     max1 = np.argmax(l1)
                     max2 = np.argmax(l2)
                     max3 = np.argmax(l3)
@@ -285,45 +286,38 @@ class GraphExtractor:
 
         (_, cnts, _) = cv2.findContours(edged.copy(), cv2.RETR_TREE, cv2.CHAIN_APPROX_NONE)
 
-        tolerence = 30
         for c in cnts:
-            if cv2.arcLength(c,True) > 300:
+            if cv2.arcLength(c, True) > 300:
                 array = []
                 for point in c:
                     for idx, ipostit in enumerate(postits):
-
-                        if (ipostit["position"][0]-tolerence < point[0][0]
-                                < ipostit["position"][0]+ipostit["position"][2]+tolerence)\
-                                and (ipostit["position"][1]-tolerence < point[0][1]
-                                < ipostit["position"][1]+ipostit["position"][3]+tolerence)\
-                                and not((ipostit["position"][0]-10 < point[0][0]
-                                < ipostit["position"][0]+ipostit["position"][2]+10)
-                                and (ipostit["position"][1]-10 < point[0][1]
-                                < ipostit["position"][1]+ipostit["position"][3]+10)):
+                        rectanglearea = self.get_area(ipostit["points"])
+                        pointarea = self.get_area((ipostit["points"][0], ipostit["points"][1], point[0])) \
+                                    + self.get_area((ipostit["points"][1], ipostit["points"][2], point[0]))\
+                                    + self.get_area((ipostit["points"][2], ipostit["points"][3], point[0]))\
+                                    + self.get_area((ipostit["points"][3], ipostit["points"][0], point[0]))
+                        if pointarea < rectanglearea*1.1 and pointarea > rectanglearea*1:
                             if not array:
                                 array.append(idx)
                             elif idx is not array[-1]:
                                 array.append(idx)
 
-                            # cimg = cv2.drawContours(self.image.copy(),c,-1,[0,0,255],thickness=6)
-                            # cimg = cv2.rectangle(cimg,(ipostit["position"][0]-tolerence,ipostit["position"][1]-tolerence),((ipostit["position"][0]+ipostit["position"][2]+tolerence),(ipostit["position"][1]+ipostit["position"][3]+tolerence)),[0,200,0],thickness=5)
-                            # cimg = cv2.rectangle(cimg,(ipostit["position"][0],ipostit["position"][1]),((ipostit["position"][0]+ipostit["position"][2]),(ipostit["position"][1]+ipostit["position"][3])),[200,0,200],thickness=5)
-                            # cimg = cv2.circle(cimg, (point[0][0],point[0][1]),2,[255,200,0],thickness=6)
-                            # display("debug",cimg)
-
                     for idx, jpostit in enumerate(self.prevPostits):
                         if not jpostit.physical:
-                            if jpostit.get_position()[0]-tolerence < point[0][0] \
-                                    < jpostit.get_position()[0]+jpostit.get_size()[0]+tolerence \
-                                    and jpostit.get_position()[1]-tolerence < point[0][1] \
-                                    < jpostit.get_position()[1]+jpostit.get_size()[1]+tolerence:
+                            postitpoints = jpostit.get_points()
+                            rectanglearea = self.get_area(postitpoints)
+                            pointarea = self.get_area((postitpoints[0], postitpoints[1], point[0])) \
+                                    + self.get_area((postitpoints[1], postitpoints[2], point[0]))\
+                                    + self.get_area((postitpoints[2], postitpoints[3], point[0]))\
+                                    + self.get_area((postitpoints[3], postitpoints[0], point[0]))
+                            if pointarea < rectanglearea*1.1 and pointarea > rectanglearea*1:
                                 if not array:
                                     array.append(jpostit.get_id())
                                 elif jpostit.get_id() is not array[-1]:
                                     array.append(jpostit.get_id())
 
                 if len(array) > 1:
-                    for i in range(0, len(array)-1):
+                    for i in range(0, len(array) - 1):
                         postit_idx = [-1, -1]
                         postit_id_start = 0
                         postit_id_end = 0
@@ -331,32 +325,32 @@ class GraphExtractor:
                             postit_id_start = array[i]
                         else:
                             postit_idx[0] = array[i]
-                        if len(str(array[i+1])) == 36:
-                            postit_id_end = array[i+1]
+                        if len(str(array[i + 1])) == 36:
+                            postit_id_end = array[i + 1]
                         else:
-                            postit_idx[1] = array[i+1]
+                            postit_idx[1] = array[i + 1]
                         if postit_id_start and postit_id_end:
                             found_line = {
-                                    "postitIdStart": postit_id_start,
-                                    "postitIdEnd": postit_id_end
-                                    }
+                                "postitIdStart": postit_id_start,
+                                "postitIdEnd": postit_id_end
+                            }
                             found_lines.append(found_line)
                         elif postit_id_start and postit_idx[1] > -1:
                             found_line = {
-                                    "postitIdStart": postit_id_start,
-                                    "postitIdx": postit_idx
-                                    }
+                                "postitIdStart": postit_id_start,
+                                "postitIdx": postit_idx
+                            }
                             found_lines.append(found_line)
                         elif postit_id_end and postit_idx[0] > -1:
                             found_line = {
-                                    "postitIdEnd": postit_id_end,
-                                    "postitIdx": postit_idx
-                                    }
+                                "postitIdEnd": postit_id_end,
+                                "postitIdx": postit_idx
+                            }
                             found_lines.append(found_line)
                         elif postit_idx[0] > -1 and postit_idx[1] > -1:
                             found_line = {
                                 "postitIdx": postit_idx
-                                }
+                            }
                             found_lines.append(found_line)
         return found_lines
 
@@ -372,12 +366,12 @@ class GraphExtractor:
 
         for idxa, pointa in enumerate(points):
             for idxb, pointb in enumerate(points):
-                distList[idxa, idxb,] = math.hypot(pointa[0]-pointb[0],pointa[1]-pointb[1])
+                distList[idxa, idxb,] = math.hypot(pointa[0] - pointb[0], pointa[1] - pointb[1])
         maxDistIdx = np.argmax(distList, axis=None)
         maxDistIdx = np.unravel_index(maxDistIdx, distList.shape)
         start = points[maxDistIdx[0]]
         end = points[maxDistIdx[1]]
-        return(start, end)
+        return (start, end)
 
     # Smooth and then find the edges of an image
     def edge(self, img, line, show_debug, thresh):
@@ -398,15 +392,27 @@ class GraphExtractor:
 
         return edged
 
+    def get_area(self, points):
+        if len(points) == 4:
+            points = self.order_points(points)
+        pointsum = 0
+        for index in range(-1, len(points) - 1):
+            point1 = points[index]
+            point2 = points[index + 1]
+            pointsum = pointsum + (point1[0] * point2[1] - point1[1] * point2[0])
+        area = abs(pointsum / 2)
+        return area
+
+
 # Display image at half size
 def display(name, img):
-        img = cv2.resize(img, None, fx=0.3, fy=0.3, interpolation=cv2.INTER_AREA)
-        cv2.imshow(name, img)
-        cv2.waitKey(0)
+    img = cv2.resize(img, None, fx=0.3, fy=0.3, interpolation=cv2.INTER_AREA)
+    cv2.imshow(name, img)
+    cv2.waitKey(0)
+
 
 # Find canvas for testing the above class in isolation
 def find_canvas(image, show_debug=False):
-
     (__, board) = cv2.threshold(image, 100, 255, cv2.THRESH_TOZERO)
     gray_board = cv2.cvtColor(board, cv2.COLOR_RGB2GRAY)
 
@@ -433,9 +439,9 @@ if __name__ == "__main__":
     canvImg = cv2.imread("IMG_20160304_154758.jpg")
     canvArea = find_canvas(canvImg)
     image1 = cv2.imread("IMG_20160304_154813.jpg")
-    image1 = image1[canvArea[1]:(canvArea[1]+canvArea[3]), canvArea[0]:(canvArea[0]+canvArea[2])]
+    image1 = image1[canvArea[1]:(canvArea[1] + canvArea[3]), canvArea[0]:(canvArea[0] + canvArea[2])]
     image2 = cv2.imread("IMG_20160304_154821.jpg")
-    image2 = image2[canvArea[1]:(canvArea[1]+canvArea[3]), canvArea[0]:(canvArea[0]+canvArea[2])]
+    image2 = image2[canvArea[1]:(canvArea[1] + canvArea[3]), canvArea[0]:(canvArea[0] + canvArea[2])]
     activePostits = []
 
     extractor1 = GraphExtractor(image1, activePostits)
@@ -457,16 +463,16 @@ if __name__ == "__main__":
     for postit in graph1["postits"]:
         x1 = postit["position"][0]
         y1 = postit["position"][1]
-        x2 = postit["position"][0]+postit["position"][2]
-        y2 = postit["position"][1]+postit["position"][3]
+        x2 = postit["position"][0] + postit["position"][2]
+        y2 = postit["position"][1] + postit["position"][3]
         cv2.rectangle(image1, (x1, y1), (x2, y2), (0, 255, 0), thickness=4)
     for line in graph1["lines"]:
         cv2.line(image1, line["startPoint"], line["endPoint"], [255, 0, 0], thickness=4)
     for postit in graph2["postits"]:
         x1 = postit["position"][0]
         y1 = postit["position"][1]
-        x2 = postit["position"][0]+postit["position"][2]
-        y2 = postit["position"][1]+postit["position"][3]
+        x2 = postit["position"][0] + postit["position"][2]
+        y2 = postit["position"][1] + postit["position"][3]
         cv2.rectangle(image2, (x1, y1), (x2, y2), (0, 255, 0), thickness=4)
     for line in graph2["lines"]:
         cv2.line(image2, line["startPoint"], line["endPoint"], [255, 0, 0], thickness=4)
@@ -478,14 +484,14 @@ if __name__ == "__main__":
             matches = bf.knnMatch(postit1["descriptors"], postit2["descriptors"], k=2)
             good = []
             for m, n in matches:
-                if m.distance < 0.45*n.distance:
+                if m.distance < 0.45 * n.distance:
                     good.append([m])
             # print(o, p, len(good))
             if len(good) > 5:
                 postitPair.append([o, p])
                 gray = cv2.cvtColor(postit1["image"], cv2.COLOR_BGR2GRAY)
                 gray = cv2.GaussianBlur(gray, (3, 3), 0)
-                ret, threshed = cv2.threshold(gray, 127, 255, cv2.THRESH_BINARY+cv2.THRESH_OTSU)
+                ret, threshed = cv2.threshold(gray, 127, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
                 kernel = np.ones((3, 3), np.uint8)
                 threshed = cv2.dilate(threshed, kernel)
                 print(pytesseract.image_to_string(Image.open("postit.png")))
