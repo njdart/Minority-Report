@@ -180,7 +180,7 @@ class GraphExtractor:
             # print(guessed_colour)
             if guessed_colour is not None:
                 self.postitColour.append(guessed_colour)
-
+                self.postitPts[idx] = self.order_points(self.postitPts[idx])
                 found_postit = {
                     "image": postit_image,
                     "colour": guessed_colour,
@@ -282,21 +282,21 @@ class GraphExtractor:
         found_lines = []
         img = self.image
 
-        edged = self.edge(img, True, show_debug, 0)
+        edged = self.edge(img, show_debug)
 
         (_, cnts, _) = cv2.findContours(edged.copy(), cv2.RETR_TREE, cv2.CHAIN_APPROX_NONE)
 
         for c in cnts:
             if cv2.arcLength(c, True) > 300:
                 array = []
-                for point in c:
+                for index in range(0, len(c), 10):
                     for idx, ipostit in enumerate(postits):
                         rectanglearea = self.get_area(ipostit["points"])
-                        pointarea = self.get_area((ipostit["points"][0], ipostit["points"][1], point[0])) \
-                                    + self.get_area((ipostit["points"][1], ipostit["points"][2], point[0]))\
-                                    + self.get_area((ipostit["points"][2], ipostit["points"][3], point[0]))\
-                                    + self.get_area((ipostit["points"][3], ipostit["points"][0], point[0]))
-                        if pointarea < rectanglearea*1.1 and pointarea > rectanglearea*1:
+                        pointarea = self.get_area((ipostit["points"][0], ipostit["points"][1], c[index][0])) \
+                                    + self.get_area((ipostit["points"][1], ipostit["points"][2], c[index][0]))\
+                                    + self.get_area((ipostit["points"][2], ipostit["points"][3], c[index][0]))\
+                                    + self.get_area((ipostit["points"][3], ipostit["points"][0], c[index][0]))
+                        if pointarea < rectanglearea*1.2 and pointarea > rectanglearea*1.1:
                             if not array:
                                 array.append(idx)
                             elif idx is not array[-1]:
@@ -306,11 +306,11 @@ class GraphExtractor:
                         if not jpostit.physical:
                             postitpoints = jpostit.get_points()
                             rectanglearea = self.get_area(postitpoints)
-                            pointarea = self.get_area((postitpoints[0], postitpoints[1], point[0])) \
-                                    + self.get_area((postitpoints[1], postitpoints[2], point[0]))\
-                                    + self.get_area((postitpoints[2], postitpoints[3], point[0]))\
-                                    + self.get_area((postitpoints[3], postitpoints[0], point[0]))
-                            if pointarea < rectanglearea*1.1 and pointarea > rectanglearea*1:
+                            pointarea = self.get_area((postitpoints[0], postitpoints[1], c[index][0])) \
+                                    + self.get_area((postitpoints[1], postitpoints[2], c[index][0]))\
+                                    + self.get_area((postitpoints[2], postitpoints[3], c[index][0]))\
+                                    + self.get_area((postitpoints[3], postitpoints[0], c[index][0]))
+                            if pointarea < rectanglearea*1.2 and pointarea > rectanglearea*1.1:
                                 if not array:
                                     array.append(jpostit.get_id())
                                 elif jpostit.get_id() is not array[-1]:
@@ -374,16 +374,10 @@ class GraphExtractor:
         return (start, end)
 
     # Smooth and then find the edges of an image
-    def edge(self, img, line, show_debug, thresh):
+    def edge(self, img, show_debug):
         kernel = np.ones((5, 5), np.uint8)
-        img = cv2.medianBlur(img, 9)
-        if not line:
-            img = cv2.dilate(img, kernel, iterations=3)
-            display("debug", img)
-            imgcopy = img.copy()
-            __, img = cv2.threshold(imgcopy, thresh, 255, cv2.THRESH_BINARY)
-            display("debug", img)
-
+        #img = cv2.medianBlur(img, 9)
+        img = cv2.bilateralFilter(img,9,75,75)
         gray_image = cv2.cvtColor(img, cv2.COLOR_RGB2GRAY)
 
         edged = cv2.Canny(gray_image, 1, 30)
@@ -393,13 +387,11 @@ class GraphExtractor:
         return edged
 
     def get_area(self, points):
-        if len(points) == 4:
-            points = self.order_points(points)
+        #if len(points) == 4:
+        #    points = self.order_points(points)
         pointsum = 0
         for index in range(-1, len(points) - 1):
-            point1 = points[index]
-            point2 = points[index + 1]
-            pointsum = pointsum + (point1[0] * point2[1] - point1[1] * point2[0])
+            pointsum = pointsum + (points[index][0] * points[index + 1][1] - points[index][1] * points[index + 1][0])
         area = abs(pointsum / 2)
         return area
 
