@@ -281,26 +281,27 @@ class GraphExtractor:
     def extract_lines(self, postits, show_debug):
         found_lines = []
         img = self.image
-
         edged = self.edge(img, show_debug)
-
         (_, cnts, _) = cv2.findContours(edged.copy(), cv2.RETR_TREE, cv2.CHAIN_APPROX_NONE)
-
         for c in cnts:
             if cv2.arcLength(c, True) > 300:
                 array = []
                 for index in range(0, len(c), 10):
+                    contained = False
                     for idx, ipostit in enumerate(postits):
                         rectanglearea = self.get_area(ipostit["points"])
-                        pointarea = self.get_area((ipostit["points"][0], ipostit["points"][1], c[index][0])) \
+                        pointarea = self.get_area((ipostit["points"][0], ipostit["points"][1], c[index][0]))\
                                     + self.get_area((ipostit["points"][1], ipostit["points"][2], c[index][0]))\
                                     + self.get_area((ipostit["points"][2], ipostit["points"][3], c[index][0]))\
                                     + self.get_area((ipostit["points"][3], ipostit["points"][0], c[index][0]))
-                        if pointarea < rectanglearea*1.2 and pointarea > rectanglearea*1.1:
+                        if pointarea < rectanglearea*1.1:
+                                contained = True
+                        if pointarea < rectanglearea*1.2 and not contained:
                             if not array:
                                 array.append(idx)
                             elif idx is not array[-1]:
                                 array.append(idx)
+
 
                     for idx, jpostit in enumerate(self.prevPostits):
                         if not jpostit.physical:
@@ -310,7 +311,9 @@ class GraphExtractor:
                                     + self.get_area((postitpoints[1], postitpoints[2], c[index][0]))\
                                     + self.get_area((postitpoints[2], postitpoints[3], c[index][0]))\
                                     + self.get_area((postitpoints[3], postitpoints[0], c[index][0]))
-                            if pointarea < rectanglearea*1.2 and pointarea > rectanglearea*1.1:
+                            if pointarea < rectanglearea*1.1:
+                                contained = True
+                            if pointarea < rectanglearea*1.2 and not contained:
                                 if not array:
                                     array.append(jpostit.get_id())
                                 elif jpostit.get_id() is not array[-1]:
