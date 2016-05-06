@@ -6,6 +6,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Net.Http;
 using Microsoft.Kinect;
+using Newtonsoft.Json;
 
 namespace MinorityReport
 {
@@ -18,6 +19,14 @@ namespace MinorityReport
 
         // Number of milliseconds to wait for the sensor to open.
         const int KINECT_OPEN_DELAY_MS = 1000;
+
+        // Maximum body data requests to be made to the server per second.
+        const int REQUESTS_PER_SEC = 5;
+
+        // URLs for POSTing data to the server
+        const string BASE_URL = "/kinect";
+        const string BODY_DATA_URL = BASE_URL + "/bodyTracking";
+
         #endregion
 
         #region Private members
@@ -31,8 +40,10 @@ namespace MinorityReport
         private bool m_shuttingDown;
         private ShuttingDownReason m_shutdownReason;
 
-        // Member objects
-        private HttpClient m_httpClient;
+        // Timing
+        private DateTime m_previousRequestTime;
+
+        // Objects
         private KinectSensor m_kinectSensor;
         private BodyIndexFrameReader m_bodyIndexFrameReader;
 
@@ -190,6 +201,8 @@ namespace MinorityReport
                 byte[] frameData = new byte[width * height];
                 bodyIndexFrame.CopyFrameDataToArray(frameData);
 
+                
+
                 // Indicator of the bodies found
                 bool[] bodiesFound = new bool[maxBodyCount];
                 for (int i = 0; i < maxBodyCount; ++i)
@@ -222,6 +235,7 @@ namespace MinorityReport
                     boundingPoints[i,3] = -1;
                 }
 
+                // Retrieve minimal bounding boxes of bodies in the frame.
                 for (int x = 0; x < width; ++x)
                 {
                     for (int y = 0; y < height; ++y)
@@ -253,16 +267,18 @@ namespace MinorityReport
                         }
                     }
                 }
+
+                IList<BoundingBox> boxes = new List<BoundingBox>();
                 for (int i = 0; i < maxBodyCount; ++i)
                 {
                     if (bodiesFound[i])
                     {
-                        m_log.DebugFormat("Found a body (index {0}) with bounding box: ({1}, {2}); ({3}, {4}).",
+                        boxes.Add(new BoundingBox(
                             i,
                             boundingPoints[i, 0],
-                            boundingPoints[i, 2],
                             boundingPoints[i, 1],
-                            boundingPoints[i, 3]);
+                            boundingPoints[i, 2],
+                            boundingPoints[i, 3]));
                     }
                 }
             }
@@ -300,32 +316,6 @@ namespace MinorityReport
             m_shuttingDown = true;
             m_shutdownReason = ShuttingDownReason.KinectUnavailable;
             m_log.Debug("Kinect timed out.");
-        }
-
-        /// <summary>
-        /// Check if the server is alive.
-        /// </summary>
-        /// <returns>True if server is alive, false otherwise.</returns>
-        private async Task<bool> PollServerAlive()
-        {
-            string uriStr = string.Format("http://{0}:{1}/alive",
-                                          m_serverHost,
-                                          m_serverPort);
-
-            HttpRequestMessage msg = new HttpRequestMessage();
-            msg.Method     = HttpMethod.Get;
-            msg.RequestUri = new Uri(uriStr);
-
-            try
-            {
-                HttpResponseMessage response = await m_httpClient.SendAsync(msg);
-            }
-            catch (HttpRequestException)
-            {
-                return false;
-            }
-
-            return true;
         }
 
         #endregion

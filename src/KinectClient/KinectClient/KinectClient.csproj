@@ -57,6 +57,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="BodyData.cs" />
     <Compile Include="BoundingBox.cs" />
     <Compile Include="KinectClient.cs" />
     <Compile Include="Program.cs" />

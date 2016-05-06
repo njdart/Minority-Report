@@ -13,6 +13,7 @@ namespace MinorityReport
 
         private PointF m_point1;
         private PointF m_point2;
+        private int    m_index;
 
         #endregion
 
@@ -68,6 +69,14 @@ namespace MinorityReport
             }
         }
 
+        public int BodyIndex
+        {
+            get
+            {
+                return m_index;
+            }
+        }
+
         #endregion
 
         #region Constructor
@@ -82,8 +91,9 @@ namespace MinorityReport
         /// <param name="x2">X coordinate of point 2.</param>
         /// <param name="y1">Y coordinate of point 1.</param>
         /// <param name="y2">Y coordinate of point 2.</param>
-        public BoundingBox(float x1, float x2, float y1, float y2)
+        public BoundingBox(int index, float x1, float y1, float x2, float y2)
         {
+            m_index = index;
             m_point1 = new PointF(x1, y1);
             m_point2 = new PointF(x2, y2);
         }
