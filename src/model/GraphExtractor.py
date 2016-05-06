@@ -93,13 +93,11 @@ class GraphExtractor:
         testimg1 = img.copy()
 
         newimg = cv2.cvtColor(testimg1, cv2.COLOR_BGR2HSV)
-        satmax = newimg[..., 1].max()
-        satmin = newimg[..., 1].min()
-        # satthresh = ((50/256)*(satmax-satmin))+satmin
-        satthresh = 80
+        satthresh = 120
         # print(satthresh)
         newimg[np.where((newimg < [255, satthresh, 255]).all(axis=2))] = [0, 0, 0]
         newimg = cv2.cvtColor(newimg, cv2.COLOR_HSV2BGR)
+        newimg[np.where((newimg < [100, 100, 100]).all(axis=2))] = [0, 0, 0]
         # display("debug", newimg)
         gray_img = cv2.cvtColor(newimg, cv2.COLOR_BGR2GRAY)
         edgegray = cv2.Canny(gray_img, 1, 30)
@@ -296,7 +294,7 @@ class GraphExtractor:
                                     + self.get_area((ipostit["points"][3], ipostit["points"][0], c[index][0]))
                         if pointarea < rectanglearea*1.1:
                                 contained = True
-                        if pointarea < rectanglearea*1.2 and not contained:
+                        if pointarea < rectanglearea*1.25 and not contained:
                             if not array:
                                 array.append(idx)
                             elif idx is not array[-1]:
@@ -313,7 +311,7 @@ class GraphExtractor:
                                     + self.get_area((postitpoints[3], postitpoints[0], c[index][0]))
                             if pointarea < rectanglearea*1.1:
                                 contained = True
-                            if pointarea < rectanglearea*1.2 and not contained:
+                            if pointarea < rectanglearea*1.25 and not contained:
                                 if not array:
                                     array.append(jpostit.get_id())
                                 elif jpostit.get_id() is not array[-1]:
@@ -401,7 +399,7 @@ class GraphExtractor:
 
 # Display image at half size
 def display(name, img):
-    img = cv2.resize(img, None, fx=0.3, fy=0.3, interpolation=cv2.INTER_AREA)
+    img = cv2.resize(img, None, fx=0.5, fy=0.5, interpolation=cv2.INTER_AREA)
     cv2.imshow(name, img)
     cv2.waitKey(0)
 
