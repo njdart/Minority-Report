@@ -641,7 +641,7 @@ if __name__ == "__main__":
 
     boardModel = Model()
     boardModel.set_debug(state=False)
-    boardModel.image_settings(mipa=2000, mapa=40000, lento=0.4, sig=0.33, mico=64, maco=200, poth=105)
+    boardModel.image_settings(mipa=5000, mapa=40000, lento=0.2, sig=0.33, mico=64, maco=200, poth=105)
     #input("Waiting for focus >")
     #requests.get("http://localhost:8080/focus")
     input("Waiting for boarders>")
