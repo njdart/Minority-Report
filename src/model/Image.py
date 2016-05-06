@@ -1,8 +1,5 @@
 import datetime
 import uuid
-import PIL
-import io
-import base64
 import cv2
 import os
 import requests
@@ -39,13 +36,6 @@ class Image(SqliteObject):
             print(response.status_code)
             print(response.json())
             return None
-
-    def image_as_base64(self):
-        img = PIL.Image.fromarray(self.image)
-        buffer = io.BytesIO()
-        img.save(buffer, format="JPEG")
-        return base64.b64encode(buffer.getvalue()).decode("utf-8")
-        # $('div').css('background-image', 'url(data:image/gif;base64,' + a.image + ')');
 
     def get_image_array(self):
         if not self.image:

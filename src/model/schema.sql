@@ -1,6 +1,18 @@
+CREATE TABLE IF NOT EXISTS session (
+  id                 STRING PRIMARY KEY,
+  topLeftX           STRING NOT NULL,
+  topLeftY           STRING NOT NULL,
+  topRightX          STRING NOT NULL,
+  topRightY          STRING NOT NULL,
+  bottomRightX       STRING NOT NULL,
+  bottomRightY       STRING NOT NULL,
+  bottomLeftX        STRING NOT NULL,
+  bottomLeftY        STRING NOT NULL
+);
+
 CREATE TABLE IF NOT EXISTS images (
-  id                STRING PRIMARY KEY,
-  timestamp         STRING NOT NULL
+  id                 STRING PRIMARY KEY,
+  timestamp          STRING NOT NULL
 );
 
 CREATE TABLE IF NOT EXISTS canvases (
