@@ -5,7 +5,6 @@ import numpy
 import datetime
 from flask_socketio import emit
 from src.model.Canvas import Canvas
-from src.model.User import User
 from src.model.Postit import Postit
 from src.model.Image import Image
 from flask import send_from_directory, send_file
@@ -14,49 +13,8 @@ from src.server import (app, socketio)
 import os
 
 
-@socketio.on('getUsers')
-def getUsers():
-    emit('getUsers', [user.as_object() for user in User.get_all()])
-
-
-@socketio.on('addUser')
-def addUser(details):
-    emit('addUser', User(username=details["username"]).create().as_object())
-
-
-@socketio.on('getUser')
-def getUser(details):
-    emit('getUser', User.get(id=details["id"]).as_object())
-
-
-@socketio.on('updateUser')
-def updateUser(details):
-    username = details["username"]
-    id = details["id"]
-
-    user = User.get(id=id)
-
-    if not user:
-        emit('updateUser', False)
-        return
-
-    if username != user.get_username():
-        user.set_username(username)
-        user.update()
-
-    emit('updateUser', user.as_object())
-
-
-@socketio.on('deleteUser')
-def deleteUser(details):
-    id = details["id"] if "id" in details else None
-
-    emit('deleteUser', User.get(id=id).delete().as_object())
-
-
 @socketio.on('addImage')
 def addImage(details):
-    userId = details["user"]
     # EG "2016-04-09T13:04:50.148Z"
     timestamp = datetime.datetime.strptime(details["timestamp"], '%Y-%m-%dT%H:%M:%S.%fZ')
     file = details["file"]
@@ -64,8 +22,7 @@ def addImage(details):
     arr = numpy.fromstring(file, numpy.uint8)
     npArr = cv2.imdecode(arr, cv2.IMREAD_COLOR)
 
-    emit('addImage', Image(user=userId,
-                           npArray=npArr,
+    emit('addImage', Image(npArray=npArr,
                            timestamp=timestamp).create().as_object())
 
 
@@ -97,6 +54,32 @@ def getCanvases():
 @socketio.on('getPostits')
 def getPostits():
     emit('getPostits', [postit.as_object() for postit in Postit.get_all()])
+
+
+@socketio.on('addImageFromUri')
+def addImageFromUri(uri):
+    image = Image.from_uri(user=1, uri=uri)
+
+    if image is None:
+        emit('addImageFromUri', None)
+        return
+
+    emit('addImageFromUri', image.create().as_object())
+
+
+@socketio.on('cameraFocus')
+def cameraFocus(uri):
+    emit('cameraFocus', Image.focus_camera(uri))
+
+
+@socketio.on('getCameraProperties')
+def getCameraProperties(uri):
+    emit('getCameraProperties', Image.get_camera_properties(uri))
+
+
+@socketio.on('setCameraProperties')
+def setCameraProperties(uri, properties):
+    emit('setCameraProperties', Image.set_camera_properties(uri, properties=properties))
 
 
 @app.route('/api/image/<imageId>')

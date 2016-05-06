@@ -1,14 +1,6 @@
-CREATE TABLE IF NOT EXISTS users (
-  id       INTEGER PRIMARY KEY autoincrement,
-  username TEXT NOT NULL UNIQUE
-);
-
 CREATE TABLE IF NOT EXISTS images (
   id                STRING PRIMARY KEY,
-  user              INTEGER NOT NULL,
-  timestamp         STRING NOT NULL,
-
-  FOREIGN KEY(user) REFERENCES users(id)
+  timestamp         STRING NOT NULL
 );
 
 CREATE TABLE IF NOT EXISTS canvases (
