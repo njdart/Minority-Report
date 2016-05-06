@@ -109,17 +109,19 @@ class Canvas(SqliteObject):
             return self.image
 
     def get_canvas_keystoned(self):
-        image = self.get_image()
+        image = self.get_image().get_image_array()
         if image is None:
             return None
-
+        print(image.shape)
         return src.model.processing.four_point_transform(image, self.get_canvas_corner_points())
 
     def get_canvas_corner_points(self):
-        return ((self.canvasTopLeftX, self.canvasTopLeftY),
-                (self.canvasTopRightX, self.canvasTopRightY),
-                (self.canvasBottomRightX, self.canvasBottomRightY),
-                (self.canvasBottomLeftX, self.canvasBottomLeftY))
+        return numpy.array([
+            (self.canvasTopLeftX, self.canvasTopLeftY),
+            (self.canvasTopRightX, self.canvasTopRightY),
+            (self.canvasBottomRightX, self.canvasBottomRightY),
+            (self.canvasBottomLeftX, self.canvasBottomLeftY)
+        ])
 
     def get_canvas_unkeystoned(self):
         imgClass = self.get_image()
@@ -127,7 +129,7 @@ class Canvas(SqliteObject):
         if imgClass is None:
             return None
         else:
-            image = imgClass.get_image()
+            image = imgClass.get_image_array()
             print(self.canvasTopLeftY)
             print(self.canvasBottomRightY)
             print(self.canvasTopLeftX)
@@ -135,15 +137,15 @@ class Canvas(SqliteObject):
             return image[self.canvasTopLeftY:self.canvasBottomRightY, self.canvasTopLeftX:self.canvasBottomRightX]
 
     def find_postits(self,
-                        min_postit_area=5000,
-                        max_postit_area=40000,
-                        len_tolerence=0.4,
-                        min_colour_thresh=64,
-                        max_colour_thresh=200):
+                     min_postit_area=5000,
+                     max_postit_area=40000,
+                     len_tolerence=0.4,
+                     min_colour_thresh=64,
+                     max_colour_thresh=200,
+                     save_postits=True):
 
         found_postits = []
         canvas_image = self.get_canvas_keystoned()
-        boxed_image = canvas_image.copy()
 
         hsv_image = cv2.cvtColor(canvas_image.copy(), cv2.COLOR_BGR2HSV)
 
@@ -216,8 +218,6 @@ class Canvas(SqliteObject):
                     postitImages.append(postitimg)
                     postitPos.append(rectangle)
 
-        postitColour = []
-
         for idx, postit_image in enumerate(postitImages):
 
             gray_image = cv2.cvtColor(postit_image, cv2.COLOR_BGR2GRAY)
@@ -240,8 +240,22 @@ class Canvas(SqliteObject):
             guessed_colour = src.model.processing.guess_colour(red_average, green_average, blue_average)
 
             if guessed_colour is not None:
-                postitColour.append(guessed_colour)
-                postitPts[idx] = src.model.processing.order_points(postitPts[idx])
-                found_postits.append(Postit(*postitPts, colour=guessed_colour, canvas=self.get_id()))
+                postitPts = src.model.processing.order_points(postitPts[idx])
+
+                postit = Postit(topLeftX=postitPts[0][0],
+                                topLeftY=postitPts[0][1],
+                                topRightX=postitPts[1][0],
+                                topRightY=postitPts[1][1],
+                                bottomRightX=postitPts[2][0],
+                                bottomRightY=postitPts[2][1],
+                                bottomLeftX=postitPts[3][0],
+                                bottomLeftY=postitPts[3][1],
+                                colour=guessed_colour,
+                                canvas=self.get_id())
+
+                if save_postits:
+                    postit.create(self.database)
+
+                found_postits.append(postit)
 
         return found_postits

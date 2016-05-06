@@ -47,7 +47,7 @@ class Image(SqliteObject):
         return base64.b64encode(buffer.getvalue()).decode("utf-8")
         # $('div').css('background-image', 'url(data:image/gif;base64,' + a.image + ')');
 
-    def get_image(self):
+    def get_image_array(self):
         if not self.image:
             self.image = cv2.imread(self.get_image_path())
 
@@ -124,7 +124,7 @@ class Image(SqliteObject):
         """
 
         # Grab a black+white smooth image
-        smooth_img = src.model.processing.grayscale_smooth(self.get_image())
+        smooth_img = src.model.processing.grayscale_smooth(self.get_image_array())
         _, threshold_board = cv2.threshold(smooth_img, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
 
         # grab a list of contours on the board

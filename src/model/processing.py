@@ -61,10 +61,11 @@ def four_point_transform(image, pts):
 
 def order_points(pts):
     """
-    takes a list of four points and order then in the following order;
+    takes a tuple of four point tuples and order then in the following order;
     [topLeft, topRight, bottomRight, bottomLeft]
     Magic taken from http://www.pyimagesearch.com/2014/08/25/4-point-opencv-getperspective-transform-example/
     """
+    print(type(pts))
     # initialzie a list of coordinates that will be ordered
     # such that the first entry in the list is the top-left,
     # the second entry is the top-right, the third is the

@@ -137,7 +137,7 @@ def canvas_serve(canvasId):
     if canvas is None:
         raise NotFound()
 
-    image = canvas.get_canvas_unkeystoned()
+    image = canvas.get_canvas_keystoned()
 
     if image is None:
         raise NotFound()

@@ -79,10 +79,20 @@ body.on('click', '.canvases-id', function() {
     $(this).parent().find('.canvases-image').toggle()
 });
 
+body.on('click', '.canvases-extractPostits', function() {
+    var canvasId = $(this).parent().parent().find('.canvases-id').text()
+    console.log('AutoExtracting postits from canvas id', canvasId);
+    socket.emit('autoExtractPostits', canvasId);
+})
+
 socket.on('getCanvases', function(data) {
     console.log('getCanvases', arguments);
     canvases = data;
     updateCanvases();
 });
 
+socket.on('autoExtractCanvases', function(data) {
+    console.log('autoExtractCanvases', arguments);
+    socket.emit('getPostits')
+})
 socket.emit('getCanvases');
