@@ -58,7 +58,7 @@ def getPostits():
 
 @socketio.on('addImageFromUri')
 def addImageFromUri(uri):
-    image = Image.from_uri(user=1, uri=uri)
+    image = Image.from_uri(uri=uri)
 
     if image is None:
         emit('addImageFromUri', None)
@@ -144,6 +144,7 @@ def canvas_serve(canvasId):
 
     i = cv2.imencode('.jpg', image)[1].tostring()
     return send_file(io.BytesIO(i), mimetype='image/jpg')
+
 
 @app.route('/api/postit/<postitId>')
 def postit_serve(postitId):

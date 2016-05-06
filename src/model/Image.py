@@ -25,7 +25,7 @@ class Image(SqliteObject):
         self.timestamp = timestamp
 
     @staticmethod
-    def from_uri(user, uri='http://localhost:8080'):
+    def from_uri(uri='http://localhost:8080'):
         response = requests.get(uri)
 
         if response.status_code == 200:
@@ -76,7 +76,7 @@ class Image(SqliteObject):
         print('Focusing Camera with URI ' + str(uri))
         response = requests.get(uri)
         print(response.status_code)
-        return response.status_code == 200
+        return response.status_code == 204
 
     @staticmethod
     def get_camera_properties(uri):
