@@ -98,6 +98,23 @@ def autoExtractCanvas(image_id):
     emit('autoExtractCanvas', canvas.as_object())
 
 
+@socketio.on('autoExtractPostits')
+def autoExtractPostits(canvas_id):
+    canvas = Canvas.get(canvas_id)
+
+    if canvas is None:
+        emit('autoExtractPostits', None)
+        return
+
+    postits = canvas.find_postits()
+
+    if postits is None:
+        emit('autoExtractPostits', None)
+        return
+
+    emit('autoExtractPostits', [ postit.as_object() for postit in postits])
+
+
 @app.route('/api/image/<imageId>')
 def image_serve(imageId):
 

@@ -33,21 +33,17 @@ CREATE TABLE IF NOT EXISTS connections (
 );
 
 CREATE TABLE IF NOT EXISTS postits (
-  id     STRING PRIMARY KEY,
-  canvas STRING,
-  height INTEGER NOT NULL,
-  width  INTEGER NOT NULL,
-  realX  INTEGER NOT NULL,
-  realY  INTEGER NOT NULL,
-  colour STRING NOT NULL,
-  keystone1X NOT NULL,
-  keystone1Y NOT NULL,
-  keystone2X NOT NULL,
-  keystone2Y NOT NULL,
-  keystone3X NOT NULL,
-  keystone3Y NOT NULL,
-  keystone4X NOT NULL,
-  keystone4Y NOT NULL,
+  id                 STRING PRIMARY KEY,
+  canvas             STRING NOT NULL,
+  topLeftX           INTEGER NOT NULL,
+  topLeftY           INTEGER NOT NULL,
+  topRightX          INTEGER NOT NULL,
+  topRightY          INTEGER NOT NULL,
+  bottomRightX       INTEGER NOT NULL,
+  bottomRightY       INTEGER NOT NULL,
+  bottomLeftX        INTEGER NOT NULL,
+  bottomLeftY        INTEGER NOT NULL,
+  colour             STRING NOT NULL,
 
   FOREIGN KEY(canvas) REFERENCES canvases(id)
 );

@@ -1,7 +1,7 @@
 import cv2
 import uuid
 import numpy as np
-
+import src.model.processing
 from src.model.SqliteObject import SqliteObject
 
 
@@ -13,70 +13,74 @@ class Postit(SqliteObject):
     properties = [
         "id",
         "canvas",
-        "height",
-        "width",
-        "realX",
-        "realY",
-        "colour",
-        "keystone1X",
-        "keystone1Y",
-        "keystone2X",
-        "keystone2Y",
-        "keystone3X",
-        "keystone3Y",
-        "keystone4X",
-        "keystone4Y"
+        "topLeftX",
+        "topLeftY",
+        "topRightX",
+        "topRightY",
+        "bottomRightX",
+        "bottomRightY",
+        "bottomLeftX",
+        "bottomLeftY",
+        "colour"
     ]
 
     table = "postits"
 
     def __init__(self,
-                 realX,
-                 realY,
-                 width,
-                 height,
+                 topLeftX,
+                 topLeftY,
+                 topRightX,
+                 topRightY,
+                 bottomRightX,
+                 bottomRightY,
+                 bottomLeftX,
+                 bottomLeftY,
                  colour,
                  canvas,
-                 keystone1X,
-                 keystone1Y,
-                 keystone2X,
-                 keystone2Y,
-                 keystone3X,
-                 keystone3Y,
-                 keystone4X,
-                 keystone4Y,
                  physical=True,
                  id=uuid.uuid4(),
                  database=None):
         super(Postit, self).__init__(id=id,
                                      database=database)
-        self.realX = int(realX)
-        self.realY = int(realY)
-        self.width = int(width)
-        self.height = int(height)
-        self.keystone1X = int(keystone1X)
-        self.keystone1Y = int(keystone1Y)
-        self.keystone2X = int(keystone2X)
-        self.keystone2Y = int(keystone2Y)
-        self.keystone3X = int(keystone3X)
-        self.keystone3Y = int(keystone3Y)
-        self.keystone4X = int(keystone4X)
-        self.keystone4Y = int(keystone4Y)
+        self.topLeftX, = int(topLeftX)
+        self.topLeftY, = int(topLeftY)
+        self.topRightX, = int(topRightX)
+        self.topRightY, = int(topRightY)
+        self.bottomRightX, = int(bottomRightX)
+        self.bottomRightY, = int(bottomRightY)
+        self.bottomLeftX, = int(bottomLeftX)
+        self.bottomLeftY, = int(bottomLeftY)
         self.colour = colour
         self.physical = physical
         self.canvas = canvas
 
     def get_position(self):
-        return (self.realX, self.realY)
+        return (self.topLeftX, self.topLeftY)
 
-    def get_size(self):
-        return (self.width, self.height)
+    def get_image(self):
+        canvas = self.get_canvas()
+        if canvas is None:
+            return None
 
-    def get_points(self):
-        return [(self.keystone1X, self.keystone1Y),
-                (self.keystone2X, self.keystone2Y),
-                (self.keystone3X, self.keystone3Y),
-                (self.keystone4X, self.keystone4Y)]
+        image = canvas.get_image()
+        if image is None:
+            return None
+
+        return image
+
+    def get_image_keystoned(self):
+        image = self.get_image()
+
+        if image is None:
+            return None
+
+        return src.model.processing.four_point_transform(image, self.get_corner_points())
+
+    def get_corner_points(self):
+        return ((self.topLeftX, self.topLeftY),
+                (self.topRightX, self.topRightY),
+                (self.bottomRightX, self.bottomRightY),
+                (self.bottomLeftX, self.bottomLeftY))
 
     def get_color(self):
         return self.colour
