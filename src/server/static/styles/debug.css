@@ -32,3 +32,8 @@ tbody > tr:nth-child(even) {
     display: none;
     max-width: 480px;
 }
+
+.cameraSettings {
+    border: 1px solid black;
+    background: #AAAAAA;
+}

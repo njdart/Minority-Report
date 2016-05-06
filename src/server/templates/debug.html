@@ -9,51 +9,26 @@
     </head>
 
     <body>
-        <h1>Users</h1>
-        <table class="usernames-table">
-            <thead class="usernames-tableHead">
-                <tr>
-                    <td>Id</td>
-                    <td>Username</td>
-                    <td></td>
-                </tr>
-            </thead>
-            <tbody class="usernames-tableBody">
-                <tr class="table-row_template">
-                    <td class="usernames-id">
-                    </td>
-                    <td>
-                        <input class="usernames-username" type="text" />
-                    </td>
-                    <td>
-                        <input class="usernames-remove" type="button" value="x" />
-                    </td>
-                </tr>
-                <tr class="usernames-userRow_new table-row_new">
-                    <td>
-                        <input class="usernames-id_new" type="number" disabled="disabled" />
-                    </td>
-                    <td>
-                        <input class="usernames-username_new" type="text" />
-                    </td>
-                    <td>
-                        <input class="usernames-add" type="button" value="+" />
-                    </td>
-                </tr>
-            </tbody>
-        </table>
+        <div>
+            <h1>Minority Report Debug UI</h1>
 
-        <br />
-        Buttons related to Users?
-
+            <p>
+                This debug UI should provide complete and incremental steps to capturing, generating and manipulating images, canvases and posits
+            </p>
+            <p>
+                Camera: <input type="url" class="captureAndProcessUri" value="http://localhost:8080" />
+            </p>
+            <input type="button" class="captureAndProcess" value="Capture and Process Image" />
+        </div>
         <hr />
         <h1>Images</h1>
         <table class="images-table">
             <thead class="images-tableHead">
                 <tr>
-                    <td>Id</td>
-                    <td>User</td>
+                    <td class="id">Id</td>
                     <td>Timestamp</td>
+                    <td></td>
+                    <td></td>
                     <td></td>
                 </tr>
             </thead>
@@ -65,10 +40,13 @@
                         <img class="images-image" src=""/>
                     </td>
                     <td>
-                        <select class="images-user user-select"></select>
+                        <input class="images-timestamp" type="text" />
                     </td>
                     <td>
-                        <input class="images-timestamp" type="text" />
+                        <input class="images-extractCanvas" type="button" value="Extract Canvas" />
+                    </td>
+                    <td>
+                        <input class="images-calibrate" type="button" value="Calibrate" />
                     </td>
                     <td>
                         <input class="images-remove" type="button" value="x" />
@@ -79,11 +57,10 @@
                         <input type="file" class="images-file">
                     </td>
                     <td>
-                        <select class="images-user user-select"></select>
-                    </td>
-                    <td>
                         <input class="images-timestamp" type="text" />
                     </td>
+                    <td></td>
+                    <td></td>
                     <td>
                         <input class="images-add" type="button" value="+" />
                     </td>
@@ -91,17 +68,25 @@
             </tbody>
         </table>
 
-        <input class="imageUri" type="url" />
-        <input class="imageFromUriBtn" type="button" value="Image From URI"/>
+        <div style="margin-top: 20px;">
+            Camera: <input class="imageUri" type="url" value="http://localhost:8080"/>
+            <br />
+            <input class="imageFromUriBtn" type="button" value="Image From URI"/>
+            <input class="focusImageBtn" type="button" value="Focus Camera"/>
+            <input class="getCameraProperties" type="button" value="Get Camera Poperties"/>
+            <input class="setCameraProperties" type="button" value="Set Camera Poperties"/>
+            <br />
+            <pre contenteditable="true" class="cameraSettings"></pre>
 
-        <br />
+            <br />
+        </div>
 
         <hr />
         <h1>Canvas</h1>
         <table  class="canvases-table">
             <thead class="canvases-tableHead">
                 <tr>
-                    <td>Id</td>
+                    <td class="id">Id</td>
                     <td>Image</td>
                     <td>Derived From</td>
                     <td>Derived At</td>
@@ -114,6 +99,7 @@
                     <td>Bottom RightX</td>
                     <td>Bottom RightY</td>
                     <td></td>
+                    <td></td>
                 </tr>
             </thead>
             <tbody class="canvases-tableBody">
@@ -124,7 +110,7 @@
                         <img class="canvases-image" src=""/>
                     </td>
                     <td>
-                        <select class="canvases-images image-select"></select>
+                        <select class="canvases-image image-select"></select>
                     </td>
                     <td>
                         <input class="canvases-derivedFrom" type="text" />
@@ -155,6 +141,9 @@
                     </td>
                     <td>
                         <input class="canvases-BottomRightY" type="text" />
+                    </td>
+                    <td>
+                        <input class="canvases-extractPostits" type="button" value="Extract Postits"/>
                     </td>
                     <td>
                         <input class="canvases-remove" type="button" value="x"/>
@@ -197,6 +186,7 @@
                     <td>
                         <input class="canvas-bottomRightY_new" type="text" />
                     </td>
+                    <td></td>
                     <td>
                         <input class="images-add" type="button" value="+" />
                     </td>
@@ -214,7 +204,7 @@
         <table  class="postits-table">
             <thead class="postits-tableHead">
                 <tr>
-                    <td>Id</td>
+                    <td class="id">Id</td>
                     <td>canvas</td>
                     <td>X</td>
                     <td>Y</td>
@@ -335,6 +325,12 @@
 
         Buttons related to canvases?
 
-        <script type="text/javascript" src="static/js/debug.js"></script>
+        <script type="text/javascript">
+            var socket = io();
+            var body = $('body');
+        </script>
+        <script type="text/javascript" src="static/js/debug/images.js"></script>
+        <script type="text/javascript" src="static/js/debug/canvases.js"></script>
+        <script type="text/javascript" src="static/js/debug/postits.js"></script>
     </body>
 </html>
