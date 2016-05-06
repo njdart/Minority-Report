@@ -41,4 +41,9 @@ socket.on('getPostits', function(data) {
     updatePostits();
 });
 
+socket.on('autoExtractPostits', function() {
+    console.log('autoExtractPostits', arguments);
+    socket.emit('getPostits');
+});
+
 socket.emit('getPostits');
