@@ -2,322 +2,173 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
-using System.Threading;
 using System.Threading.Tasks;
-using System.Net.Http;
 using Microsoft.Kinect;
+using System.Timers;
 using Newtonsoft.Json;
+using System.IO;
+using System.Windows;
 
 namespace MinorityReport
 {
-    public class KinectClient
+    public class BodyBoundingBox
     {
-        #region Constants
+        public int bodyIndex;
+        public Point topLeft;
+        public Point bottomRight;
 
-        // Number of milliseconds of Kinect unavailability before the Kinect is assumed to be disconnected.
-        const int KINECT_TIMEOUT_MS = 5000;
-
-        // Number of milliseconds to wait for the sensor to open.
-        const int KINECT_OPEN_DELAY_MS = 1000;
-
-        // Maximum body data requests to be made to the server per second.
-        const int REQUESTS_PER_SEC = 5;
-
-        // URLs for POSTing data to the server
-        const string BASE_URL = "/kinect";
-        const string BODY_DATA_URL = BASE_URL + "/bodyTracking";
-
-        #endregion
-
-        #region Private members
-
-        // Settings
-        private string m_serverHost;
-        private int    m_serverPort;
-
-        // Status
-        private bool m_initSuccessful;
-        private bool m_shuttingDown;
-        private ShuttingDownReason m_shutdownReason;
-
-        // Timing
-        private DateTime m_previousRequestTime;
-
-        // Objects
-        private KinectSensor m_kinectSensor;
-        private BodyIndexFrameReader m_bodyIndexFrameReader;
-
-        // Log4net
-        private static readonly log4net.ILog m_log = log4net.LogManager.GetLogger
-     (System.Reflection.MethodBase.GetCurrentMethod().DeclaringType);
-
-        #endregion
-
-        #region Properties
-
-        public bool InitSuccessful { get { return m_initSuccessful; } }
-
-        #endregion
-
-        #region Constructor
-
-        /// <summary>
-        /// Constructor. Takes command-line arguments.
-        /// </summary>
-        /// <param name="args">Array of command-line arguments.</param>
-        public KinectClient(string[] args)
+        public BodyBoundingBox()
         {
-            // Default status and settings
-            m_initSuccessful = false;
-            m_shuttingDown = false;
-            m_shutdownReason = ShuttingDownReason.UserAbort;
-            m_serverHost = "";
-            m_serverPort = -1;
+            this.topLeft = new Point();
+            this.bottomRight = new Point();
+        }
+    }
 
-            m_log.Debug("Hello from KinectClient.");
+    public class BoundingBoxesEventArgs: EventArgs
+    {
+        public IList<BodyBoundingBox> BoundingBoxes { get; set; }
 
-            // Parse command line arguments.
-            m_initSuccessful = ParseArgs(args);
-            if (!m_initSuccessful)
-            {
-                m_shuttingDown = true;
-                return;
-            }
+        public BoundingBoxesEventArgs(IList<BodyBoundingBox> boundingBoxes)
+        {
+            this.BoundingBoxes = boundingBoxes;
+        }
+    }
 
-            // Open the Kinect sensor and set event handlers.
-            m_kinectSensor = KinectSensor.GetDefault();
-            m_kinectSensor.Open();
-            m_kinectSensor.IsAvailableChanged += m_kinectSensor_IsAvailableChanged;
-            m_bodyIndexFrameReader = m_kinectSensor.BodyIndexFrameSource.OpenReader();
-            m_bodyIndexFrameReader.FrameArrived += BodyIndexFrameReader_FrameArrived;
+    public class KinectClient : IKinectClient
+    {
+        private KinectSensor sensor = null;
+        private BodyIndexFrameReader bodyIndexReader = null;
 
-            // Check initial availability of the sensor; give it 1 second to connect first.
-            Thread.Sleep(KINECT_OPEN_DELAY_MS);
-            if (!m_kinectSensor.IsAvailable)
-            {
-                Task.Run(() => DetectKinectTimeout());
-            }
+        public string Server { get; set; }
+            = "localhost";
 
-            m_log.Debug("Initialisation complete.");
+        public int Port { get; set; }
+            = 8088;
+
+        public event EventHandler ServerDisconnected;
+        public event EventHandler<BoundingBoxesEventArgs> BoundingBoxesSampled;
+
+        public KinectClient(string server, int port)
+        {
+            this.sensor = KinectSensor.GetDefault();
+            this.sensor.Open();
+
+            this.bodyIndexReader = this.sensor.BodyIndexFrameSource.OpenReader();
         }
 
-        #endregion
-
-        #region Events
-
-        #endregion
-
-        #region Public methods
-
-        public ShuttingDownReason Run()
+        public void BeginSampling()
         {
-            m_log.Debug("Starting KinectClient execution.");
-
-            // Wait...
-            while (!m_shuttingDown) ;
-
-            m_log.Debug("Shutting down.");
-            return m_shutdownReason;
+            this.bodyIndexReader.FrameArrived += this.BodyIndexReader_FrameArrived;
         }
 
-        #endregion
-
-        #region Private methods
-
-        private bool ParseArgs(string[] args)
+        public void StopSampling()
         {
-            foreach (string arg in args)
-            {
-                if ((arg.Substring(0, 7) == "--host=") &&
-                    (arg.Length > 7))
-                {
-                    if (m_serverHost != "")
-                    {
-                        m_log.Error("Host cannot be specified more than once.");
-                        return false;
-                    }
-                    m_serverHost = arg.Substring(7);
-                }
-
-                else if ((arg.Substring(0, 7) == "--port=") &&
-                         (arg.Length > 7))
-                {
-                    if (m_serverPort != -1)
-                    {
-                        m_log.Error("Port cannot be specified more than once.");
-                        return false;
-                    }
-                    try
-                    {
-                        m_serverPort = Int32.Parse(arg.Substring(7));
-                    }
-                    catch (Exception ex)
-                    {
-                        if (ex is FormatException || ex is OverflowException)
-                        {
-                            m_log.Error("Invalid port specified.");
-                            return false;
-                        }
-                        throw;
-                    }
-                    if (m_serverPort < 0)
-                    {
-                        m_log.Error("Invalid port specified.");
-                        return false;
-                    }
-                }
-                else
-                {
-                    m_log.WarnFormat("Arg '{0}' unrecognised.", arg);
-                }
-            }
-
-            bool retval = true;
-            if (m_serverHost == "")
-            {
-                m_log.Error("No server host specified.");
-                retval = false;
-            }
-            if (m_serverPort == -1)
-            {
-                m_log.Error("No server port specified.");
-                retval = false;
-            }
-            return retval;
+            this.bodyIndexReader.FrameArrived -= this.BodyIndexReader_FrameArrived;
         }
 
-        private void BodyIndexFrameReader_FrameArrived(object sender, BodyIndexFrameArrivedEventArgs e)
+        private void BodyIndexReader_FrameArrived(object sender, BodyIndexFrameArrivedEventArgs e)
         {
-            using (BodyIndexFrame bodyIndexFrame = e.FrameReference.AcquireFrame())
+            using (BodyIndexFrame frame = e.FrameReference.AcquireFrame())
             {
-                m_log.DebugFormat("Body index frame arrived; width: {0}; height: {1}",
-                    bodyIndexFrame.FrameDescription.Width,
-                    bodyIndexFrame.FrameDescription.Height);
-
-                int width = bodyIndexFrame.FrameDescription.Width;
-                int height = bodyIndexFrame.FrameDescription.Height;
-                int maxBodyCount = m_kinectSensor.BodyFrameSource.BodyCount;
-
-                byte[] frameData = new byte[width * height];
-                bodyIndexFrame.CopyFrameDataToArray(frameData);
-
-                
-
-                // Indicator of the bodies found
-                bool[] bodiesFound = new bool[maxBodyCount];
-                for (int i = 0; i < maxBodyCount; ++i)
+                if (frame == null)
                 {
-                    bodiesFound[i] = false;
-                }
-
-                // Format of the boundingPoints array:
-                //
-                //              |-------|-------|-------|-------|
-                //              | Min X | Max X | Min Y | Max Y |
-                // |------------|-------|-------|-------|-------|
-                // | Body 1     | [0,0] | [0,1] | [0,2] | [0,3] | etc.
-                // |------------|-------|-------|-------|-------|
-                // | Body 2     |       |       |       |       |
-                // |------------|-------|-------|-------|-------|
-                // | Body 3     |       |       |       |       |
-                // |------------|-------|-------|-------|-------|
-                // | Body 4     |       |       |       |       |
-                // |------------|-------|-------|-------|-------|
-                // | ...        |       |       |       |       |
-                // |------------|-------|-------|-------|-------|
-                //
-                int[,] boundingPoints = new int[maxBodyCount, 4];
-                for (int i = 0; i < maxBodyCount; ++i)
-                {
-                    boundingPoints[i,0] = width;
-                    boundingPoints[i,1] = -1;
-                    boundingPoints[i,2] = height;
-                    boundingPoints[i,3] = -1;
-                }
-
-                // Retrieve minimal bounding boxes of bodies in the frame.
-                for (int x = 0; x < width; ++x)
-                {
-                    for (int y = 0; y < height; ++y)
-                    {
-                        int bodyIndex = frameData[x + y * width];
-                        if (bodyIndex < maxBodyCount)
-                        {
-                            bodiesFound[bodyIndex] = true;
-                            // Min X
-                            if (x < boundingPoints[bodyIndex, 0])
-                            {
-                                boundingPoints[bodyIndex, 0] = x;
-                            }
-                            // Max X
-                            if (x > boundingPoints[bodyIndex, 1])
-                            {
-                                boundingPoints[bodyIndex, 1] = x;
-                            }
-                            // Min Y
-                            if (y < boundingPoints[bodyIndex, 2])
-                            {
-                                boundingPoints[bodyIndex, 2] = y;
-                            }
-                            // Max Y
-                            if (y > boundingPoints[bodyIndex, 3])
-                            {
-                                boundingPoints[bodyIndex, 3] = y;
-                            }
-                        }
-                    }
-                }
-
-                IList<BoundingBox> boxes = new List<BoundingBox>();
-                for (int i = 0; i < maxBodyCount; ++i)
-                {
-                    if (bodiesFound[i])
-                    {
-                        boxes.Add(new BoundingBox(
-                            i,
-                            boundingPoints[i, 0],
-                            boundingPoints[i, 1],
-                            boundingPoints[i, 2],
-                            boundingPoints[i, 3]));
-                    }
-                }
-            }
-        }
-
-        private void m_kinectSensor_IsAvailableChanged(object sender, IsAvailableChangedEventArgs e)
-        {
-            if (!e.IsAvailable)
-            {
-                m_log.Debug("Kinect unavailable.");
-                // The Kinect is unavailable, but this might just be temporary. Asynchronously run DetectKinectTimeout.
-                Task.Run(() => DetectKinectTimeout());
-            }
-        }
-
-        private void DetectKinectTimeout()
-        {
-            m_log.Debug("Kinect timeout detection started.");
-
-            CancellationTokenSource ctSource = new CancellationTokenSource();
-            CancellationToken ct = ctSource.Token;
-            ctSource.CancelAfter(KINECT_TIMEOUT_MS);
-
-            // Until the timeout is reached, poll availability of the sensor.
-            while (!ct.IsCancellationRequested)
-            {
-                if (m_kinectSensor.IsAvailable)
-                {
-                    m_log.Debug("Kinect availability returned.");
+                    Console.Write("Null frame acquired.\n");
                     return;
                 }
-            }
 
-            // The timeout was reached and the Kinect is still unavailable, so shut down.
-            m_shuttingDown = true;
-            m_shutdownReason = ShuttingDownReason.KinectUnavailable;
-            m_log.Debug("Kinect timed out.");
+                Console.Write("acquired\n");
+
+                // Initialize our bounding boxes as null.
+                IList<BodyBoundingBox> boundingBoxes = new BodyBoundingBox[this.sensor.BodyFrameSource.BodyCount];
+                for (int i = 0; i < boundingBoxes.Count; ++i)
+                {
+                    boundingBoxes[i] = null;
+                }
+
+                // Copy frame into accessible buffer
+                byte[] frameBuf = new byte[frame.FrameDescription.Width * frame.FrameDescription.Height];
+                frame.CopyFrameDataToArray(frameBuf);
+
+                // Iterate over every pixel, top to bottom, left to right
+                for (int y = 0; y < frame.FrameDescription.Height; ++y)
+                {
+                    for (int x = 0; x < frame.FrameDescription.Width; ++x)
+                    {
+                        // Get the value at the pixel
+                        int bufIdx = y * frame.FrameDescription.Width + x;
+                        int bodyIdx = frameBuf[bufIdx];
+                        if (bodyIdx >= 0 && bodyIdx < boundingBoxes.Count)
+                        {
+                            // The pixel is part of a body, so record
+                            if (boundingBoxes[bodyIdx] == null)
+                            {
+                                // Create a new bounding box since this is the first time we have seen the body
+                                boundingBoxes[bodyIdx] = new BodyBoundingBox();
+                                boundingBoxes[bodyIdx].bodyIndex = bodyIdx;
+
+                                // Set up initial coordinates.
+                                //
+                                // Note: topLeft.y is guaranteed to be this coordinate because we are scanning from
+                                // top to bottom, so we never try to update it later.
+                                //
+                                // Note: the maximum values are set to absolute minimum so that they are later
+                                // guaranteed to be updated.
+                                boundingBoxes[bodyIdx].topLeft = new Point(x, y);
+                                boundingBoxes[bodyIdx].bottomRight = new Point(x + 1, y + 1);
+                            }
+                            else
+                            {
+                                // Update the minimum x-coordinate if it is a minimum.
+                                boundingBoxes[bodyIdx].topLeft.X = Math.Min(boundingBoxes[bodyIdx].topLeft.X, x);
+
+                                // Update the maximum x-coordinate if it is a maximum.
+                                boundingBoxes[bodyIdx].bottomRight.X = Math.Max(boundingBoxes[bodyIdx].bottomRight.X, x);
+
+                                // The y-coordinate is guaranteed to be a maximum since we are scanning top to bottom.
+                                boundingBoxes[bodyIdx].bottomRight.Y = y;
+                            }
+                        }
+                    }
+                }
+
+                string boundingBoxesJson = this.SerializeBoundingBoxes(boundingBoxes);
+
+                if (this.BoundingBoxesSampled != null)
+                {
+                    this.BoundingBoxesSampled.Invoke(this, new BoundingBoxesEventArgs(boundingBoxes));
+                }
+            }
         }
 
-        #endregion
+        private string SerializeBoundingBoxes(IList<BodyBoundingBox> boundingBoxes)
+        {
+            // Setup serialization into a string
+            TextWriter stringWriter = new StringWriter();
+            JsonWriter jsonWriter = new JsonTextWriter(stringWriter);
+            JsonSerializer jsonSerializer = JsonSerializer.Create();
+
+            // Make it neat
+            jsonWriter.Formatting = Formatting.Indented;
+            jsonSerializer.Formatting = Formatting.Indented;
+
+            jsonWriter.WritePropertyName("bodies");
+            jsonWriter.WriteStartArray();
+
+            // Ignore null entries.
+            foreach (BodyBoundingBox boundingBox in boundingBoxes.Where(x => x != null))
+            {
+                // Conveniently, BodyBoundingBox fits the spec when serialized...
+                jsonSerializer.Serialize(jsonWriter, boundingBox);
+            }
+
+            jsonWriter.WriteEndArray();
+
+            if (boundingBoxes.Where(x => x != null).Count() > 1)
+            {
+                Console.Write(stringWriter.ToString() + "\n\n");
+            }
+
+            return stringWriter.ToString();
+        }
     }
 }

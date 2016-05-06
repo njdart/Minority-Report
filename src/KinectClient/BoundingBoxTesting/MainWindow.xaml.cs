@@ -49,8 +49,8 @@ namespace BoundingBoxTesting
 
         private void KinectClient_BoundingBoxesSampled(object sender, BoundingBoxesEventArgs e)
         {
-            this.Dispatcher.Invoke((Action)(() =>
-            {
+//            this.Dispatcher.Invoke((Action)(() =>
+//            {
                 using (DrawingContext dc = this.drawingGrp.Open())
                 {
                     dc.DrawRectangle(Brushes.White, null, new Rect(new Size(512.0, 424.0)));
@@ -61,7 +61,7 @@ namespace BoundingBoxTesting
                         dc.DrawRectangle(Brushes.Blue, null, r);
                     }
                 }
-            }));
+//            }));
         }
     }
 }
