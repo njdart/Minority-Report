@@ -82,6 +82,22 @@ def setCameraProperties(uri, properties):
     emit('setCameraProperties', Image.set_camera_properties(uri, properties=properties))
 
 
+@socketio.on('autoExtractCanvas')
+def autoExtractCanvas(image_id):
+    image = Image.get(image_id)
+
+    if image is None:
+        emit('autoExtractCanvas', None)
+        return
+
+    canvas = image.find_canvas()
+    if canvas is None:
+        emit('autoExtractCanvas', None)
+        return
+
+    emit('autoExtractCanvas', canvas.as_object())
+
+
 @app.route('/api/image/<imageId>')
 def image_serve(imageId):
 

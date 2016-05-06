@@ -75,7 +75,7 @@ body.on('click', '.images-add', function() {
     var files = row.find('.images-file').prop('files');
 
     var properties = {
-        timestamp: new Date(row.find('.images-timestamp').val()).toISOString()
+        timestamp: new Date(row.find('.canvas-derivedAt_new').val()).toISOString()
     };
 
     if (properties.timestamp && files.length > 0) {
@@ -115,6 +115,17 @@ body.on('click', '.images-remove', function() {
 // Show image
 body.on('click', '.images-id', function() {
     $(this).parent().find('.images-image').toggle()
+});
+
+body.on('click', '.images-extractCanvas', function() {
+    var imageId = $(this).parent().parent().find('.images-id').text();
+    console.log('Extract Canvas', imageId);
+    socket.emit('autoExtractCanvas', imageId);
+});
+
+socket.on('autoExtractCanvas', function(data) {
+    console.log('autoExtractCanvases', arguments)
+    socket.emit('getCanvases');
 });
 
 socket.on('addImage', function() {
