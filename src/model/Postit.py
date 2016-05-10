@@ -58,6 +58,10 @@ class Postit(SqliteObject):
     def get_position(self):
         return (self.realX, self.realY)
 
+    def set_position(self, realX, realY):
+        self.realX = realX
+        self.realY = realY
+
     def get_size(self):
         return (self.width, self.height)
 
@@ -189,4 +193,3 @@ class Postit(SqliteObject):
         self.colour = colour
         self.physical = physical
         self.canvas = canvas
-

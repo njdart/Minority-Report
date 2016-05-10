@@ -93,15 +93,15 @@ class GraphExtractor:
         testimg1 = img.copy()
 
         newimg = cv2.cvtColor(testimg1, cv2.COLOR_BGR2HSV)
-        satthresh = 120
+        satthresh = 80
         # print(satthresh)
         newimg[np.where((newimg < [255, satthresh, 255]).all(axis=2))] = [0, 0, 0]
         newimg = cv2.cvtColor(newimg, cv2.COLOR_HSV2BGR)
-        newimg[np.where((newimg < [100, 100, 100]).all(axis=2))] = [0, 0, 0]
-        # display("debug", newimg)
+        newimg[np.where((newimg < [80, 80, 80]).all(axis=2))] = [0, 0, 0]
+        #display("debug", newimg)
         gray_img = cv2.cvtColor(newimg, cv2.COLOR_BGR2GRAY)
         edgegray = cv2.Canny(gray_img, 1, 30)
-        # display("debug",edgegray)
+        #display("debug",edgegray)
         (_, cnts, _) = cv2.findContours(edgegray.copy(), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
         for c in cnts:
             box = cv2.boxPoints(cv2.minAreaRect(c))
