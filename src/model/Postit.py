@@ -59,8 +59,9 @@ class Postit(SqliteObject):
         return (self.realX, self.realY)
 
     def set_position(self, realX, realY):
-        self.realX = realX
-        self.realY = realY
+        if not self.physical:
+            self.realX = realX
+            self.realY = realY
 
     def get_size(self):
         return (self.width, self.height)

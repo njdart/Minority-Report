@@ -343,20 +343,26 @@ class Model:
         postit_ids = []
         active_postits_found = []
         newUniquePostits = []
+        # Initiate ORB detector
+        orb = cv2.ORB_create(scaleFactor=1.01,
+                             nlevels=128,
+                             edgeThreshold=31,
+                             firstLevel=0,
+                             WTA_K=2,
+                             scoreType=cv2.ORB_HARRIS_SCORE,
+                             patchSize=63)
+
         for o, newPostit in enumerate(new_postits):
             maxidx = -1
             good = np.zeros(len(self.activePostits), dtype=np.int)
 
+            nim = binarize(newPostit["image"].copy())
             IDs = []
             for p, oldPostit in enumerate(self.activePostits):
-                oim = self.bw_smooth(image=oldPostit.get_postit_image(self.get_prev_canvas_image(oldPostit.get_canvas())))
-                nim = self.bw_smooth(image=newPostit["image"])
-                # Initiate SIFT detector
-                sift = cv2.xfeatures2d.SIFT_create()
-
-                # Find the keypoints and descriptors with SIFT
-                kp1, des1 = sift.detectAndCompute(oim, None)
-                kp2, des2 = sift.detectAndCompute(nim, None)
+                oim = binarize(oldPostit.get_postit_image(self.get_prev_canvas_image(oldPostit.get_canvas())).copy())
+                # Find the keypoints and descriptors with ORB
+                kp1, des1 = orb.detectAndCompute(oim, None)
+                kp2, des2 = orb.detectAndCompute(nim, None)
 
                 # Create BFMatcher object
                 bf = cv2.BFMatcher()
@@ -365,15 +371,15 @@ class Model:
                     matches = bf.knnMatch(des2, des1, k=2)
                     IDs.append(oldPostit.get_id())
                     for m, n in matches:
-                        if m.distance < (0.75 * n.distance):
+                        if m.distance < (0.75*n.distance):
                             good[p] += 1
                 else:
-                    cv2.imshow("thing", oim)
+                    cv2.imshow("debug", oim)
                     cv2.waitKey(0)
 
-            # print(good)
+            print(good)
             try:
-                if max(good) > 10:
+                if max(good) > 20:
                     maxidx = np.argmax(good)
             except:
                 pass
@@ -552,42 +558,17 @@ class Model:
                                   (0, 0, 0),
                                   thickness=cv2.FILLED)
 
-                    postitImageTest = postitImage.copy()
+                    postitImage = binarize(postitImage)
 
-                    Z = postitImageTest.reshape((-1,3))
-                    # convert to np.float32
-                    Z = np.float32(Z)
-                    # define criteria, number of clusters(K) and apply kmeans()
-                    criteria = (cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, 10, 1.0)
-                    K = 2
-                    ret,label,center = cv2.kmeans(data=Z, K=K, bestLabels=None, criteria=criteria, attempts=10, flags=cv2.KMEANS_RANDOM_CENTERS)
-                    # Now convert back into uint8, and make original image
-                    center = np.uint8(center)
-                    res = center[label.flatten()]
-                    res2 = res.reshape((postitImageTest.shape))
-                    # cv2.imshow('res2',res2)
-
-                    bmin = res2[..., 0].min()
-                    gmin = res2[..., 1].min()
-                    rmin = res2[..., 2].min()
                     if postit.colour == "ORANGE":
-                        postitImage[np.where((res2 > [0, 0, 0]).all(axis=2))] = [0, 0, 0]
-                        postitImage[np.where((res2 > [bmin, gmin, rmin]).all(axis=2))] = [26, 160, 255]
+                        postitImage[np.where((postitImage > [0, 0, 0]).all(axis=2))] = [26, 160, 255]
                     elif postit.colour == "YELLOW":
-                        postitImage[np.where((res2 > [0, 0, 0]).all(axis=2))] = [0, 0, 0]
-                        postitImage[np.where((res2 > [bmin, gmin, rmin]).all(axis=2))] = [93, 255, 237]
+                        postitImage[np.where((postitImage > [0, 0, 0]).all(axis=2))] = [93, 255, 237]
                     elif postit.colour == "BLUE":
-                        postitImage[np.where((res2 > [0, 0, 0]).all(axis=2))] = [0, 0, 0]
-                        postitImage[np.where((res2 > [bmin, gmin, rmin]).all(axis=2))] = [255, 200, 41]
+                        postitImage[np.where((postitImage > [0, 0, 0]).all(axis=2))] = [255, 200, 41]
                     elif postit.colour == "MAGENTA":
-                        postitImage[np.where((res2 > [0, 0, 0]).all(axis=2))] = [0, 0, 0]
-                        postitImage[np.where((res2 > [bmin, gmin, rmin]).all(axis=2))] = [182, 90, 255]
-                    #cv2.imwrite("test.png",postitImageTest)
-                    #print(pytesseract.image_to_string(Image.open("test.png")))
+                        postitImage[np.where((postitImage > [0, 0, 0]).all(axis=2))] = [182, 90, 255]
 
-
-                    # cv2.imshow("debugC", postitImage)
-                    # cv2.waitKey(0)
                     disp_image[y1:y1 + postitImage.shape[0], x1:x1 + postitImage.shape[1]] = postitImage
                     cv2.rectangle(disp_image,
                                   (x1, y1),
@@ -625,6 +606,32 @@ class Model:
         self.canvasConnections.append([self.prevCanvasID, self.new_id])
         self.prevCanvasID = self.new_id
         self.canvasList.append(new_canvas)
+
+
+def binarize(image):
+    Z = image.reshape((-1,3))
+    # convert to np.float32
+    Z = np.float32(Z)
+    # define criteria, number of clusters(K) and apply kmeans()
+    criteria = (cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, 10, 1.0)
+    K = 2
+    ret,label,center = cv2.kmeans(data=Z,
+                                  K=K,
+                                  bestLabels=None,
+                                  criteria=criteria,
+                                  attempts=10,
+                                  flags=cv2.KMEANS_RANDOM_CENTERS)
+    # Now convert back into uint8, and make original image
+    center = np.uint8(center)
+    res = center[label.flatten()]
+    res2 = res.reshape((image.shape))
+
+    bmin = res2[..., 0].min()
+    gmin = res2[..., 1].min()
+    rmin = res2[..., 2].min()
+    image[np.where((res2 > [0, 0, 0]).all(axis=2))] = [0, 0, 0]
+    image[np.where((res2 > [bmin, gmin, rmin]).all(axis=2))] = [255, 255, 255]
+    return image
 
 if __name__ == "__main__":
     ######
