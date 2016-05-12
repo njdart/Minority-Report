@@ -201,12 +201,12 @@ class Model:
 
     # From calibImage find likely canvasBounds
     def find_canvas(self, image, show_debug):
-        smooth_img = self.bw_smooth(image)
+       # smooth_img = self.bw_smooth(image)
        # blur = cv2.GaussianBlur(smooth_img,(5,5),0)
-        ret3,gray_board = cv2.threshold(smooth_img,0,255,cv2.THRESH_BINARY+cv2.THRESH_OTSU)
+       # ret3,gray_board = cv2.threshold(smooth_img,0,255,cv2.THRESH_BINARY+cv2.THRESH_OTSU)
         #(__, gray_board) = cv2.threshold(smooth_img, 200, 255, cv2.THRESH_OTSU)
-
-        (__, board_contours, __) = cv2.findContours(gray_board, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+        bin_image = cv2.cvtColor(binarize(image.copy()), cv2.COLOR_RGB2GRAY)
+        (__, board_contours, __) = cv2.findContours(bin_image, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
         areas = [cv2.contourArea(c) for c in board_contours]
 
         max_index = np.argmax(areas)
@@ -568,7 +568,12 @@ class Model:
                         postitImage[np.where((postitImage > [0, 0, 0]).all(axis=2))] = [255, 200, 41]
                     elif postit.colour == "MAGENTA":
                         postitImage[np.where((postitImage > [0, 0, 0]).all(axis=2))] = [182, 90, 255]
+                    #cv2.imwrite("test.png",postitImageTest)
+                    #print(pytesseract.image_to_string(Image.open("test.png")))
 
+
+                    # cv2.imshow("debugC", postitImage)
+                    # cv2.waitKey(0)
                     disp_image[y1:y1 + postitImage.shape[0], x1:x1 + postitImage.shape[1]] = postitImage
                     cv2.rectangle(disp_image,
                                   (x1, y1),

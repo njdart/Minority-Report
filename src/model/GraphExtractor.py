@@ -89,20 +89,21 @@ class GraphExtractor:
 
         found_postits = []
         img = self.image
-        boxedimg = img.copy()
+
         testimg1 = img.copy()
 
         newimg = cv2.cvtColor(testimg1, cv2.COLOR_BGR2HSV)
-        satthresh = 80
+        satthresh = 70
         # print(satthresh)
         newimg[np.where((newimg < [255, satthresh, 255]).all(axis=2))] = [0, 0, 0]
         newimg = cv2.cvtColor(newimg, cv2.COLOR_HSV2BGR)
-        newimg[np.where((newimg < [80, 80, 80]).all(axis=2))] = [0, 0, 0]
+        newimg[np.where((newimg < [70, 70, 70]).all(axis=2))] = [0, 0, 0]
         #display("debug", newimg)
         gray_img = cv2.cvtColor(newimg, cv2.COLOR_BGR2GRAY)
         edgegray = cv2.Canny(gray_img, 1, 30)
         #display("debug",edgegray)
         (_, cnts, _) = cv2.findContours(edgegray.copy(), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
+        boxedimg = gray_img.copy()
         for c in cnts:
             box = cv2.boxPoints(cv2.minAreaRect(c))
             box = np.int0(box)
@@ -110,7 +111,7 @@ class GraphExtractor:
             # print(cv2.contourArea(box))
             if show_debug:
                 print(cv2.contourArea(box))
-                cv2.imshow("Debug", boxedimg)
+            #display("Debug", boxedimg)
             if (cv2.contourArea(box) > min_postit_area) and (cv2.contourArea(box) < max_postit_area):
                 length = math.hypot(box[0, 0] - box[1, 0], box[0, 1] - box[1, 1])
                 height = math.hypot(box[2, 0] - box[1, 0], box[2, 1] - box[1, 1])
@@ -282,6 +283,7 @@ class GraphExtractor:
         edged = self.edge(img, show_debug)
         (_, cnts, _) = cv2.findContours(edged.copy(), cv2.RETR_TREE, cv2.CHAIN_APPROX_NONE)
         for c in cnts:
+            debug_img = self.image.copy()
             if cv2.arcLength(c, True) > 300:
                 array = []
                 for index in range(0, len(c), 10):
@@ -297,9 +299,9 @@ class GraphExtractor:
                         if pointarea < rectanglearea*1.25 and not contained:
                             if not array:
                                 array.append(idx)
+
                             elif idx is not array[-1]:
                                 array.append(idx)
-
 
                     for idx, jpostit in enumerate(self.prevPostits):
                         if not jpostit.physical:
@@ -314,8 +316,10 @@ class GraphExtractor:
                             if pointarea < rectanglearea*1.25 and not contained:
                                 if not array:
                                     array.append(jpostit.get_id())
+                                    line_start_point = c[index][0]
                                 elif jpostit.get_id() is not array[-1]:
                                     array.append(jpostit.get_id())
+                                    line_end_point = c[index][0]
 
                 if len(array) > 1:
                     for i in range(0, len(array) - 1):
