@@ -1,6 +1,13 @@
 
 # Server
 
+## Notes
+
+Some things in this document are TBC...
+
+* kinectClientUUID - may be unnecessary (probably unnecessary)
+* userID - may take another form (UUID; IP address i.e. nothing; etc.)
+
 ## Broadcast events:
 Responses that may be emitted by the server
 
@@ -10,8 +17,78 @@ Emit a json representation of the graph, where the UUIDs can be requested later.
 {CanvasObject}
 ```
 
+###### ```getKinectImage```
+Sent by server to request a colour image from a specified Kinect client, for calibration purposes:
+```javascript
+{
+    "kinectClientUUID": UUID,
+    "maxImageWidth": int,
+    "maxImageHeight": int
+}
+```
+
+The maximum image dimensions are specified in pixels. The Kinect client should then emit the following (to ```getKinectImage```):
+```javascript
+{
+    "kinectClientUUID": UUID,
+    "b64Bitmap": data,
+    "flipped": boolean
+}
+```
+
+The b64Bitmap data is a base64-encoded file in bitmap (BMP) format, which itself encodes pixel format, width, height, stride, etc. and can probably be read by PIL or something.
+The flipped attribute indicates whether the image is left-to-right flipped, which in general is true. However since I might fix this, we may as well not assume things.
+
+###### ```calibrationStatus```
+This is sent to a specific web client at various points after they have requested calibration, in order to display to the user what the status of the calibration process currently is.
+
+```javascript
+{
+    "kinectCalibrated": boolean,
+    "cameraCalibrated": boolean,
+    "kinectErrorString": string,
+    "cameraErrorString": string,
+}
+```
+
+The error strings can be left out of the message if there are no errors.
+If one of the booleans is false, the UI should check if error messages are present, and if so, something has gone wrong.
+Otherwise, it just means we are 'waiting' for calibration to complete.
+
 ## Response events:
 Requests that are accepted by the server. Responses will be emitted with the same name eg on ```getPostit``` will also emit ```getPostit```
+
+###### ```registerKinectClient```
+Sent by Kinect client to server to register its existence and associated web client:
+```javascript
+{
+    "webClientAddress": "XXX.XXX.XXX.XXX:XXX"
+}
+```
+
+This returns:
+```javascript
+{
+    "kinectClientUUID": UUID
+}
+```
+
+###### ```requestCalibration```
+Sent by web client to request calibration of associated Kinect and associated camera (userID is TBC):
+```javascript
+{
+    "userID": GUID
+}
+```
+
+This returns:
+```javascript
+{
+    "status": status
+}
+```
+
+The status can be ```"OK"``` or other things (top kek; TBC). It is not analogous to ```calibrationStatus```; it is simply meant to indicate whether it is possible to **start** calibration.
 
 ###### ```getPostits``` 
 Requests postits from its UUID and canvas UUID:
