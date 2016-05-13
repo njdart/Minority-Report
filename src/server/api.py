@@ -5,10 +5,13 @@ import numpy
 import datetime
 from flask_socketio import emit
 from src.model.Canvas import Canvas
+from src.model.InstanceConfiguration import InstanceConfiguration
 from src.model.Postit import Postit
 from src.model.Image import Image
 from flask import send_from_directory, send_file
 from werkzeug.exceptions import NotFound
+
+from src.model.Session import Session
 from src.server import (app, socketio)
 import os
 
@@ -58,7 +61,7 @@ def getPostits():
 
 @socketio.on('addImageFromUri')
 def addImageFromUri(uri):
-    image = Image.from_uri(user=1, uri=uri)
+    image = Image.from_uri(uri=uri)
 
     if image is None:
         emit('addImageFromUri', None)
@@ -113,6 +116,30 @@ def autoExtractPostits(canvas_id):
         return
 
     emit('autoExtractPostits', [ postit.as_object() for postit in postits])
+
+
+@socketio.on('startSession')
+def startSession(name, description):
+    emit('startSession', Session(name=name, description=description).create().as_object())
+
+
+@socketio.on('getSessions')
+def getSessions():
+    emit('getSessions', [session.as_object() for session in Session.get_all()])
+
+
+@socketio.on('newInstanceConfiguration')
+def newInstanceConfiguration(sessionId,
+                             cameraHost,
+                             cameraPort,
+                             kinectHost,
+                             kinectPort):
+    emit('newInstanceConfiguration', InstanceConfiguration(sessionId=sessionId,
+                                                           cameraHost=cameraHost,
+                                                           cameraPort=cameraPort,
+                                                           kinectHost=kinectHost,
+                                                           kinectPort=kinectPort).create().as_object())
+
 
 
 @app.route('/api/image/<imageId>')

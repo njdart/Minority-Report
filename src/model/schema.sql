@@ -1,25 +1,46 @@
 CREATE TABLE IF NOT EXISTS session (
-  id                 STRING PRIMARY KEY,
-  topLeftX           STRING NOT NULL,
-  topLeftY           STRING NOT NULL,
-  topRightX          STRING NOT NULL,
-  topRightY          STRING NOT NULL,
-  bottomRightX       STRING NOT NULL,
-  bottomRightY       STRING NOT NULL,
-  bottomLeftX        STRING NOT NULL,
-  bottomLeftY        STRING NOT NULL
+  id                 TEXT PRIMARY KEY,
+  name               TEXT NOT NULL,
+  description        TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS instanceConfiguration (
+  id                 TEXT PRIMARY KEY,
+  sessionId          TEXT NOT NULL,
+  topLeftX           TEXT,
+  topLeftY           TEXT,
+  topRightX          TEXT,
+  topRightY          TEXT,
+  bottomRightX       TEXT,
+  bottomRightY       TEXT,
+  bottomLeftX        TEXT,
+  bottomLeftY        TEXT,
+  cameraHost         TEXT,
+  kinectHost         TEXT,
+  cameraPort         INTEGER NOT NULL,
+  kinectPort         INTEGER NOT NULL,
+
+  FOREIGN KEY(sessionId) REFERENCES session(id)
+);
+
+CREATE TABLE IF NOT EXISTS users (
+  id                 TEXT PRIMARY KEY,
+  name               TEXT NOT NULL
 );
 
 CREATE TABLE IF NOT EXISTS images (
-  id                 STRING PRIMARY KEY,
-  timestamp          STRING NOT NULL
+  id                 TEXT PRIMARY KEY,
+  timestamp          TEXT NOT NULL,
+  sessionId          TEXT NOT NULL,
+
+  FOREIGN KEY(sessionId) REFERENCES session(id)
 );
 
 CREATE TABLE IF NOT EXISTS canvases (
-  id                 STRING PRIMARY KEY,
-  image              STRING,
-  derivedFrom        STRING,
-  derivedAt          STRING,
+  id                 TEXT PRIMARY KEY,
+  image              TEXT,
+  derivedFrom        TEXT,
+  derivedAt          TEXT,
   canvasTopLeftX     INTEGER,
   canvasTopLeftY     INTEGER,
   canvasBottomLeftX  INTEGER,
@@ -33,11 +54,11 @@ CREATE TABLE IF NOT EXISTS canvases (
 );
 
 CREATE TABLE IF NOT EXISTS connections (
-  id                 STRING PRIMARY KEY,
-  start              STRING NOT NULL,
-  finish             STRING NOT NULL,
-  canvas             string NOT NULL,
-  type               STRING,
+  id                 TEXT PRIMARY KEY,
+  start              TEXT NOT NULL,
+  finish             TEXT NOT NULL,
+  canvas             TEXT NOT NULL,
+  type               TEXT,
 
   FOREIGN KEY(start) REFERENCES postits(id),
   FOREIGN Key(finish) REFERENCES postits(id),
@@ -45,8 +66,8 @@ CREATE TABLE IF NOT EXISTS connections (
 );
 
 CREATE TABLE IF NOT EXISTS postits (
-  id                 STRING PRIMARY KEY,
-  canvas             STRING NOT NULL,
+  id                 TEXT PRIMARY KEY,
+  canvas             TEXT NOT NULL,
   topLeftX           INTEGER NOT NULL,
   topLeftY           INTEGER NOT NULL,
   topRightX          INTEGER NOT NULL,
@@ -55,7 +76,7 @@ CREATE TABLE IF NOT EXISTS postits (
   bottomRightY       INTEGER NOT NULL,
   bottomLeftX        INTEGER NOT NULL,
   bottomLeftY        INTEGER NOT NULL,
-  colour             STRING NOT NULL,
+  colour             TEXT NOT NULL,
 
   FOREIGN KEY(canvas) REFERENCES canvases(id)
 );
