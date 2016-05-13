@@ -93,15 +93,15 @@ class GraphExtractor:
         testimg1 = img.copy()
 
         newimg = cv2.cvtColor(testimg1, cv2.COLOR_BGR2HSV)
-        satthresh = 70
+        satthresh = 100
         # print(satthresh)
         newimg[np.where((newimg < [255, satthresh, 255]).all(axis=2))] = [0, 0, 0]
         newimg = cv2.cvtColor(newimg, cv2.COLOR_HSV2BGR)
-        newimg[np.where((newimg < [70, 70, 70]).all(axis=2))] = [0, 0, 0]
-        #display("debug", newimg)
+        newimg[np.where((newimg < [100, 100, 100]).all(axis=2))] = [0, 0, 0]
+        # display("debug", newimg)
         gray_img = cv2.cvtColor(newimg, cv2.COLOR_BGR2GRAY)
         edgegray = cv2.Canny(gray_img, 1, 30)
-        #display("debug",edgegray)
+        # display("debug",edgegray)
         (_, cnts, _) = cv2.findContours(edgegray.copy(), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
         boxedimg = gray_img.copy()
         for c in cnts:
@@ -177,9 +177,23 @@ class GraphExtractor:
 
             guessed_colour = self.guess_colour(red_average, green_average, blue_average)
             # print(guessed_colour)
-            if guessed_colour is not None:
+            self.postitPts[idx] = self.order_points(self.postitPts[idx])
+            midpoint = (int(0.5*self.postitPts[idx][2][0]+0.5*self.postitPts[idx][0][0]),
+                        int(0.5*self.postitPts[idx][2][1]+0.5*self.postitPts[idx][0][1]))
+
+            rectanglearea = self.get_area(self.postitPts[idx])
+            pointarea = self.get_area((self.postitPts[idx][0], self.postitPts[idx][1], midpoint))\
+                        + self.get_area((self.postitPts[idx][1], self.postitPts[idx][2], midpoint))\
+                        + self.get_area((self.postitPts[idx][2], self.postitPts[idx][3], midpoint))\
+                        + self.get_area((self.postitPts[idx][3], self.postitPts[idx][0], midpoint))
+            if pointarea < rectanglearea:
+                    print("Postitception")
+                    postitception = True
+            else:
+                postitception = False
+
+            if guessed_colour is not None and not postitception:
                 self.postitColour.append(guessed_colour)
-                self.postitPts[idx] = self.order_points(self.postitPts[idx])
                 found_postit = {
                     "image": postit_image,
                     "colour": guessed_colour,

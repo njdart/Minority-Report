@@ -344,13 +344,14 @@ class Model:
         active_postits_found = []
         newUniquePostits = []
         # Initiate ORB detector
-        orb = cv2.ORB_create(scaleFactor=1.01,
-                             nlevels=128,
-                             edgeThreshold=31,
+        orb = cv2.ORB_create(scaleFactor=1.2,
+                             nlevels=8,
+                             edgeThreshold=5,
                              firstLevel=0,
                              WTA_K=2,
                              scoreType=cv2.ORB_HARRIS_SCORE,
-                             patchSize=63)
+                             patchSize=31)
+
 
         for o, newPostit in enumerate(new_postits):
             maxidx = -1
@@ -358,6 +359,7 @@ class Model:
 
             nim = binarize(newPostit["image"].copy())
             IDs = []
+            potential_matches = []
             for p, oldPostit in enumerate(self.activePostits):
                 oim = binarize(oldPostit.get_postit_image(self.get_prev_canvas_image(oldPostit.get_canvas())).copy())
                 # Find the keypoints and descriptors with ORB
@@ -378,11 +380,25 @@ class Model:
                     cv2.waitKey(0)
 
             print(good)
-            try:
-                if max(good) > 20:
-                    maxidx = np.argmax(good)
-            except:
-                pass
+            for index, n in enumerate(good):
+                if n > 11:
+                    potential_matches.append(index)
+
+            if len(potential_matches) == 1:
+               maxidx = np.argmax(good)
+            elif len(potential_matches) > 1:
+                maxidx = np.argmax(good)
+                potential_matches.remove(maxidx)
+
+                for index in potential_matches:
+                    ID = self.activePostits[index].id
+                    self.activePostits.remove(self.activePostits[index])
+                    delcxns = []
+                    for cxn in self.postitConnections:
+                        if ID in cxn:
+                            delcxns.append(cxn)
+                    for delcxn in delcxns:
+                        self.postitConnections.remove(delcxn)
 
             # print(len(goodMatches))
             if maxidx == -1:
@@ -581,8 +597,9 @@ class Model:
                                   (0, 200, 200),
                                   thickness=4)
 
-            r = 720 / disp_image.shape[1]
-            dim = (720, int(disp_image.shape[0] * r))
+            r = 1920 / disp_image.shape[1]
+            dim = (1920, int(disp_image.shape[0] * r))
+
 
             # perform the actual resizing of the image and show it
             disp_image = cv2.resize(disp_image, dim, interpolation=cv2.INTER_AREA)
@@ -662,45 +679,45 @@ if __name__ == "__main__":
     #       ~ Fix   : Change find postit threshold
     #####
 
-    canvImg = cv2.imread('/home/jjs/projects/Minority-Report/src/IMG_20160304_154758.jpg')
-    boardModel = Model()
-    boardModel.set_debug(state=False)
-    boardModel.new_calib_image(image=canvImg)
-    boardModel.run_auto_calibrate(show_debug=False)
-    boardModel.image_settings(mipa=9000, mapa=20000, lento=0.4, sig=0.33, mico=64, maco=200, poth=120)
-    for idx in range(0,len(os.listdir ('/home/jjs/projects/Minority-Report/src/testImg/'))):
-        image = cv2.imread('/home/jjs/projects/Minority-Report/src/testImg/' + str(idx) + '.png')
-        boardModel.new_raw_image(image=image, time=datetime.datetime.now(), update=1)
-        boardModel.display()
-    boardModel.move_postit(boardModel.canvasList[-1].postits[0].id, 500, 500)
-    boardModel.display()
-
+    # canvImg = cv2.imread('/home/jjs/projects/Minority-Report/src/IMG_20160304_154758.jpg')
     # boardModel = Model()
     # boardModel.set_debug(state=False)
-    # boardModel.image_settings(mipa=5000, mapa=40000, lento=0.2, sig=0.33, mico=64, maco=200, poth=105)
-    # #input("Waiting for focus >")
-    # #requests.get("http://localhost:8080/focus")
-    # input("Waiting for boarders>")
-    # r = requests.get("http://localhost:8080") # Request image from phone
-    # # Receiving an image from the request gives code 200, all other returns means that the image has no been obtained
-    # if r.status_code == 200:
-    #     print("Got Good Calibartion Image")
-    #     nparray = np.asarray(bytearray(r.content), dtype="uint8") # Transform byte array to numpy array
-    #     canvImg = cv2.imdecode(nparray,cv2.IMREAD_COLOR) # Decode values as openCV colours
-    #     boardModel.new_calib_image(image=canvImg) #set as calibration image
-    #     boardModel.run_auto_calibrate() # Autocalibratefrom image
-    # else:
-    #     print(":( Got Bad Calibration Image")
-    #     print(r.text)
-    # input("Waiting >")
-    # while(1):
-    #     r = requests.get("http://localhost:8080")
-    #     if r.status_code == 200:
-    #         print("Got Good Postit Image")
-    #         nparray = np.asarray(bytearray(r.content), dtype="uint8")
-    #         img = cv2.imdecode(nparray,cv2.IMREAD_COLOR)
-    #         boardModel.new_raw_image(img, datetime.datetime.now(),update=1)
-    #         boardModel.display()
-    #     else:
-    #         print(":( Got Bad Postit Image")
-    #         print(r.text)
+    # boardModel.new_calib_image(image=canvImg)
+    # boardModel.run_auto_calibrate(show_debug=False)
+    # boardModel.image_settings(mipa=9000, mapa=20000, lento=0.4, sig=0.33, mico=64, maco=200, poth=120)
+    # for idx in range(0,len(os.listdir ('/home/jjs/projects/Minority-Report/src/testImg/'))):
+    #     image = cv2.imread('/home/jjs/projects/Minority-Report/src/testImg/' + str(idx) + '.png')
+    #     boardModel.new_raw_image(image=image, time=datetime.datetime.now(), update=1)
+    #     boardModel.display()
+    # boardModel.move_postit(boardModel.canvasList[-1].postits[0].id, 500, 500)
+    # boardModel.display()
+
+    boardModel = Model()
+    boardModel.set_debug(state=False)
+    boardModel.image_settings(mipa=5000, mapa=40000, lento=0.2, sig=0.33, mico=64, maco=200, poth=105)
+    #input("Waiting for focus >")
+    #requests.get("http://localhost:8080/focus")
+    input("Waiting for boarders>")
+    r = requests.get("http://localhost:8080") # Request image from phone
+    # Receiving an image from the request gives code 200, all other returns means that the image has no been obtained
+    if r.status_code == 200:
+        print("Got Good Calibartion Image")
+        nparray = np.asarray(bytearray(r.content), dtype="uint8") # Transform byte array to numpy array
+        canvImg = cv2.imdecode(nparray,cv2.IMREAD_COLOR) # Decode values as openCV colours
+        boardModel.new_calib_image(image=canvImg) #set as calibration image
+        boardModel.run_auto_calibrate() # Autocalibratefrom image
+    else:
+        print(":( Got Bad Calibration Image")
+        print(r.text)
+    input("Waiting >")
+    while(1):
+        r = requests.get("http://localhost:8080")
+        if r.status_code == 200:
+            print("Got Good Postit Image")
+            nparray = np.asarray(bytearray(r.content), dtype="uint8")
+            img = cv2.imdecode(nparray,cv2.IMREAD_COLOR)
+            boardModel.new_raw_image(img, datetime.datetime.now(),update=1)
+            boardModel.display()
+        else:
+            print(":( Got Bad Postit Image")
+            print(r.text)
