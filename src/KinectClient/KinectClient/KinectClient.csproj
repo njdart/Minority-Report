@@ -56,6 +56,9 @@
     <Reference Include="WindowsBase" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="BodyBoundingBox.cs" />
+    <Compile Include="BoundingBoxesEventArgs.cs" />
+    <Compile Include="ColorFrameSampledEventArgs.cs" />
     <Compile Include="IKinectClient.cs" />
     <Compile Include="KinectClient.cs" />
     <Compile Include="Program.cs" />
