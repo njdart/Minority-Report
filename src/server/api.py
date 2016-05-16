@@ -1,77 +1,31 @@
 import io
 
 import cv2
-import numpy as np
+import numpy
 import datetime
 from flask_socketio import emit
 from src.model.Canvas import Canvas
-from src.model.User import User
+from src.model.InstanceConfiguration import InstanceConfiguration
 from src.model.Postit import Postit
 from src.model.Image import Image
 from flask import send_from_directory, send_file
 from werkzeug.exceptions import NotFound
+
+from src.model.Session import Session
 from src.server import (app, socketio)
 import os
-
-def npArray2Base64(npArray):
-    img = PILImage.fromarray(npArray)
-    buffer = io.BytesIO()
-    img.save(buffer, format="JPEG")
-    return base64.b64encode(buffer.getvalue()).decode("utf-8")
-
-
-@socketio.on('getUsers')
-def getUsers():
-    emit('getUsers', [user.as_object() for user in User.get_all()])
-
-
-@socketio.on('addUser')
-def addUser(details):
-    emit('addUser', User(username=details["username"]).create().as_object())
-
-
-@socketio.on('getUser')
-def getUser(details):
-    emit('getUser', User.get(id=details["id"]).as_object())
-
-
-@socketio.on('updateUser')
-def updateUser(details):
-    username = details["username"]
-    id = details["id"]
-
-    user = User.get(id=id)
-
-    if not user:
-        emit('updateUser', False)
-        return
-
-    if username != user.get_username():
-        user.set_username(username)
-        user.update()
-
-    emit('updateUser', user.as_object())
-
-
-@socketio.on('deleteUser')
-def deleteUser(details):
-    id = details["id"] if "id" in details else None
-
-    emit('deleteUser', User.get(id=id).delete().as_object())
 
 
 @socketio.on('addImage')
 def addImage(details):
-    userId = details["user"]
     # EG "2016-04-09T13:04:50.148Z"
     timestamp = datetime.datetime.strptime(details["timestamp"], '%Y-%m-%dT%H:%M:%S.%fZ')
     file = details["file"]
 
-    arr = np.fromstring(file, np.uint8)
+    arr = numpy.fromstring(file, numpy.uint8)
     npArr = cv2.imdecode(arr, cv2.IMREAD_COLOR)
 
-    emit('addImage', Image(user=userId,
-                           npArray=npArr,
+    emit('addImage', Image(npArray=npArr,
                            timestamp=timestamp).create().as_object())
 
 
@@ -95,17 +49,144 @@ def updateImage(details):
     emit('updateImage', image.update().as_object())
 
 
-@app.route('/api/images/<postitId>')
-# @app.route('/api/images/<width>/<height>/<path:postitId>')
-def image_serve(postitId, width=None, height=None):
+@socketio.on('getCanvases')
+def getCanvases():
+    emit('getCanvases', [canvas.as_object() for canvas in Canvas.get_all()])
+
+
+@socketio.on('getPostits')
+def getPostits():
+    emit('getPostits', [postit.as_object() for postit in Postit.get_all()])
+
+
+@socketio.on('addImageFromUri')
+def addImageFromUri(uri):
+    image = Image.from_uri(uri=uri)
+
+    if image is None:
+        emit('addImageFromUri', None)
+        return
+
+    emit('addImageFromUri', image.create().as_object())
+
+
+@socketio.on('cameraFocus')
+def cameraFocus(uri):
+    emit('cameraFocus', Image.focus_camera(uri))
+
+
+@socketio.on('getCameraProperties')
+def getCameraProperties(uri):
+    emit('getCameraProperties', Image.get_camera_properties(uri))
+
+
+@socketio.on('setCameraProperties')
+def setCameraProperties(uri, properties):
+    emit('setCameraProperties', Image.set_camera_properties(uri, properties=properties))
+
+
+@socketio.on('autoExtractCanvas')
+def autoExtractCanvas(image_id):
+    image = Image.get(image_id)
+
+    if image is None:
+        emit('autoExtractCanvas', None)
+        return
+
+    canvas = image.find_canvas()
+    if canvas is None:
+        emit('autoExtractCanvas', None)
+        return
+
+    emit('autoExtractCanvas', canvas.as_object())
+
+
+@socketio.on('autoExtractPostits')
+def autoExtractPostits(canvas_id):
+    canvas = Canvas.get(canvas_id)
+
+    if canvas is None:
+        emit('autoExtractPostits', None)
+        return
+
+    postits = canvas.find_postits()
+
+    if postits is None:
+        emit('autoExtractPostits', None)
+        return
+
+    emit('autoExtractPostits', [ postit.as_object() for postit in postits])
+
+
+@socketio.on('startSession')
+def startSession(name, description):
+    emit('startSession', Session(name=name, description=description).create().as_object())
+
+
+@socketio.on('getSessions')
+def getSessions():
+    emit('getSessions', [session.as_object() for session in Session.get_all()])
+
+
+@socketio.on('newInstanceConfiguration')
+def newInstanceConfiguration(sessionId,
+                             cameraHost,
+                             cameraPort,
+                             kinectHost,
+                             kinectPort):
+    emit('newInstanceConfiguration', InstanceConfiguration(sessionId=sessionId,
+                                                           cameraHost=cameraHost,
+                                                           cameraPort=cameraPort,
+                                                           kinectHost=kinectHost,
+                                                           kinectPort=kinectPort).create().as_object())
+
+
+
+@app.route('/api/image/<imageId>')
+def image_serve(imageId):
 
     root_dir = os.path.dirname(os.path.realpath(__file__))
 
     path = os.path.join(root_dir, 'static', 'images')
-    file = '{}.jpg'.format(postitId)
+    file = '{}.jpg'.format(imageId)
 
-    return send_from_directory(path, file, mimetype='image/jpg')
+    try:
+        return send_from_directory(path, file, mimetype='image/jpg')
+    except:
+        return send_from_directory(path, "testPostit1.jpg", mimetype="image/jpg")
 
+
+@app.route('/api/canvas/<canvasId>')
+def canvas_serve(canvasId):
+
+    canvas = Canvas.get(id=canvasId)
+
+    if canvas is None:
+        raise NotFound()
+
+    image = canvas.get_canvas_keystoned()
+
+    if image is None:
+        raise NotFound()
+
+    i = cv2.imencode('.jpg', image)[1].tostring()
+    return send_file(io.BytesIO(i), mimetype='image/jpg')
+
+@app.route('/api/postit/<postitId>')
+def postit_serve(postitId):
+
+    postit = Postit.get(id=postitId)
+
+    if postit is None:
+        raise NotFound()
+
+    image = postit.get_postit_image()
+
+    if image is None:
+        raise NotFound()
+
+    i = cv2.imencode('.jpg', image)[1].tostring()
+    return send_file(io.BytesIO(i), mimetype='image/jpg')
 
 @socketio.on('getAll')
 def getAll(request):
@@ -155,29 +236,7 @@ def getAll(request):
     )
 
 
-@socketio.on('getPostits')
-def getPostits(request):
-    print("Get Postits" + str(request))
-    emit('getPostits', [
-        {
-            "canvas": "de305d54-75b4-431b-adb2-eb6b9e546014",
-            "id": "23a29456-5ded-4b66-b3f0-178b7afdc0e7",
-            "realX": 10,
-            "realY": 10,
-            "colour": "red",
-            "connections": [
-                "36afb67b-c127-4fb8-b795-b917c4099742",
-                "3fb558b4-5c5c-42a1-98db-84267c470a47"
-            ]
-        }
-    ])
-
-
-
-@socketio.on('getCanvas')
-def getCanvas(request):
-    print("Get Canvas" + str(request))
-    emit('getCanvas', {
+canvasjson = {
         "id": "de305d54-75b4-431b-adb2-eb6b9e546014",
         "timestamp": "2016-03-18T14:02:56.541Z",
         "postits": [
@@ -201,7 +260,17 @@ def getCanvas(request):
                 ]
             }
         ]
-    })
+    }
+
+@socketio.on('getCanvas')
+def getCanvas(request):
+    print("Get Canvas" + str(request))
+    emit('getCanvas', canvasjson)
+
+@socketio.on("updateCanvas")
+def updateCanvas(request):
+    print("Update Canvas " + str(request))
+    socketio.emit("updateCanvas", canvasjson, broadcast=True)
 
 
 @socketio.on('getSettings')

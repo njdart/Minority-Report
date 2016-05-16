@@ -9,88 +9,328 @@
     </head>
 
     <body>
+        <div>
+            <h1>Minority Report Debug UI</h1>
 
-        <div class="usernames">
-            <h1>Users</h1>
-            <table class="usernames-table">
-                <thead class="usernames-tableHead">
-                    <tr>
-                        <td>Id</td>
-                        <td>Username</td>
-                        <td></td>
-                    </tr>
-                </thead>
-                <tbody class="usernames-tableBody">
-                    <tr class="table-row_template">
-                        <td class="usernames-id">
-                        </td>
-                        <td>
-                            <input class="usernames-username" type="text" />
-                        </td>
-                        <td>
-                            <input class="usernames-remove" type="button" value="x" />
-                        </td>
-                    </tr>
-                    <tr class="usernames-userRow_new table-row_new">
-                        <td>
-                            <input class="usernames-id_new" type="number" disabled="disabled" />
-                        </td>
-                        <td>
-                            <input class="usernames-username_new" type="text" />
-                        </td>
-                        <td>
-                            <input class="usernames-add" type="button" value="+" />
-                        </td>
-                    </tr>
-                </tbody>
-            </table>
+            <p>
+                This debug UI should provide complete and incremental steps to capturing, generating and manipulating images, canvases and posits
+            </p>
+            <p>
+                Camera: <input type="url" class="captureAndProcessUri" value="http://localhost:8080" />
+            </p>
+            <input type="button" class="captureAndProcess" value="Capture and Process Image" />
+        </div>
+        <hr />
+        <h1>Images</h1>
+        <table class="images-table">
+            <thead class="images-tableHead">
+                <tr>
+                    <td class="id">Id</td>
+                    <td>Timestamp</td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                </tr>
+            </thead>
+            <tbody class="images-tableBody">
+                <tr class="table-row_template">
+                    <td>
+                        <a href="#" class="images-id">
+                        </a>
+                        <img class="images-image" src=""/>
+                    </td>
+                    <td>
+                        <input class="images-timestamp" type="text" />
+                    </td>
+                    <td>
+                        <input class="images-extractCanvas" type="button" value="Extract Canvas" />
+                    </td>
+                    <td>
+                        <input class="images-calibrate" type="button" value="Calibrate" />
+                    </td>
+                    <td>
+                        <input class="images-remove" type="button" value="x" />
+                    </td>
+                </tr>
+                <tr class="images-imageRow_new table-row_new">
+                    <td>
+                        <input type="file" class="images-file">
+                    </td>
+                    <td>
+                        <input class="images-timestamp" type="text" />
+                    </td>
+                    <td></td>
+                    <td></td>
+                    <td>
+                        <input class="images-add" type="button" value="+" />
+                    </td>
+                </tr>
+            </tbody>
+        </table>
 
-            <h1>Images</h1>
-            <table class="images-table">
-                <thead class="images-tableHead">
-                    <tr>
-                        <td>Id</td>
-                        <td>User</td>
-                        <td>Timestamp</td>
-                        <td></td>
-                    </tr>
-                </thead>
-                <tbody class="images-tableBody">
-                    <tr class="table-row_template">
-                        <td>
-                            <a href="#" class="images-id">
-                            </a>
-                            <img class="images-image" src=""/>
-                        </td>
-                        <td>
-                            <select class="images-user user-select"></select>
-                        </td>
-                        <td>
-                            <input class="images-timestamp" type="text" />
-                        </td>
-                        <td>
-                            <input class="images-remove" type="button" value="x" />
-                        </td>
-                    </tr>
-                    <tr class="images-imageRow_new table-row_new">
-                        <td>
-                            <input type="file" class="images-file">
-                        </td>
-                        <td>
-                            <select class="images-user user-select"></select>
-                        </td>
-                        <td>
-                            <input class="images-timestamp" type="text" />
-                        </td>
-                        <td>
-                            <input class="images-add" type="button" value="+" />
-                        </td>
-                    </tr>
-                </tbody>
-            </table>
+        <div style="margin-top: 20px;">
+            Camera: <input class="imageUri" type="url" value="http://localhost:8080"/>
+            <br />
+            <input class="imageFromUriBtn" type="button" value="Image From URI"/>
+            <input class="focusImageBtn" type="button" value="Focus Camera"/>
+            <input class="getCameraProperties" type="button" value="Get Camera Poperties"/>
+            <input class="setCameraProperties" type="button" value="Set Camera Poperties"/>
+            <br />
+            <pre contenteditable="true" class="cameraSettings"></pre>
+
+            <br />
         </div>
 
+        <hr />
+        <h1>Canvas</h1>
+        <table  class="canvases-table">
+            <thead class="canvases-tableHead">
+                <tr>
+                    <td class="id">Id</td>
+                    <td>Image</td>
+                    <td>Derived From</td>
+                    <td>Derived At</td>
+                    <td>Top LeftX</td>
+                    <td>Top LeftY</td>
+                    <td>Top RightX</td>
+                    <td>Top RightY</td>
+                    <td>Bottom LeftX</td>
+                    <td>Bottom LeftY</td>
+                    <td>Bottom RightX</td>
+                    <td>Bottom RightY</td>
+                    <td></td>
+                    <td></td>
+                </tr>
+            </thead>
+            <tbody class="canvases-tableBody">
+                <tr class="canvases-row_template table-row_template">
+                    <td>
+                        <a href="#" class="canvases-id">
+                        </a>
+                        <img class="canvases-image" src=""/>
+                    </td>
+                    <td>
+                        <select class="canvases-image image-select"></select>
+                    </td>
+                    <td>
+                        <input class="canvases-derivedFrom" type="text" />
+                    </td>
+                    <td>
+                        <input class="canvases-derivedAt" type="text" />
+                    </td>
+                    <td>
+                        <input class="canvases-topLeftX" type="text" />
+                    </td>
+                    <td>
+                        <input class="canvases-topLeftY" type="text" />
+                    </td>
+                    <td>
+                        <input class="canvases-topRightX" type="text" />
+                    </td>
+                    <td>
+                        <input class="canvases-topRightY" type="text" />
+                    </td>
+                    <td>
+                        <input class="canvases-BottomLeftX" type="text" />
+                    </td>
+                    <td>
+                        <input class="canvases-BottomLeftY" type="text" />
+                    </td>
+                    <td>
+                        <input class="canvases-BottomRightX" type="text" />
+                    </td>
+                    <td>
+                        <input class="canvases-BottomRightY" type="text" />
+                    </td>
+                    <td>
+                        <input class="canvases-extractPostits" type="button" value="Extract Postits"/>
+                    </td>
+                    <td>
+                        <input class="canvases-remove" type="button" value="x"/>
+                    </td>
+                </tr>
+                <tr class="canvases-canvasRow_new table-row_new">
+                    <td>
+                        <input class="canvases-id_new" type="number" disabled="disabled" />
+                    </td>
+                    <td>
+                        <select class="canvases-images_new image-select"></select>
+                    </td>
+                    <td>
+                        <input class="canvas-derivedFrom_new" type="text" />
+                    </td>
+                    <td>
+                        <input class="canvas-derivedAt_new" type="text" />
+                    </td>
+                    <td>
+                        <input class="canvas-topLeftX_new" type="text" />
+                    </td>
+                    <td>
+                        <input class="canvas-topLeftY_new" type="text" />
+                    </td>
+                    <td>
+                        <input class="canvas-topRightX_new" type="text" />
+                    </td>
+                    <td>
+                        <input class="canvas-topRightY_new" type="text" />
+                    </td>
+                    <td>
+                        <input class="canvas-bottomLeftX_new" type="text" />
+                    </td>
+                    <td>
+                        <input class="canvas-bottomLeftY_new" type="text" />
+                    </td>
+                    <td>
+                        <input class="canvas-bottomRightX_new" type="text" />
+                    </td>
+                    <td>
+                        <input class="canvas-bottomRightY_new" type="text" />
+                    </td>
+                    <td></td>
+                    <td>
+                        <input class="images-add" type="button" value="+" />
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+        <input type="button" class="force-canvas-send" value="Force Canvas Send" />
 
-        <script type="text/javascript" src="static/js/debug.js"></script>
+        <br />
+
+        Buttons related to canvases?
+
+        <hr />
+        <h1>Postits</h1>
+        <table  class="postits-table">
+            <thead class="postits-tableHead">
+                <tr>
+                    <td class="id">Id</td>
+                    <td>canvas</td>
+                    <td>X</td>
+                    <td>Y</td>
+                    <td>Width</td>
+                    <td>Height</td>
+                    <td>Keystone X1</td>
+                    <td>Keystone Y1</td>
+                    <td>Keystone X2</td>
+                    <td>Keystone Y2</td>
+                    <td>Keystone X3</td>
+                    <td>Keystone Y3</td>
+                    <td>Keystone X4</td>
+                    <td>Keystone Y4</td>
+                    <td></td>
+                </tr>
+            </thead>
+            <tbody class="postits-tableBody">
+                <tr class="postits-row_template table-row_template">
+                    <td>
+                        <a href="#" class="postits-id">
+                        </a>
+                        <img class="postits-image" src=""/>
+                    </td>
+                    <td>
+                        <select class="postits-canvas canvas-select"></select>
+                    </td>
+                    <td>
+                        <input class="postits-x" type="text" />
+                    </td>
+                    <td>
+                        <input class="postits-y" type="text" />
+                    </td>
+                    <td>
+                        <input class="postits-width" type="text" />
+                    </td>
+                    <td>
+                        <input class="postits-height" type="text" />
+                    </td>
+                    <td>
+                        <input class="postits-keystone-x1" type="text" />
+                    </td>
+                    <td>
+                        <input class="postits-keystone-y1" type="text" />
+                    </td>
+                    <td>
+                        <input class="postits-keystone-x2" type="text" />
+                    </td>
+                    <td>
+                        <input class="postits-keystone-y2" type="text" />
+                    </td>
+                    <td>
+                        <input class="postits-keystone-x3" type="text" />
+                    </td>
+                    <td>
+                        <input class="postits-keystone-y3" type="text" />
+                    </td>
+                    <td>
+                        <input class="postits-keystone-x4" type="text" />
+                    </td>
+                    <td>
+                        <input class="postits-keystone-y4" type="text" />
+                    </td>
+                    <td>
+                        <input class="canvases-remove" type="button" value="x"/>
+                    </td>
+                </tr>
+                <tr class="postits-postitRow_new table-row_new">
+                    <td>
+                        <input class="postits-id_new" type="number" disabled="disabled" />
+                    </td>
+                    <td>
+                        <select class="postits-canvas canvas-select"></select>
+                    </td>
+                    <td>
+                        <input class="postits-x_new" type="text" />
+                    </td>
+                    <td>
+                        <input class="postits-y_new" type="text" />
+                    </td>
+                    <td>
+                        <input class="postits-width_new" type="text" />
+                    </td>
+                    <td>
+                        <input class="postits-height_new" type="text" />
+                    </td>
+                    <td>
+                        <input class="postits-keystone-x1_new" type="text" />
+                    </td>
+                    <td>
+                        <input class="postits-keystone-y1_new" type="text" />
+                    </td>
+                    <td>
+                        <input class="postits-keystone-x2_new" type="text" />
+                    </td>
+                    <td>
+                        <input class="postits-keystone-y2_new" type="text" />
+                    </td>
+                    <td>
+                        <input class="postits-keystone-x3_new" type="text" />
+                    </td>
+                    <td>
+                        <input class="postits-keystone-y3_new" type="text" />
+                    </td>
+                    <td>
+                        <input class="postits-keystone-x4_new" type="text" />
+                    </td>
+                    <td>
+                        <input class="postits-keystone-y4_new" type="text" />
+                    </td>
+                    <td>
+                        <input class="postits-add" type="button" value="+" />
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+
+        <br />
+
+        Buttons related to canvases?
+
+        <script type="text/javascript">
+            var socket = io();
+            var body = $('body');
+        </script>
+        <script type="text/javascript" src="static/js/debug/images.js"></script>
+        <script type="text/javascript" src="static/js/debug/canvases.js"></script>
+        <script type="text/javascript" src="static/js/debug/postits.js"></script>
     </body>
 </html>

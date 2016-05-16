@@ -2,160 +2,219 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
-using System.Threading;
 using System.Threading.Tasks;
-using System.Net.Http;
+using Microsoft.Kinect;
+using System.Timers;
+using Newtonsoft.Json;
+using System.IO;
+using System.Windows;
+using System.Drawing;
+using System.Drawing.Imaging;
+using System.Runtime.InteropServices;
+using System.Windows.Media;
+using System.Windows.Media.Imaging;
 
 namespace MinorityReport
 {
-    public class KinectClient
+    public class KinectClient : IKinectClient
     {
-        private const string HTTP_VERB_BODIES = "BODIES";
-        private const string HTTP_VERB_GESTURE = "GESTURE";
+        private KinectSensor sensor = null;
+        private BodyIndexFrameReader bodyIndexReader = null;
+        private ColorFrameReader colorReader = null;
 
-        private const int POLL_INTERVAL_MS = 500;
+        public string Server { get; set; }
+            = "localhost";
 
-        private string m_server_host;
-        private int    m_server_port;
+        public int Port { get; set; }
+            = 8088;
 
-        private static readonly log4net.ILog log = log4net.LogManager.GetLogger
-     (System.Reflection.MethodBase.GetCurrentMethod().DeclaringType);
+        public event EventHandler ServerDisconnected;
+        public event EventHandler<BoundingBoxesSampledEventArgs> BoundingBoxesSampled;
+        public event EventHandler<ColorFrameSampledEventArgs> ColorFrameSampled;
 
-        private bool m_init_successful;
-
-        private KinectHandler m_kinectHandler;
-        private HttpClient    m_httpClient;
-
-        private HttpMethod m_bodiesMethod = new HttpMethod(HTTP_VERB_BODIES);
-        private HttpMethod m_gestureMethod = new HttpMethod(HTTP_VERB_GESTURE);
-
-        public bool InitSuccessful
+        public KinectClient(string server, int port)
         {
-            get
-            {
-                return m_init_successful;
-            }
+            this.sensor = KinectSensor.GetDefault();
+            this.sensor.Open();
+
+            this.bodyIndexReader = this.sensor.BodyIndexFrameSource.OpenReader();
+            this.colorReader = this.sensor.ColorFrameSource.OpenReader();
         }
 
-        private bool ParseArgs(string[] args)
+        public void BeginSampling()
         {
-            foreach (string arg in args)
-            {
-                if ((arg.Substring(0, 7) == "--host=") &&
-                    (arg.Length > 7))
-                {
-                    if (m_server_host != "")
-                    {
-                        log.Error("Host cannot be specified more than once.");
-                        return false;
-                    }
-                    m_server_host = arg.Substring(7);
-                }
+            this.bodyIndexReader.FrameArrived += this.BodyIndexReader_FrameArrived;
+            this.colorReader.FrameArrived += this.ColorReader_FrameArrived;
+        }
 
-                else if ((arg.Substring(0, 7) == "--port=") &&
-                         (arg.Length > 7))
+        public void StopSampling()
+        {
+            this.bodyIndexReader.FrameArrived -= this.BodyIndexReader_FrameArrived;
+        }
+
+        private void BodyIndexReader_FrameArrived(object sender, BodyIndexFrameArrivedEventArgs e)
+        {
+            // Do this logic in a separate thread (the logic is quite intensive)
+            new Task(new Action(() =>
+            {
+                using (BodyIndexFrame frame = e.FrameReference.AcquireFrame())
                 {
-                    if (m_server_port != -1)
+                    if (frame == null)
                     {
-                        log.Error("Port cannot be specified more than once.");
-                        return false;
+                        Console.Write("Null body index frame acquired.\n");
+                        return;
                     }
-                    try
+
+                    // Console.Write("acquired body index frame\n");
+
+                    // Initialize our bounding boxes as null.
+                    IList<BodyBoundingBox> boundingBoxes = new BodyBoundingBox[this.sensor.BodyFrameSource.BodyCount];
+                    for (int i = 0; i < boundingBoxes.Count; ++i)
                     {
-                        m_server_port = Int32.Parse(arg.Substring(7));
+                        boundingBoxes[i] = null;
                     }
-                    catch (Exception ex)
+
+                    // Copy frame into accessible buffer
+                    byte[] frameBuf = new byte[frame.FrameDescription.Width * frame.FrameDescription.Height];
+                    frame.CopyFrameDataToArray(frameBuf);
+
+                    // Iterate over every pixel, top to bottom, left to right
+                    for (int y = 0; y < frame.FrameDescription.Height; ++y)
                     {
-                        if (ex is FormatException || ex is OverflowException)
+                        for (int x = 0; x < frame.FrameDescription.Width; ++x)
                         {
-                            log.Error("Invalid port specified.");
-                            return false;
+                            // Get the value at the pixel
+                            int bufIdx = y * frame.FrameDescription.Width + x;
+                            int bodyIdx = frameBuf[bufIdx];
+                            if (bodyIdx >= 0 && bodyIdx < boundingBoxes.Count)
+                            {
+                                // The pixel is part of a body, so record
+                                if (boundingBoxes[bodyIdx] == null)
+                                {
+                                    // Create a new bounding box since this is the first time we have seen the body
+                                    boundingBoxes[bodyIdx] = new BodyBoundingBox();
+                                    boundingBoxes[bodyIdx].bodyIndex = bodyIdx;
+
+                                    // Set up initial coordinates.
+                                    //
+                                    // Note: topLeft.y is guaranteed to be this coordinate because we are scanning from
+                                    // top to bottom, so we never try to update it later.
+                                    //
+                                    // Note: the maximum values are set to absolute minimum so that they are later
+                                    // guaranteed to be updated.
+                                    boundingBoxes[bodyIdx].topLeft = new System.Windows.Point(x, y);
+                                    boundingBoxes[bodyIdx].bottomRight = new System.Windows.Point(x + 1, y + 1);
+                                }
+                                else
+                                {
+                                    // Update the minimum x-coordinate if it is a minimum.
+                                    boundingBoxes[bodyIdx].topLeft.X = Math.Min(boundingBoxes[bodyIdx].topLeft.X, x);
+
+                                    // Update the maximum x-coordinate if it is a maximum.
+                                    boundingBoxes[bodyIdx].bottomRight.X = Math.Max(boundingBoxes[bodyIdx].bottomRight.X, x);
+
+                                    // The y-coordinate is guaranteed to be a maximum since we are scanning top to bottom.
+                                    boundingBoxes[bodyIdx].bottomRight.Y = y;
+                                }
+                            }
                         }
-                        throw;
                     }
-                    if (m_server_port < 0)
+
+                    string boundingBoxesJson = this.SerializeBoundingBoxes(boundingBoxes);
+
+                    if (this.BoundingBoxesSampled != null)
                     {
-                        log.Error("Invalid port specified.");
-                        return false;
+                        this.BoundingBoxesSampled.Invoke(this, new BoundingBoxesSampledEventArgs(boundingBoxes));
                     }
                 }
+            })).Start();
+        }
 
-                else
+        private void ColorReader_FrameArrived(object sender, ColorFrameArrivedEventArgs e)
+        {
+            new Task(new Action(() =>
+            {
+                using (ColorFrame frame = e.FrameReference.AcquireFrame())
                 {
-                    log.WarnFormat("Arg '{0}' unrecognised.", arg);
+                    if (frame == null)
+                    {
+                        Console.Write("Null color frame acquired.\n");
+                        return;
+                    }
+
+                    // Console.Write("acquired color frame");
+
+                    // Get pixel data
+                    byte[] pixels = new byte[frame.FrameDescription.Width * frame.FrameDescription.Height * 4];
+                    frame.CopyConvertedFrameDataToArray(pixels, ColorImageFormat.Bgra);
+
+                    // Create a bitmap structure to hold data
+                    WriteableBitmap bmp = new WriteableBitmap(frame.FrameDescription.Width,
+                                                                   frame.FrameDescription.Height,
+                                                                   96.0, 96.0,
+                                                                   PixelFormats.Bgr32,
+                                                                   null);
+
+                    // Write data into a bitmap structure
+                    using (KinectBuffer buf = frame.LockRawImageBuffer())
+                    {
+                        bmp.Lock();
+                        frame.CopyConvertedFrameDataToIntPtr(bmp.BackBuffer,
+                                                             (uint)frame.FrameDescription.LengthInPixels * 4,
+                                                             ColorImageFormat.Bgra);
+                        bmp.AddDirtyRect(new Int32Rect(0, 0, bmp.PixelHeight, bmp.PixelHeight));
+                        bmp.Unlock();
+                    }
+
+                    // Invoke event handler
+                    if (this.ColorFrameSampled != null)
+                    {
+                        this.ColorFrameSampled.Invoke(this, new ColorFrameSampledEventArgs(bmp));
+                    }
+
+                    // Encode the data into a BMP file format
+                    BmpBitmapEncoder encoder = new BmpBitmapEncoder();
+                    encoder.Frames.Add(BitmapFrame.Create(bmp));
+
+                    // Write the BMP file to a stream
+                    using (MemoryStream stream = new MemoryStream())
+                    {
+                        encoder.Save(stream);
+                        stream.Close();
+                    }
                 }
-            }
-
-            bool retval = true;
-            if (m_server_host == "")
-            {
-                log.Error("No server host specified.");
-                retval = false;
-            }
-            if (m_server_port == -1)
-            {
-                log.Error("No server port specified.");
-                retval = false;
-            }
-            return retval;
+            })).Start();
         }
 
-        public KinectClient(string[] args)
+        private string SerializeBoundingBoxes(IList<BodyBoundingBox> boundingBoxes)
         {
-            m_init_successful = false;
+            // Setup serialization into a string
+            TextWriter stringWriter = new StringWriter();
+            JsonWriter jsonWriter = new JsonTextWriter(stringWriter);
+            JsonSerializer jsonSerializer = JsonSerializer.Create();
 
-            m_server_host = "";
-            m_server_port = -1;
+            // Make it neat
+            jsonWriter.Formatting = Formatting.Indented;
+            jsonSerializer.Formatting = Formatting.Indented;
 
-            log.Info("Starting the Kinect handler...");
-            m_kinectHandler = new KinectHandler();
+            jsonWriter.WritePropertyName("bodies");
+            jsonWriter.WriteStartArray();
 
-            log.Info("Initialising the HTTP client...");
-            m_httpClient = new HttpClient();
-
-            m_init_successful = ParseArgs(args);
-
-            if (InitSuccessful)
+            // Ignore null entries.
+            foreach (BodyBoundingBox boundingBox in boundingBoxes.Where(x => x != null))
             {
-                log.Info("Checking the server is alive...");
-                Task<bool> alive = PollServerAlive();
-                alive.Wait();
-                if (!alive.Result)
-                {
-                    log.Fatal("The server isn't alive! Cannot continue.");
-                    m_init_successful = false;
-                }
-            }
-        }
-
-        public async Task MainLoop()
-        {
-            if (!InitSuccessful)
-            {
-                return;
+                // Conveniently, BodyBoundingBox fits the spec when serialized...
+                jsonSerializer.Serialize(jsonWriter, boundingBox);
             }
 
-            bool alive = true;
-            while (alive)
+            jsonWriter.WriteEndArray();
+
+            if (boundingBoxes.Where(x => x != null).Count() > 1)
             {
-                alive = await PollServerAlive();
-                Thread.Sleep(POLL_INTERVAL_MS);
+                Console.Write(stringWriter.ToString() + "\n\n");
             }
-        }
 
-        private async Task<bool> PollServerAlive()
-        {
-            string uriStr = string.Format("http://{0}:{1}/alive",
-                                          m_server_host,
-                                          m_server_port);
-
-            HttpRequestMessage msg = new HttpRequestMessage();
-            msg.Method     = HttpMethod.Get;
-            msg.RequestUri = new Uri(uriStr);
-            
-            HttpResponseMessage response = await m_httpClient.SendAsync(msg);
-
-            return true;
+            return stringWriter.ToString();
         }
     }
 }

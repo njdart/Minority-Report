@@ -1,115 +1,111 @@
 <!DOCTYPE html>
 <html lang="en">
-    <head>
-        <!-- Required meta tags always come first -->
-        <meta charset="utf-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-        <meta http-equiv="x-ua-compatible" content="ie=edge">
+	<head>
+		<!-- Required meta tags always come first -->
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+		<meta http-equiv="x-ua-compatible" content="ie=edge">
 
-        <!-- Bootstrap CSS -->
-        <link rel="stylesheet" href="http://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap.min.css">
-        
-        <link rel="stylesheet" href="../static/styles/index.css">
-        
-        
-    </head>
-  <body>
+		<!-- Bootstrap CSS -->
+		<link rel="stylesheet" href="http://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap.min.css">
+		<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropper/2.3.0/cropper.min.css">
 
-    <div class="container">
-        <div class="header clearfix">
-            <nav>
-                <ul class="nav nav-pills pull-xs-right">
-                    <li class="nav-item active">
-                        <a class="nav-link" href="#">Home <span class="sr-only">(current)</span></a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="#">About</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="#">Contact</a>
-                    </li>
-                </ul>
-            </nav>
-            <h3 class="text-muted">Minority Report</h3>
-        </div>
+		<link rel="stylesheet" href="/static/styles/index.css">
+	</head>
+	<body>
+		<div class="container">
+			<div class="header clearfix">
+				<nav>
+					<ul class="nav nav-pills pull-xs-right">
+						<li class="nav-item active">
+							<a class="nav-link" href="#">Home <span class="sr-only">(current)</span></a>
+						</li>
+						<li class="nav-item">
+							<a class="nav-link" href="#">About</a>
+						</li>
+						<li class="nav-item">
+							<a class="nav-link" href="#">Contact</a>
+						</li>
+					</ul>
+				</nav>
+				<h3 class="text-muted">Minority Report</h3>
+			</div>
 
 
-          <!-- raw whole image -->
-        <div class="jumbotron">
-            <div class="row">
-                <div>
-                    <img class="img-responsive" src="http://media4.popsugar-assets.com/files/2014/08/08/878/n/1922507/caef16ec354ca23b_thumb_temp_cover_file32304521407524949.xxxlarge/i/Funny-Cat-GIFs.jpg">
-                
-                    <a id="editCanvasBtn" href="#" data-toggle="modal" data-target="#imageModal" class="btn btn-default btn-block">Edit canvas</a>
-                </div>
-            </div>
-        </div>
+			<!-- raw whole image -->
+			<div class="jumbotron">
+				<div class="row">
+					<div>
+						<img class="img-responsive" src="http://media4.popsugar-assets.com/files/2014/08/08/878/n/1922507/caef16ec354ca23b_thumb_temp_cover_file32304521407524949.xxxlarge/i/Funny-Cat-GIFs.jpg">
 
-        <!-- raw whole image modal -->
-        <div id="imageModal" class="modal fade">
-            <div class="modal-dialog modal-lg">
-                <div class="modal-content">
-                    <div class="modal-header">
-                        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                            <span aria-hidden="true">&times;</span>
-                        </button>
-                        <h4 class="modal-title" id="myModalLabel">Canvas Location</h4>
-                    </div>
-                
+						<a id="editCanvasBtn" href="#" data-toggle="modal" data-target="#imageModal" class="btn btn-default btn-block">Edit canvas</a>
+					</div>
+				</div>
+			</div>
 
-                    <div class="modal-body" id="imageModalContent">
-                        <div >
-                          <img id="canvasSelectImage" class="img-responsive" src="http://media4.popsugar-assets.com/files/2014/08/08/878/n/1922507/caef16ec354ca23b_thumb_temp_cover_file32304521407524949.xxxlarge/i/Funny-Cat-GIFs.jpg">
+			<!-- raw whole image modal -->
+			<div id="imageModal" class="modal fade">
+				<div class="modal-dialog modal-lg">
+					<div class="modal-content">
+						<div class="modal-header">
+							<button type="button" class="close" data-dismiss="modal" aria-label="Close">
+								<span aria-hidden="true">&times;</span>
+							</button>
+							<h4 class="modal-title" id="myModalLabel">Canvas Location</h4>
+						</div>
+
+
+                        <div class="modal-body" id="imageModalContent">
+                            <div >
+                              <canvas style="height:100%;width:100%;" id="modalCanvas" ></canvas>
+                            </div>
                         </div>
-                    </div>
 
-                    <div class="modal-footer">
-                        <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
-                        <button type="button" class="btn btn-primary" data-dismiss="modal">Save changes</button>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-
-        <!-- raw canvas -->
-        <div class="jumbotron">
-            <div class="row">
-                <div>
-                    <img class="img-responsive" src="http://media4.popsugar-assets.com/files/2014/08/08/878/n/1922507/caef16ec354ca23b_thumb_temp_cover_file32304521407524949.xxxlarge/i/Funny-Cat-GIFs.jpg">
-                </div>
-
-                <div class="">
-                    <div class="btn-group btn-group-justified" data-toggle="buttons">
-                        <label class="btn btn-default active">
-                            <input type="checkbox" checked>Show lines</label>
-                        </label>
-                        <label class="btn btn-default active">
-                            <input type="checkbox" checked>Show postits</button>
-                        </label>
-                    </div>
-
-                    <div class="btn-group btn-group-justified">
-                        <a href="#" class="btn btn-default">Add line</a>
-                        <a href="#" class="btn btn-default">Add postit</a>
-                    </div>
-                </div>    
-            </div>
-        </div>
-
-        <!-- Directed graph (D3) -->
-        <div class="jumbotron">
-            <div class="row">
-                <div>
-                    <img class="img-responsive" src="http://media4.popsugar-assets.com/files/2014/08/08/878/n/1922507/caef16ec354ca23b_thumb_temp_cover_file32304521407524949.xxxlarge/i/Funny-Cat-GIFs.jpg">
-                </div>
-            </div>
-        </div>
+						<div class="modal-footer">
+							<button type="button" class="btn btn-default closeb" data-dismiss="modal">Close</button>
+							<button type="button" class="btn btn-primary" data-dismiss="modal" id="imageSave">Save changes</button>
+						</div>
+					</div>
+				</div>
+			</div>
 
 
+			<!-- raw canvas -->
+			<div class="jumbotron">
+				<div class="row">
+					<div>
+						<canvas id="picanvas">
+							Your browser does not support the HTML5 canvas tag.
+						</canvas>
+					</div>
 
-    </div>
-    
+					<div class="">
+						<div class="btn-group btn-group-justified" data-toggle="buttons">
+							<label class="btn btn-default active">
+								<input type="checkbox" checked>Show lines</label>
+							</label>
+							<label class="btn btn-default active">
+								<input type="checkbox" checked>Show postits</button>
+							</label>
+						</div>
+
+						<div class="btn-group btn-group-justified">
+							<a href="#" class="btn btn-default" id="lineChange" data-toggle="modal" data-target="#imageModal">Add line</a>
+							<a href="#" class="btn btn-default" id="postitChange" data-toggle="modal" data-target="#imageModal">Add postit</a>
+						</div>
+					</div>
+				</div>
+			</div>
+
+			<!-- Directed graph (D3) -->
+			<div class="jumbotron">
+				<div class="row">
+					<div>
+						<img class="img-responsive" src="http://www.starwarscats.com/wp-content/uploads/2013/01/darth-vader-cat.jpg">
+					</div>
+				</div>
+			</div>
+		</div>
 
     
 
@@ -117,42 +113,212 @@
     <!-- jQuery first, then Bootstrap JS. -->
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/2.1.4/jquery.min.js"></script>
     <script src="http://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/js/bootstrap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/cropper/2.3.0/cropper.min.js"></script>
+    <script src="https://cdn.socket.io/socket.io-1.4.5.js"></script>
+    <script src="https://code.createjs.com/easeljs-0.8.2.min.js"></script>
+
+    
     <script type="text/javascript">
         
-        
+        var socket = io(),
+            image,
+            canvas,
+            postits = [],
+
+            wholeImage = "http://media4.popsugar-assets.com/files/2014/08/08/878/n/1922507/caef16ec354ca23b_thumb_temp_cover_file32304521407524949.xxxlarge/i/Funny-Cat-GIFs.jpg",
+            canvasImage = "http://i.huffpost.com/gen/1975176/images/o-SLEEPY-CAT-WATERMELON-facebook.jpg";
+
+
+
+        function updateCanvas() {
+            wholeImage = image.last().id;
+
+        };
+
+        function updateCanvas() {
+            canvasImage = canvas.last().id;
+        }
+
+        function updatePostits() {
+
+
+        };
+
+        socket.on('getImages', function(data) {
+            console.log('getImages', arguments);
+            image = data;
+            updateImages();
+        });
+
+        socket.on('getCanvases', function(data) {
+            console.log('getCanavses', arguments);
+            canvas = data;
+            updateCanavs();
+        });
+
+        socket.on('getPostits', function(data) {
+            console.log('getPostits', arguments);
+            postits = data;
+            updatePostits();
+        })
+
+
+
+        $('#modalCanvas').css('background-image', wholeImage)
+
+
         $("#editCanvasBtn").on("click", function() {
-            
+
+            console.log('asdfdsf');
+            socket.emit('getImages');
+
+            //adds the correct image
+            $("#modalImage").attr("src", wholeImage);
+
             //remove draggabe from image
             $("img").on("dragstart", function(event){
                 event.preventDefault();
             });
+
+            // draggable canvas objects
+
+            var stage,
+                output;
+
+            stage = new createjs.Stage("modalCanvas");
+
+            stage.mouseMoveOutside = true;
+
+            var topLeft = new createjs.Shape(),
+                topRight = new createjs.Shape(),
+                botLeft = new createjs.Shape(),
+                botRight = new createjs.Shape();
+            topLeft.graphics.beginFill("red").drawCircle(0,0,5);
+            topRight.graphics.beginFill("red").drawCircle(0,0,5);
+            botLeft.graphics.beginFill("red").drawCircle(0,0,5);
+            botRight.graphics.beginFill("red").drawCircle(0,0,5);
             
-            var $selection = $("<div>").addClass("selection-box");
+
+            var topLeftDragger = new createjs.Container(),
+                topRightDragger = new createjs.Container(),
+                botLeftDragger = new createjs.Container(),
+                botRightDragger = new createjs.Container();
+            
+            function addChildren() {
+                topLeftDragger.addChild(topLeft);
+                topRightDragger.addChild(topRight);
+                botLeftDragger.addChild(botLeft);
+                botRightDragger.addChild(botRight);
+
+                stage.addChild(topLeftDragger);
+                stage.addChild(topRightDragger);
+                stage.addChild(botLeftDragger);
+                stage.addChild(botRightDragger);
+            }
+            
+            function createLines() {
+                var c = $("#modalCanvas")[0];
+                var ctx = c.getContext("2d");
+                ctx.beginPath();
+                ctx.moveTo(x1, y1);
+
+                ctx.lineTo(x2, y1);
+                ctx.lineTo(x2, y2);
+                ctx.lineTo(x1, y2);
+                ctx.lineTo(x1, y1);
+                
+            }
+            
+            function setCornerPositions() {
+                
+                
+                addChildren();
+                
+                topLeftDragger.x = x1;
+                topLeftDragger.y = y1;
+                
+                topRightDragger.x = x2;
+                topRightDragger.y = y1;
+                
+                botLeftDragger.x = x1;
+                botLeftDragger.y = y2;
+                
+                botRightDragger.x = x2;
+                botRightDragger.y = y2;
+            
+            }
+            
+            var x1 = 20,
+                x2 = 40,
+                y1 = 20,
+                y2 = 40;
+            
+            setCornerPositions();
             
             
-            $("#canvasSelectImage").on("mousedown", function(event){
-                
-                $selection.remove();
-                
-                var xVal = event.pageX - $("#canvasSelectImage").offset().left + $("#canvasSelectImage").position().left;
-                var yVal = event.pageY - $("#canvasSelectImage").offset().top + $("#canvasSelectImage").position().top;
-                
-                
-                $selection.appendTo($("#imageModalContent"));
-                
-                
-                $("#canvasSelectImage").on('mousemove', function(e) {
-                    var xPos = e.pageX - $("#canvasSelectImage").offset().left + $("#canvasSelectImage").position().left,
-                        yPos = e.pageY - $("#canvasSelectImage").offset().top + $("#canvasSelectImage").position().top,
-                        width  = Math.abs(xPos - xVal),
-                        height = Math.abs(yPos - yVal),
-                        new_x,
-                        new_y;
-                    
+            
+            topLeftDragger.on("pressmove", function(evt) {
+                evt.currentTarget.x = evt.stageX;
+                evt.currentTarget.y = evt.stageY;
+                stage.update();
+                createLines(20, 20, 40, 60);
+            });
+            
+            topRightDragger.on("pressmove", function(evt) {
+                evt.currentTarget.x = evt.stageX;
+                evt.currentTarget.y = evt.stageY;
+                stage.update();
+                //createLines()
+            });
+            
+            botLeftDragger.on("pressmove", function(evt) {
+                evt.currentTarget.x = evt.stageX;
+                evt.currentTarget.y = evt.stageY;
+                stage.update();
+                console.log(this.id);
+            });
+            
+            botRightDragger.on("pressmove", function(evt) {
+                evt.currentTarget.x = evt.stageX;
+                evt.currentTarget.y = evt.stageY;
+                stage.update();
+                console.log(this.id);
+            });
+
+            stage.update();
+
+
+
+            /*var $selection = $("<div>").addClass("selection-box"),
+                topLeft,
+                topRight,
+                width,
+                height;
+            
+            $("#imageModalContent").on("mousedown", function(event){
+
+		$selection.remove();
+
+		// coordinates of mouse relative to image
+		var xVal = event.pageX - $("#modalImage").offset().left + $("#modalImage").position().left;
+		var yVal = event.pageY - $("#modalImage").offset().top + $("#modalImage").position().top;
+
+		// add selection box to screen
+		$selection.appendTo($("#imageModalContent"));
+
+		$("#imageModalContent").on('mousemove', function(e) {
+			var xPos = e.pageX - $("#modalImage").offset().left + $("#modalImage").position().left,
+			yPos = e.pageY - $("#modalImage").offset().top + $("#modalImage").position().top,
+			width  = Math.abs(xPos - xVal),
+			height = Math.abs(yPos - yVal),
+			new_x,
+			new_y;
+
+                    //console.log(width.toString() + " " + height.toString());
 
                     new_x = (xPos < xVal) ? (xVal - width) : xVal;
                     new_y = (yPos < yVal) ? (yVal - height) : yVal;
-
+	
                     $selection.css({
                         'width': width,
                         'height': height,
@@ -160,13 +326,28 @@
                         'left': new_x
                     });
                     
-                }).on("mouseup", function(){
-                    $("#canvasSelectImage").off("mousemove");
+                });
+                
+                $(document).on("mouseup", function(){
+                    $("#imageModalContent").off("mousemove");
                 }); 
-            }); 
+            });*/
+            $(".closeb").click(function() {
+                $(".selection-box").remove();
+            });
+            $("#imageSave").click(function() {
+                /*
+                todo: passing topLeft, topRight, height, width to nic
+                get the new canvas image from nic
+                set the new image
+                */
+            });
         });
         
-
+        $("#lineChange").on("click", function() {
+            //the canvas image
+            $("#modalImage").attr("src", canvasImage);
+        });
     </script>
     </body>
 </html>

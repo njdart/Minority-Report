@@ -1,32 +1,5 @@
-var socket = io();
-
-var body = $('body');
-var usernamesTable = $('.usernames-tableBody');
 var imagesTable = $('.images-tableBody');
-
-var users = [];
 var images = [];
-
-function updateUsers() {
-    console.log('Updating Users');
-    $('.usernames-userRow').remove();
-    var template = $('.usernames-tableBody > .table-row_template');
-
-    users.forEach(function(user) {
-        var tr = template.clone();
-        tr.removeClass('table-row_template');
-        tr.addClass('usernames-userRow');
-        $(tr).insertBefore(usernamesTable.children().last());
-
-        tr.find('.usernames-id').text(user.id);
-        tr.find('.usernames-username').val(user.username);
-        tr.find('.usernames-delete').val('x');
-
-        $('.user-select').append($('<option></option>')
-            .attr('value', user.id)
-            .text(user.username));
-    })
-}
 
 function updateImages() {
     console.log('Updating Images');
@@ -41,39 +14,49 @@ function updateImages() {
         $(tr).insertBefore(imagesTable.children().last());
         tr.find('.images-id').text(image.id);
         tr.find('.images-image').attr('src', 'api/image/' + image.id);
-        tr.find('.images-user').val(image.user);
         tr.find('.images-timestamp').val(new Date(image.timestamp).toISOString());
-    })
+
+        $('.image-select').append($('<option></option>')
+            .attr('value', image.id)
+            .text(image.id))
+    });
+}
+function storeUriInCache () {
+    var uri = $('.imageUri').val();
+
+    if(typeof(Storage) !== "undefined") {
+        localStorage.setItem('cameraUri', uri);
+        console.log('Setting URI local storage to', uri);
+    } else {
+        console.error('Browser does not support Local Storage');
+    }
 }
 
-// On add user button
-body.on('click', '.usernames-add', function() {
-
-    var properties = {
-        username: $('.usernames-username_new').val()
-    };
-
-    console.log('Creating User', properties);
-    if (properties.username) {
-        socket.emit('addUser', properties);
-    }
+body.on('click', '.imageFromUriBtn', function () {
+    storeUriInCache();
+    socket.emit('addImageFromUri', $('.imageUri').val());
 });
 
-// On username loose focus
-body.on('focusout', '.usernames-username', function(){
-    var children = $(this).parent().parent();
-
-    var properties = {
-        id: children.find('.usernames-id').text(),
-        username: children.find('.usernames-username').val()
-    };
-
-    console.log(properties);
-
-    socket.emit('updateUser', properties)
+body.on('click', '.focusImageBtn', function() {
+    storeUriInCache();
+    socket.emit('cameraFocus', $('.imageUri').val());
 });
 
-// On username loose focus
+body.on('click', '.getCameraProperties', function() {
+    storeUriInCache();
+    socket.emit('getCameraProperties', $('.imageUri').val());
+});
+
+body.on('click', '.setCameraProperties', function() {
+    storeUriInCache();
+    socket.emit('setCameraProperties', $('.imageUri').val(), $('.cameraSettings').text());
+});
+
+body.on("click", ".force-canvas-send", function()
+{
+    socket.emit("updateCanvas", {});
+});
+
 body.on('focusout', '.images-timestamp', function(){
     var children = $(this).parent().parent();
 
@@ -87,27 +70,15 @@ body.on('focusout', '.images-timestamp', function(){
     socket.emit('updateImage', properties)
 });
 
-// on user delete button
-body.on('click', '.usernames-remove', function() {
-    var row = $(this).parent().parent();
-    var properties = {
-        id: row.find('.usernames-id').text(),
-        username: row.find('.usernames-username').val()
-    };
-    console.log('Deleting User', properties);
-    socket.emit('deleteUser', properties);
-});
-
 body.on('click', '.images-add', function() {
     var row = $(this).parent().parent();
     var files = row.find('.images-file').prop('files');
 
     var properties = {
-        user: parseInt(row.find('.images-user').val()),
-        timestamp: new Date(row.find('.images-timestamp').val()).toISOString()
+        timestamp: new Date(row.find('.canvas-derivedAt_new').val()).toISOString()
     };
 
-    if (properties.timestamp && properties.user > 0 && files.length > 0) {
+    if (properties.timestamp && files.length > 0) {
         properties.timestamp = new Date(properties.timestamp);
         var file = files[0];
         properties.name = file.name;
@@ -146,30 +117,15 @@ body.on('click', '.images-id', function() {
     $(this).parent().find('.images-image').toggle()
 });
 
-// on getUsers response
-socket.on('getUsers', function(data) {
-    console.log('getUsers', arguments);
-    users = data;
-    updateUsers()
+body.on('click', '.images-extractCanvas', function() {
+    var imageId = $(this).parent().parent().find('.images-id').text();
+    console.log('Extract Canvas', imageId);
+    socket.emit('autoExtractCanvas', imageId);
 });
 
-// on addUser response, get fresh users list
-socket.on('addUser', function() {
-    console.log('addUser', arguments);
-    $('.usernames-username_new').val('');
-    socket.emit('getUsers');
-});
-
-// on updateUser response, get fresh users list
-socket.on('updateUser', function() {
-    console.log('updateUser', arguments);
-    socket.emit('getUsers');
-});
-
-// on deleteUser response, get fresh users list
-socket.on('deleteUser', function() {
-    console.log('deleteUser', arguments);
-    socket.emit('getUsers');
+socket.on('autoExtractCanvas', function(data) {
+    console.log('autoExtractCanvases', arguments)
+    socket.emit('getCanvases');
 });
 
 socket.on('addImage', function() {
@@ -194,5 +150,28 @@ socket.on('deleteImage', function(data) {
     socket.emit('getImages');
 });
 
-socket.emit('getUsers');
+socket.on('addImageFromUri', function(data) {
+    console.log('addImageFromUri', arguments);
+    socket.emit('getImages');
+});
+
+socket.on('getCameraProperties', function(data) {
+    console.log('getCameraProperties', arguments);
+    $('.cameraSettings').text(JSON.stringify(data, null, 2));
+});
+
+socket.on('cameraFocus', function(data) {
+    console.log('cameraFocus got response', data);
+    alert('Camera Focus ' + ((data) ? 'Success' : 'Failed' ));
+});
+
+socket.on('setCameraProperties', function(data) {
+    console.log('setCameraProperties got response', data);
+    alert('Set Camera Properties ' + ((data) ? 'Success' : 'Failed' ));
+});
+
+if(typeof(Storage) !== "undefined") {
+    $('.imageUri').val(localStorage.getItem('cameraUri') || "http://localhost:8080");
+}
+
 socket.emit('getImages');
