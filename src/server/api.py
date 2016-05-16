@@ -3,6 +3,7 @@ import io
 import cv2
 import numpy
 import datetime
+import uuid
 from flask_socketio import emit
 from src.model.Canvas import Canvas
 from src.model.InstanceConfiguration import InstanceConfiguration
@@ -25,8 +26,11 @@ def addImage(details):
     arr = numpy.fromstring(file, numpy.uint8)
     npArr = cv2.imdecode(arr, cv2.IMREAD_COLOR)
 
-    emit('addImage', Image(npArray=npArr,
-                           timestamp=timestamp).create().as_object())
+    emit('addImage', Image(sessionId=1,
+                           npArray=npArr,
+                           timestamp=timestamp,
+                           id=uuid.uuid4()
+                           ).create().as_object())
 
 
 @socketio.on('getImages')
@@ -39,7 +43,7 @@ def deleteImage(details):
     emit('deleteImage', Image.get(details["id"]).delete().as_object())
 
 
-@socketio.on('updateImage')
+# @socketio.on('updateImage')
 def updateImage(details):
     image = Image.get(details["id"])
 

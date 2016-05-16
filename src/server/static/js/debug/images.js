@@ -72,10 +72,13 @@ body.on('focusout', '.images-timestamp', function(){
 
 body.on('click', '.images-add', function() {
     var row = $(this).parent().parent();
+    console.log(row);
     var files = row.find('.images-file').prop('files');
+    var ts = row.find('.images-timestamp').val();
+    console.log("Timestamp:", ts)
 
     var properties = {
-        timestamp: new Date(row.find('.canvas-derivedAt_new').val()).toISOString()
+        timestamp: new Date(ts).toISOString()
     };
 
     if (properties.timestamp && files.length > 0) {
