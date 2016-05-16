@@ -113,7 +113,7 @@ class SqliteObject(object):
         c.execute(query, (self.id,))
         db.commit()
 
-        return self
+        return True
 
     def create(self, database=None):
 

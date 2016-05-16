@@ -1,11 +1,23 @@
-.node {
-    fill: #ccc;
-    stroke: #fff;
-    stroke-width: 2px;
+body {
+    padding: 0px;
+    margin: 0px;
 }
 
-.link {
-    stroke: #777;
-    stroke-width: 2px;
-    transform: translate(50px,50px);
+.localStorageUnset {
+    width: 100%;
+    height: 100%;
+    position: absolute;
+    z-index: 1000;
+    background-color: #FFF;
+}
+
+.localStorageUnset-message {
+    margin: 0px auto;
+    text-align: center;
+}
+
+.hudCanvas {
+    width: 100%;
+    height: 100%;
+    position: absolute;
 }

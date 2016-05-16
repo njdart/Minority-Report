@@ -1,5 +1,4 @@
 import io
-
 import cv2
 import numpy
 import datetime
@@ -11,7 +10,6 @@ from src.model.Postit import Postit
 from src.model.Image import Image
 from flask import send_from_directory, send_file
 from werkzeug.exceptions import NotFound
-
 from src.model.Session import Session
 from src.server import (app, socketio)
 import os
@@ -19,7 +17,6 @@ import os
 
 @socketio.on('addImage')
 def addImage(details):
-    # EG "2016-04-09T13:04:50.148Z"
     timestamp = datetime.datetime.strptime(details["timestamp"], '%Y-%m-%dT%H:%M:%S.%fZ')
     file = details["file"]
 
@@ -43,7 +40,7 @@ def deleteImage(details):
     emit('deleteImage', Image.get(details["id"]).delete().as_object())
 
 
-# @socketio.on('updateImage')
+@socketio.on('updateImage')
 def updateImage(details):
     image = Image.get(details["id"])
 
@@ -120,16 +117,6 @@ def autoExtractPostits(canvas_id):
         return
 
     emit('autoExtractPostits', [ postit.as_object() for postit in postits])
-
-
-@socketio.on('startSession')
-def startSession(name, description):
-    emit('startSession', Session(name=name, description=description).create().as_object())
-
-
-@socketio.on('getSessions')
-def getSessions():
-    emit('getSessions', [session.as_object() for session in Session.get_all()])
 
 
 @socketio.on('newInstanceConfiguration')
