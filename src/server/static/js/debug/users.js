@@ -1,5 +1,6 @@
 $(function() {
     var table = $('.usersTable');
+    var usersLists = $('.usersList');
 
     var addUserToTable = function(user) {
         var row = $('<tr></tr>').data(user);
@@ -19,6 +20,7 @@ $(function() {
             .append($('<button type="submit" class="btn btn-danger usersTable-remove">Remove</button>')));
 
         table.append(row);
+        usersLists.append($('<option class="usersList-user"></option>').attr('value', user.id).text(user.name))
     };
 
     // CREATE
@@ -41,6 +43,7 @@ $(function() {
     socket.on('get_users', function (users) {
 
         table.empty();
+        $('.usersList-user').remove();
 
         users.forEach(addUserToTable);
     });
@@ -56,6 +59,7 @@ $(function() {
             socket.once('update_user', function(user) {
                 row.data(user);
                 row.find('.usersTable-userName').val(user.name);
+                $('option[value="' + user.id + '"').text(user.name);
             });
         } else {
             console.log('No Change to User');
@@ -70,7 +74,8 @@ $(function() {
         socket.emit('delete_user', id);
         socket.once('delete_user', function(success) {
             if (success) {
-                row.remove()
+                row.remove();
+                $('option[value="' + id + '"').remove();
             }
         })
     });

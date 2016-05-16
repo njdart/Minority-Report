@@ -1,5 +1,6 @@
 $(function() {
     var table = $('.sessionsTable');
+    var sessionsLists = $('.sessionsList');
 
     var addSessionToTable = function(session) {
         var row = $('<tr></tr>').data(session);
@@ -24,6 +25,9 @@ $(function() {
             .append($('<button type="submit" class="btn btn-danger sessionsTable-remove">Remove</button>')));
 
         table.append(row);
+        sessionsLists.append($('<option class="sessionsList-session"></option>')
+            .attr('value', session.id)
+            .text(session.name));
     };
 
     // CREATE
@@ -48,6 +52,7 @@ $(function() {
     socket.on('get_sessions', function (sessions) {
 
         table.empty();
+        $('.sessionsList-session').remove();
 
         sessions.forEach(addSessionToTable);
     });
@@ -67,6 +72,7 @@ $(function() {
                 row.data(session);
                 row.find('.sessionsTable-sessionName').val(session.name);
                 row.find('.sessionsTable-sessionDescription').val(session.description);
+                $('option[value="' + session.id + '"').text(session.name);
             });
         } else {
             console.log('No Change to User');
@@ -81,7 +87,8 @@ $(function() {
         socket.emit('delete_session', id);
         socket.once('delete_session', function(success) {
             if (success) {
-                row.remove()
+                row.remove();
+                $('option[value="' + id + '"').remove();
             }
         })
     });

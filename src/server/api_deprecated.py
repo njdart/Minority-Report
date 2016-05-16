@@ -119,20 +119,6 @@ def autoExtractPostits(canvas_id):
     emit('autoExtractPostits', [ postit.as_object() for postit in postits])
 
 
-@socketio.on('newInstanceConfiguration')
-def newInstanceConfiguration(sessionId,
-                             cameraHost,
-                             cameraPort,
-                             kinectHost,
-                             kinectPort):
-    emit('newInstanceConfiguration', InstanceConfiguration(sessionId=sessionId,
-                                                           cameraHost=cameraHost,
-                                                           cameraPort=cameraPort,
-                                                           kinectHost=kinectHost,
-                                                           kinectPort=kinectPort).create().as_object())
-
-
-
 @app.route('/api/image/<imageId>')
 def image_serve(imageId):
 

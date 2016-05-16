@@ -13,9 +13,9 @@ def databaseHandler():
 
 import src.server.ui
 import src.server.kinect
-# from src.server import api
 import src.server.api.users_api
 import src.server.api.sessions_api
+import src.server.api.instanceConfiguration_api
 
 def run_server():
     socketio.run(app, host="0.0.0.0", port=8088, debug=True)

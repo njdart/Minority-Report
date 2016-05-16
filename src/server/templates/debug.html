@@ -95,6 +95,120 @@
         </div>
       </div>
 
+      <!-- INSTANCE CONFIGURATIONS -->
+      <div class="panel panel-info">
+        <div class="panel-heading">Instance Configurations</div>
+        <div class="panel-body">
+          <table class="table table-hover">
+            <thead>
+              <td class="col-md-4">ID</td>
+              <td class="col-md-6">Session</td>
+              <td class="col-md-2"></td>
+            </thead>
+            <tbody class="instanceConfigsTable">
+
+            </tbody>
+            <tfoot>
+              <tr>
+                <td></td>
+                <td>
+                  <div class="form">
+                    <div class="form-group">
+                      <label for="configInstanceSession">Session</label>
+                      <select class="instanceConfigsTable-add_sessionId sessionsList form-control" id="configInstanceSession">
+                        <option selected="selected" value="">None</option>
+                      </select>
+                    </div>
+
+                    <div class="form-group">
+                      <label for="configInstanceUser">User</label>
+                      <select class="instanceConfigsTable-add_userId usersList form-control" id="configInstanceUser">
+                        <option selected="selected" value="">None</option>
+                      </select>
+                    </div>
+
+                    <div class="form-group">
+                      <label for="configInstanceTopLeft">TopLeft as (x,y)</label>
+                      <input class="instanceConfigsTable-add_topLeft form-control"
+                             id="configInstanceTopLeft"
+                             type="text"
+                             placeholder="(x,y)">
+                    </div>
+
+                    <div class="form-group">
+                      <label for="configInstanceTopRight">TopRight as (x,y)</label>
+                      <input class="instanceConfigsTable-add_topRight form-control"
+                             id="configInstanceTopRight"
+                             type="text"
+                             placeholder="(x,y)">
+                    </div>
+
+                    <div class="form-group">
+                      <label for="configInstanceBottomRight">BottomRight as (x,y)</label>
+                      <input class="instanceConfigsTable-add_bottomRight form-control"
+                             id="configInstanceBottomRight"
+                             type="text"
+                             placeholder="(x,y)">
+                    </div>
+
+                    <div class="form-group">
+                      <label for="configInstanceBottomLeft">BottomLeft as (x,y)</label>
+                      <input class="instanceConfigsTable-add_bottomLeft form-control"
+                             id="configInstanceBottomLeft"
+                             type="text"
+                             placeholder="(x,y)">
+                    </div>
+
+                    <div class="form-group">
+                      <label for="configInstanceCameraHost">Camera Host</label>
+                      <input class="instanceConfigsTable-add_cameraHost form-control"
+                             id="configInstanceCameraHost"
+                             type="text"
+                             placeholder="localhost"
+                             value="localhost">
+                    </div>
+
+                    <div class="form-group">
+                      <label for="configInstanceCameraPort">Camera Port</label>
+                      <input class="instanceConfigsTable-add_cameraPort form-control"
+                             id="configInstanceCameraPort"
+                             type="number"
+                             placeholder="8080"
+                             value="8080">
+
+                      <div class="form-group">
+                      <label for="configInstanceKinectHost">Kinect Host</label>
+                      <input class="instanceConfigsTable-add_kinectHost form-control"
+                             id="configInstanceKinectHost"
+                             type="text"
+                             placeholder="localhost"
+                             value="localhost">
+                    </div>
+
+                    <div class="form-group">
+                      <label for="configInstanceKinectPort">Kinect Port</label>
+                      <input class="instanceConfigsTable-add_kinectPort form-control"
+                             id="configInstanceKinectPort"
+                             type="number"
+                             placeholder="8081"
+                             value="8081">
+                    </div>
+
+                  </div>
+                </td>
+                <td>
+                  <button type="submit" class="btn btn-success instanceConfigsTable-add">Add</button>
+                </td>
+              </tr>
+            </tfoot>
+          </table>
+        </div>
+      </div>
+
+      <!-- TODO: IMAGES -->
+      <!-- TODO: CANVASES -->
+      <!-- TODO: POSTITS -->
+
     </div>
 
     <!-- jQuery (necessary for Bootstrap's JavaScript plugins) -->
@@ -110,5 +224,6 @@
     </script>
     <script src="/static/js/debug/users.js"></script>
     <script src="/static/js/debug/sessions.js"></script>
+    <script src="/static/js/debug/instanceConfiguration.js"></script>
   </body>
 </html>

@@ -7,6 +7,7 @@ CREATE TABLE IF NOT EXISTS session (
 CREATE TABLE IF NOT EXISTS instanceConfiguration (
   id                 TEXT PRIMARY KEY,
   sessionId          TEXT NOT NULL,
+  userId             TEXT NOT NULL,
   topLeftX           TEXT,
   topLeftY           TEXT,
   topRightX          TEXT,
@@ -15,12 +16,13 @@ CREATE TABLE IF NOT EXISTS instanceConfiguration (
   bottomRightY       TEXT,
   bottomLeftX        TEXT,
   bottomLeftY        TEXT,
-  cameraHost         TEXT,
-  kinectHost         TEXT,
+  cameraHost         TEXT NOT NULL,
+  kinectHost         TEXT NOT NULL,
   cameraPort         INTEGER NOT NULL,
   kinectPort         INTEGER NOT NULL,
 
-  FOREIGN KEY(sessionId) REFERENCES session(id)
+  FOREIGN KEY(sessionId) REFERENCES session(id),
+  FOREIGN KEY(userId) REFERENCES users(id)
 );
 
 CREATE TABLE IF NOT EXISTS users (

@@ -6,6 +6,7 @@ class InstanceConfiguration(SqliteObject):
     properties = [
         "id",
         "sessionId",
+        "userId",
         "topLeftX",
         "topLeftY",
         "topRightX",
@@ -24,6 +25,7 @@ class InstanceConfiguration(SqliteObject):
 
     def __init__(self,
                  sessionId,
+                 userId,
                  kinectHost,
                  kinectPort,
                  cameraHost,
@@ -40,6 +42,7 @@ class InstanceConfiguration(SqliteObject):
         super(InstanceConfiguration, self).__init__(id=id)
 
         self.sessionId = sessionId
+        self.userId = userId
         self.kinectHost = kinectHost
         self.kinectPort = kinectPort
         self.cameraHost = cameraHost
