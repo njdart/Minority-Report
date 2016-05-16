@@ -1,10 +1,13 @@
-from src.server import app
-from flask import request
+from flask_socketio import emit
+from src.server import socketio
+import json
+import base64
+from PIL import Image
+import io
 
-@app.route("/kinect/body", methods=["POST"])
-def body_data_post():
-    return "body data page...<br><br>" + str(request.data)
-
-@app.route("/kinect/gesture", methods=["POST"])
-def gesture_data_post():
-    return "gesture data page...<br><br>" + str(request.data)
+@socketio.on("getKinectImage")
+def getKinectImage(data):
+    bmpData = base64.b64decode(data["b64Bitmap"])
+    stream = io.BytesIO(bmpData)
+    image = Image.open(stream)
+    print(image.size)

@@ -11,10 +11,11 @@ import src.model.processing
 
 class Image(SqliteObject):
 
-    properties = ["id", "timestamp"]
+    properties = ["id", "timestamp", "sessionId"]
     table = "images"
 
     def __init__(self,
+                 sessionId,
                  npArray=None,
                  id=uuid.uuid4(),
                  timestamp=datetime.datetime.utcnow().replace(tzinfo=pytz.UTC),
@@ -23,6 +24,7 @@ class Image(SqliteObject):
                          database=database)
         self.image = npArray
         self.timestamp = timestamp
+        self.sessionId = sessionId
 
     @staticmethod
     def from_uri(uri='http://localhost:8080'):

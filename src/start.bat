@@ -2,5 +2,7 @@
 
 REM Edit the line below in order to provide the correct path.
 SET PATH=%PATH%;C:\Python34
+SET PYTHONPATH=..
 
-start pythonw minority_report.py
+python minority_report.py
+PAUSE

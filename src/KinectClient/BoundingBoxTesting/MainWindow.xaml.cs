@@ -26,6 +26,9 @@ namespace BoundingBoxTesting
         private DrawingGroup drawingGrp;
         private DrawingImage drawingImg;
 
+        /// <summary>
+        /// The image source used as the data context for the canvas.
+        /// </summary>
         public ImageSource ImageSource
         {
             get
@@ -47,21 +50,30 @@ namespace BoundingBoxTesting
             this.mainCanvas.DataContext = this;
         }
 
-        private void KinectClient_BoundingBoxesSampled(object sender, BoundingBoxesEventArgs e)
+        private void KinectClient_BoundingBoxesSampled(object sender, BoundingBoxesSampledEventArgs e)
         {
-//            this.Dispatcher.Invoke((Action)(() =>
-//            {
-                using (DrawingContext dc = this.drawingGrp.Open())
+            // This function may be called from a different thread, so ensure this code is run on the GUI's main
+            // thread.
+            try
+            {
+                this.Dispatcher.Invoke((Action)(() =>
                 {
-                    dc.DrawRectangle(Brushes.White, null, new Rect(new Size(512.0, 424.0)));
-
-                    foreach (BodyBoundingBox box in e.BoundingBoxes.Where(x => x != null))
+                    using (DrawingContext dc = this.drawingGrp.Open())
                     {
-                        Rect r = new Rect(box.topLeft, box.bottomRight);
-                        dc.DrawRectangle(Brushes.Blue, null, r);
+                        dc.DrawRectangle(Brushes.White, null, new Rect(new Size(512.0, 424.0)));
+
+                        foreach (BodyBoundingBox box in e.BoundingBoxes.Where(x => x != null))
+                        {
+                            Rect r = new Rect(box.topLeft, box.bottomRight);
+                            dc.DrawRectangle(Brushes.Blue, null, r);
+                        }
                     }
-                }
-//            }));
+                }));
+            }
+            catch (TaskCanceledException)
+            {
+                // Nobody cares if this is cancelled. It probably means the app has been stopped.
+            }
         }
     }
 }

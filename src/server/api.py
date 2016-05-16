@@ -3,12 +3,16 @@ import io
 import cv2
 import numpy
 import datetime
+import uuid
 from flask_socketio import emit
 from src.model.Canvas import Canvas
+from src.model.InstanceConfiguration import InstanceConfiguration
 from src.model.Postit import Postit
 from src.model.Image import Image
 from flask import send_from_directory, send_file
 from werkzeug.exceptions import NotFound
+
+from src.model.Session import Session
 from src.server import (app, socketio)
 import os
 
@@ -22,8 +26,11 @@ def addImage(details):
     arr = numpy.fromstring(file, numpy.uint8)
     npArr = cv2.imdecode(arr, cv2.IMREAD_COLOR)
 
-    emit('addImage', Image(npArray=npArr,
-                           timestamp=timestamp).create().as_object())
+    emit('addImage', Image(sessionId=1,
+                           npArray=npArr,
+                           timestamp=timestamp,
+                           id=uuid.uuid4()
+                           ).create().as_object())
 
 
 @socketio.on('getImages')
@@ -36,7 +43,7 @@ def deleteImage(details):
     emit('deleteImage', Image.get(details["id"]).delete().as_object())
 
 
-@socketio.on('updateImage')
+# @socketio.on('updateImage')
 def updateImage(details):
     image = Image.get(details["id"])
 
@@ -113,6 +120,30 @@ def autoExtractPostits(canvas_id):
         return
 
     emit('autoExtractPostits', [ postit.as_object() for postit in postits])
+
+
+@socketio.on('startSession')
+def startSession(name, description):
+    emit('startSession', Session(name=name, description=description).create().as_object())
+
+
+@socketio.on('getSessions')
+def getSessions():
+    emit('getSessions', [session.as_object() for session in Session.get_all()])
+
+
+@socketio.on('newInstanceConfiguration')
+def newInstanceConfiguration(sessionId,
+                             cameraHost,
+                             cameraPort,
+                             kinectHost,
+                             kinectPort):
+    emit('newInstanceConfiguration', InstanceConfiguration(sessionId=sessionId,
+                                                           cameraHost=cameraHost,
+                                                           cameraPort=cameraPort,
+                                                           kinectHost=kinectHost,
+                                                           kinectPort=kinectPort).create().as_object())
+
 
 
 @app.route('/api/image/<imageId>')

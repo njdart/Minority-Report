@@ -17,7 +17,10 @@ class SqliteObject(object):
         props = {}
         for prop in self.properties:
             if hasattr(self, prop):
-                props[prop] = str(getattr(self, prop))
+                if prop is not None:
+                    props[prop] = str(getattr(self, prop))
+                else:
+                    props[prop] = None
 
         return props
 
@@ -122,12 +125,17 @@ class SqliteObject(object):
             if hasattr(self, property):
                 attr = getattr(self, property)
                 if attr is not None:
-                    values.append(attr)
+                    if attr is None:
+                        values.append(None)
+                    if type(attr) in [int, float]:
+                        values.append(str(attr))
+                    else:
+                        values.append('\'' + str(attr) + '\'')
                     selectors.append('{}=\'{}\''.format(property, str(attr)))
 
         query = 'INSERT INTO {} ({}) VALUES ({});'.format(self.table,
                                                           ','.join(properties),
-                                                          ','.join(map(lambda x: '\'' + str(x) + '\'', values)))
+                                                          ','.join(values))
 
         print('Using CREATE query \'{}\''.format(query))
 
