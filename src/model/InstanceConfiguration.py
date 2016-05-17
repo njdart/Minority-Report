@@ -15,10 +15,10 @@ class InstanceConfiguration(SqliteObject):
         "bottomRightY",
         "bottomLeftX",
         "bottomLeftY",
-        "kinectHost",
-        "kinectPort",
         "cameraHost",
-        "cameraPort"
+        "kinectHost",
+        "cameraPort",
+        "kinectPort"
     ]
 
     table = "instanceConfiguration"
@@ -55,3 +55,34 @@ class InstanceConfiguration(SqliteObject):
         self.bottomRightY = bottomRightY
         self.bottomLeftX = bottomLeftX
         self.bottomLeftY = bottomLeftY
+
+    def as_object(self):
+        return {
+            "id": str(self.id),
+            "userId": self.userId,
+            "sessionId": self.sessionId,
+            "kinect": {
+                "host": self.kinectHost,
+                "port": self.kinectPort
+            },
+            "camera": {
+                "host": self.cameraHost,
+                "port": self.cameraPort
+            },
+            "topLeft": {
+                "x": self.topLeftX,
+                "y": self.topLeftY
+            },
+            "topRight": {
+                "x": self.topRightX,
+                "y": self.topRightY
+            },
+            "bottomRight": {
+                "x": self.bottomRightX,
+                "y": self.bottomRightY
+            },
+            "bottomLeft": {
+                "x": self.bottomLeftX,
+                "y": self.bottomLeftY
+            }
+        }
