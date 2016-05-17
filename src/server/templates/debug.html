@@ -212,7 +212,58 @@
         </div>
       </div>
 
-      <!-- TODO: IMAGES -->
+      <!-- IMAGES -->
+      <div class="panel panel-info">
+        <div class="panel-heading">Images</div>
+        <div class="panel-body">
+          <table class="table table-hover">
+            <thead>
+              <td class="col-md-4">ID</td>
+              <td class="col-md-3">Timestamp</td>
+              <td class="col-md-3">InstanceConfiguration</td>
+              <td class="col-md-2"></td>
+            </thead>
+            <tbody class="imagesTable">
+
+            </tbody>
+            <tfoot>
+              <tr>
+                <td>
+                  <input type="file" class="form-control imagesTable-add_image" placeholder="Name">
+                </td>
+                <td>
+                  <input type="text" class="form-control imagesTable-add_timestamp" placeholder="Now">
+                </td>
+                <td>
+                  <select class="imagesTable-add_instanceConfigId instanceConfigsList form-control">
+                    <option selected="selected" value="">None</option>
+                  </select>
+                </td>
+                <td>
+                  <button type="submit" class="btn btn-success imagesTable-add">Add</button>
+                </td>
+              </tr>
+
+              <tr>
+                <td>
+                  <input type="text" class="form-control imagesTable-add_imageUri" placeholder="localhost">
+                </td>
+                <td>
+                  <input type="text" class="form-control imagesTable-add_imagePort" placeholder="8080">
+                </td>
+                <td>
+                  <select class="imagesTable-add_instanceConfigId instanceConfigsList form-control">
+                    <option selected="selected" value="">None</option>
+                  </select>
+                </td>
+                <td>
+                  <button type="submit" class="btn btn-success imagesTable-get">Get</button>
+                </td>
+              </tr>
+            </tfoot>
+          </table>
+        </div>
+      </div>
       <!-- TODO: CANVASES -->
       <!-- TODO: POSTITS -->
 
@@ -232,5 +283,6 @@
     <script src="/static/js/debug/users.js"></script>
     <script src="/static/js/debug/sessions.js"></script>
     <script src="/static/js/debug/instanceConfiguration.js"></script>
+    <script src="/static/js/debug/images.js"></script>
   </body>
 </html>

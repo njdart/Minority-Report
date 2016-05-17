@@ -1,180 +1,125 @@
-var imagesTable = $('.images-tableBody');
-var images = [];
+$(function() {
 
-function updateImages() {
-    console.log('Updating Images');
-    $('.images-imageRow').remove();
-    var template = $('.images-tableBody > .table-row_template');
+    var table = $('.imagesTable');
+    var imagesList = $('.imagesList');
 
-    images.forEach(function(image) {
-        var tr = template.clone();
-        tr.removeClass('table-row_template');
-        tr.addClass('images-imageRow');
-
-        $(tr).insertBefore(imagesTable.children().last());
-        tr.find('.images-id').text(image.id);
-        tr.find('.images-image').attr('src', 'api/image/' + image.id);
-        tr.find('.images-timestamp').val(new Date(image.timestamp).toISOString());
-
-        $('.image-select').append($('<option></option>')
+    var addImageToTable = function(image) {
+        var row = $('<tr></tr>').data(image);
+    
+        // Image ID
+        row.append($('<td class="imagesTable-imageId"></td>')
+            .append($('<a></a>')
+                .text(image.id)
+                .attr('target', '_blank')
+                .attr('href', '/api/image/' + image.id)));
+    
+        // Timestamp
+        row.append($('<td></td>')
+            .append($('<input type="text" class="form-control imagesTable-timestamp">')
+                .val(new Date(image.timestamp).toISOString())));
+    
+        // Instance Configuration
+        row.append($('<td></td>')
+            .append($('<input type="text" class="form-control imagesTable-InstanceConfigurationId">')
+                .val(image.instanceConfigurationId)));
+    
+        // Save + Remove Button
+        row.append($('<td></td>')
+            .append($('<button type="submit" class="btn btn-primary imagesTable-save">Save</button>'))
+            .append($('<button type="submit" class="btn btn-danger imagesTable-remove">Remove</button>')));
+    
+        table.append(row);
+        imagesList.append($('<option class="imagesList-session"></option>')
             .attr('value', image.id)
             .text(image.id))
+    };
+
+    // CREATE
+    $('.imagesTable-add').click(function() {
+        var row = $(this).parent().parent();
+
+        var file = row.find('.imagesTable-add_image').prop('files');
+        var timestamp = row.find('.sessionsTable-add_timestamp').val();
+        timestamp = (timestamp) ? new Date(timestamp) : new Date();
+        var instanceConfigId = row.find('.imagesTable-add_instanceConfigId').val();
+
+        if (timestamp && instanceConfigId && file.length > 0) {
+
+            var fileReader = new FileReader();
+
+            fileReader.addEventListener('loadend', function() {
+                console.log('Uploading File (' + fileReader.result.byteLength, 'bytes)');
+                socket.emit('create_image', fileReader.result, timestamp.toISOString(), instanceConfigId);
+            });
+
+            fileReader.readAsArrayBuffer(file[0]);
+        }
     });
-}
-function storeUriInCache () {
-    var uri = $('.imageUri').val();
 
-    if(typeof(Storage) !== "undefined") {
-        localStorage.setItem('cameraUri', uri);
-        console.log('Setting URI local storage to', uri);
-    } else {
-        console.error('Browser does not support Local Storage');
-    }
-}
+    $('.imagesTable-get').click(function() {
+        var row = $(this).parent().parent();
 
-body.on('click', '.imageFromUriBtn', function () {
-    storeUriInCache();
-    socket.emit('addImageFromUri', $('.imageUri').val());
-});
+        var host = row.find('.imagesTable-add_imageUri').val() ||  'localhost';
+        var port = row.find('.imagesTable-add_imagePort').val() || 8080;
+        var instanceConfigId = row.find('.imagesTable-add_instanceConfigId').val();
 
-body.on('click', '.focusImageBtn', function() {
-    storeUriInCache();
-    socket.emit('cameraFocus', $('.imageUri').val());
-});
+        localStorage.setItem('cameraHost', host);
+        localStorage.setItem('cameraPort', port);
 
-body.on('click', '.getCameraProperties', function() {
-    storeUriInCache();
-    socket.emit('getCameraProperties', $('.imageUri').val());
-});
+        if (host && port && instanceConfigId) {
+            console.log(host);
+            console.log(port);
+            console.log(instanceConfigId);
+            socket.emit('get_image', instanceConfigId, 'http://' + host + ':' + port);
+        }
 
-body.on('click', '.setCameraProperties', function() {
-    storeUriInCache();
-    socket.emit('setCameraProperties', $('.imageUri').val(), $('.cameraSettings').text());
-});
+    });
 
-body.on("click", ".force-canvas-send", function()
-{
-    socket.emit("updateCanvas", {});
-});
+    socket.on('create_image', function(image) {
+        addImageToTable(image);
+        $('.imagesTable-add_image').val('');
+        $('.imagesTable-add_instanceConfigId').val('');
+        $('.imagesTable-add_timestamp').val('');
+    });
 
-body.on('focusout', '.images-timestamp', function(){
-    var children = $(this).parent().parent();
+    // READ
+    socket.on('get_images', function (images) {
 
-    var properties = {
-        id: children.find('.images-id').text(),
-        timestamp: children.find('.images-timestamp').val()
-    };
+        table.empty();
+        $('.imagesList-image').remove();
 
-    console.log(properties);
+        images.forEach(addImageToTable);
+    });
 
-    socket.emit('updateImage', properties)
-});
+    // UPDATE
+    $(document).on('click', '.imagesTable-save', function() {
+        var row = $(this).parent().parent();
+        var id = row.find('.imagesTable-imageId').text();
+        var timestamp = new Date(row.find('.imagesTable-timestamp').val()).toISOString();
+        var instanceConfigurationId = row.find('.imagesTable-instanceConfigId').val();
 
-body.on('click', '.images-add', function() {
-    var row = $(this).parent().parent();
-    console.log(row);
-    var files = row.find('.images-file').prop('files');
-    var ts = row.find('.images-timestamp').val();
-    console.log("Timestamp:", ts)
-
-    var properties = {
-        timestamp: new Date(ts).toISOString()
-    };
-
-    if (properties.timestamp && files.length > 0) {
-        properties.timestamp = new Date(properties.timestamp);
-        var file = files[0];
-        properties.name = file.name;
-
-        var fr = new FileReader();
-        fr.addEventListener('loadend', function() {
-            console.log('fr loaded, file is', fr.result.byteLength, 'bytes long');
-            properties.file = fr.result;
-            socket.emit('addImage', properties);
+        socket.emit('update_image', id, timestamp, instanceConfigurationId);
+        socket.once('update_image', function(image) {
+            row.data(image);
+            row.find('.imagesTable-instanceConfigId').val(image.instanceConfigId);
+            row.find('.imagesTable-timestamp').val(new Date(image.timestamp).toISOString());
+            $('option[value="' + image.id + '"').text(image.id);
         });
-        fr.addEventListener('progress', function(event) {
-            console.log('fr progress', (100 * (event.loaded/event.total)), '%');
-        });
+    });
 
-        fr.readAsArrayBuffer(file);
-    } else {
-        console.log('Not uploading, missing details');
-        return
-    }
+    // DELETE
+    $(document).on('click', '.imagesTable-remove', function() {
+        var row = $(this).parent().parent();
+        var id = row.find('.imagesTable-imageId').text();
 
-    console.log(properties);
+        socket.emit('delete_image', id);
+        socket.once('delete_image', function(success) {
+            if (success) {
+                row.remove();
+                $('option[value="' + id + '"').remove();
+            }
+        })
+    });
+
+    socket.emit('get_images');
 });
-
-// on user delete button
-body.on('click', '.images-remove', function() {
-    var row = $(this).parent().parent();
-    var properties = {
-        id: row.find('.images-id').text()
-    };
-    console.log('Deleting image', properties);
-    socket.emit('deleteImage', properties);
-});
-
-// Show image
-body.on('click', '.images-id', function() {
-    $(this).parent().find('.images-image').toggle()
-});
-
-body.on('click', '.images-extractCanvas', function() {
-    var imageId = $(this).parent().parent().find('.images-id').text();
-    console.log('Extract Canvas', imageId);
-    socket.emit('autoExtractCanvas', imageId);
-});
-
-socket.on('autoExtractCanvas', function(data) {
-    console.log('autoExtractCanvases', arguments)
-    socket.emit('getCanvases');
-});
-
-socket.on('addImage', function() {
-    console.log('addImage', arguments);
-    $('.images-image_new').val('');
-    socket.emit('getImages');
-});
-
-socket.on('getImages', function(data) {
-    console.log('getImages', arguments);
-    images = data;
-    updateImages();
-});
-
-socket.on('updateImage', function(data) {
-    console.log('updateTimestamp', arguments);
-    socket.emit('getImages');
-});
-
-socket.on('deleteImage', function(data) {
-    console.log('deleteImage', arguments);
-    socket.emit('getImages');
-});
-
-socket.on('addImageFromUri', function(data) {
-    console.log('addImageFromUri', arguments);
-    socket.emit('getImages');
-});
-
-socket.on('getCameraProperties', function(data) {
-    console.log('getCameraProperties', arguments);
-    $('.cameraSettings').text(JSON.stringify(data, null, 2));
-});
-
-socket.on('cameraFocus', function(data) {
-    console.log('cameraFocus got response', data);
-    alert('Camera Focus ' + ((data) ? 'Success' : 'Failed' ));
-});
-
-socket.on('setCameraProperties', function(data) {
-    console.log('setCameraProperties got response', data);
-    alert('Set Camera Properties ' + ((data) ? 'Success' : 'Failed' ));
-});
-
-if(typeof(Storage) !== "undefined") {
-    $('.imageUri').val(localStorage.getItem('cameraUri') || "http://localhost:8080");
-}
-
-socket.emit('getImages');

@@ -128,8 +128,6 @@ $(function() {
             }
         };
 
-        console.log(data);
-
         if (data.sessionId &&
             data.userId &&
             data.camera.host &&
@@ -150,7 +148,6 @@ $(function() {
 
     // READ
     socket.on('get_instance_configurations', function (instanceConfigs) {
-        console.log(instanceConfigs);
         table.empty();
         $('.instanceConfigsList-instanceConfig').remove();
 

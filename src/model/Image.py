@@ -11,11 +11,11 @@ import src.model.processing
 
 class Image(SqliteObject):
 
-    properties = ["id", "timestamp", "sessionId"]
+    properties = ["id", "timestamp", "instanceConfigurationId"]
     table = "images"
 
     def __init__(self,
-                 sessionId,
+                 instanceConfigurationId,
                  npArray=None,
                  id=uuid.uuid4(),
                  timestamp=datetime.datetime.utcnow().replace(tzinfo=pytz.UTC),
@@ -24,15 +24,16 @@ class Image(SqliteObject):
                          database=database)
         self.image = npArray
         self.timestamp = timestamp
-        self.sessionId = sessionId
+        self.instanceConfigurationId = instanceConfigurationId
 
     @staticmethod
-    def from_uri(uri='http://localhost:8080'):
+    def from_uri(instanceConfigurationId, uri='http://localhost:8080'):
         response = requests.get(uri)
 
         if response.status_code == 200:
             nparray = numpy.asarray(bytearray(response.content), dtype="uint8")
             return Image(id=uuid.uuid4(),
+                         instanceConfigurationId=instanceConfigurationId,
                          npArray=cv2.imdecode(nparray, cv2.IMREAD_COLOR))
         else:
             print(response.status_code)
@@ -53,6 +54,7 @@ class Image(SqliteObject):
 
     def create(self, database=None):
         super(Image, self).create(database=database)
+        print('Writing Image to file', self.get_image_path())
         cv2.imwrite(self.get_image_path(), self.image)
         return self
 
@@ -171,8 +173,8 @@ class Image(SqliteObject):
                         canvasTopRightY=canvy[maxTopRight][0],
                         canvasBottomRightX=canvx[maxBottomRight][0],
                         canvasBottomRightY=canvy[maxBottomRight][0],
-                        canvasBottomLeftX = canvx[maxBottomLeft][0],
-                        canvasBottomLeftY = canvy[maxBottomLeft][0])
+                        canvasBottomLeftX= canvx[maxBottomLeft][0],
+                        canvasBottomLeftY= canvy[maxBottomLeft][0])
 
         if save_canvas_to_db:
             canvas.create(self.database)
