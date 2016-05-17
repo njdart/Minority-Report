@@ -1,7 +1,7 @@
 from flask.ext.socketio import emit
 from src.server import socketio
 from src.model.Session import Session
-
+import uuid
 
 @socketio.on('create_session')
 def create_session(name, description):
@@ -16,7 +16,7 @@ def create_session(name, description):
         "description": "fooDescription in short form"
     }
     """
-    emit('create_session', Session(name=name, description=description).create().as_object())
+    emit('create_session', Session(name=name, description=description,  id=uuid.uuid4()).create().as_object())
 
 
 @socketio.on('get_sessions')

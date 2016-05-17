@@ -37,9 +37,9 @@ $(function() {
         var name = row.find('.sessionsTable-add_name').val();
         var description = row.find('.sessionsTable-add_description').val();
 
-        if (name && description) {
-            socket.emit('create_session', name, description);
-        }
+        //if (name && description) {
+        //    socket.emit('create_session', name, description);
+        //}
     });
 
     socket.on('create_session', function(session) {
