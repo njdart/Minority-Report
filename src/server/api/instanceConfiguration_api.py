@@ -34,7 +34,7 @@ def create_instance_configuration(sessionId,
         "bottomRightY": 100,
         "bottomLeftX": 0,
         "bottomLeftY": 100,
-        "id": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+        "id": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"
     }
     """
     emit('create_instance_configuration', InstanceConfiguration(sessionId=sessionId,

@@ -1,6 +1,6 @@
 $(function() {
-    var table = $('.sessionsTable');
-    var instanceConfigurationsLists = $('.instanceConfigurationsLists');
+    var table = $('.instanceConfigsTable');
+    var instanceConfigurationsLists = $('.instanceConfigsList');
 
     var addInstanceConfigToTable = function(instanceConfiguration) {
         var row = $('<tr></tr>').data(instanceConfiguration);
@@ -11,68 +11,77 @@ $(function() {
 
         // Session Id
         row.append($('<td></td>')
-            .append($('<input type="text" class="form-control sessionsTable-sessionName" placeholder="Name">')
-                .val(instanceConfiguration.name)));
+            .append($('<input type="text" class="form-control instanceConfigsTable-sessionId" placeholder="Session ID">')
+                .val(instanceConfiguration.sessionId)));
 
-        // // User Id
-        // row.append($('<td></td>')
-        //     .append($('<input type="text" class="form-control sessionsTable-sessionDescription" placeholder="Description">')
-        //         .val(instanceConfiguration.description)));
-        //
-        // // Save + Remove Button
-        // row.append($('<td></td>')
-        //     .append($('<button type="submit" class="btn btn-primary sessionsTable-save">Save</button>'))
-        //     .append($('<button type="submit" class="btn btn-danger sessionsTable-remove">Remove</button>')));
-        //
-        // table.append(row);
+        // User Id
+        row.append($('<td></td>')
+             .append($('<input type="text" class="form-control instanceConfigsTable-userId" placeholder="User ID">')
+                 .val(instanceConfiguration.userId)));
+
+        // kinect Host
+        row.append($('<td></td>')
+             .append($('<input type="text" class="form-control instanceConfigsTable-kinectHost" placeholder="Kinect Host">')
+                 .val(instanceConfiguration.kinectHost)));
+
+        // Save + Remove Button
+        row.append($('<td></td>')
+            .append($('<button type="submit" class="btn btn-primary instanceConfigsTable-save">Save</button>'))
+            .append($('<button type="submit" class="btn btn-danger instanceConfigsTable-remove">Remove</button>')));
+
+        table.append(row);
         instanceConfigurationsLists.append($('<option class="instanceConfigsTable-config"></option>')
             .attr('value', instanceConfiguration.id)
             .text(instanceConfiguration.id));
     };
 
-//    // CREATE
-//    $('.sessionsTable-add').click(function() {
-//        var row = $(this).parent().parent();
-//
-//        var name = row.find('.sessionsTable-add_name').val();
-//        var description = row.find('.sessionsTable-add_description').val();
-//
-//        if (name && description) {
-//            socket.emit('create_session', name, description);
-//        }
-//    });
-//
-//    socket.on('create_session', function(session) {
-//        addInstanceConfigToTable(session);
-//        $('.sessionsTable-add_name').val('');
-//        $('.sessionsTable-add_description').val('');
-//    });
-//
-//    // READ
-//    socket.on('get_sessions', function (sessions) {
-//
-//        table.empty();
-//        $('.sessionsList-session').remove();
-//
-//        sessions.forEach(addInstanceConfigToTable);
-//    });
-//
-//    // UPDATE
-//    $(document).on('click', '.sessionsTable-save', function() {
-//        var row = $(this).parent().parent();
-//        var id = row.find('.sessionsTable-sessionId').text();
-//        var name = row.find('.sessionsTable-sessionName').val();
-//        var description = row.find('.sessionsTable-sessionDescription').val();
-//
-//        var oldValue = row.data();
-//
-//        if (name !== oldValue.name || description !== oldValue.description) {
-//            socket.emit('update_session', id, name, description);
-//            socket.once('update_session', function(session) {
-//                row.data(session);
-//                row.find('.sessionsTable-sessionName').val(session.name);
-//                row.find('.sessionsTable-sessionDescription').val(session.description);
-//                $('option[value="' + session.id + '"').text(session.name);
+    // CREATE
+    $('.instanceConfigsTable-add').click(function() {
+        var row = $(this).parent().parent();
+
+        var sessionId = row.find('.instanceConfigsTable-add_sessionId').val();
+        var userId = row.find('.instanceConfigsTable-add_userId').val();
+        var kinectHost = row.find('.instanceConfigsTable-add_kinectHost').val();
+
+        if (sessionId && userId && kinectHost) {
+            socket.emit('create_instanceConfig', sessionId, userId, kinectHost);
+        }
+    });
+
+    socket.on('create_instanceConfig', function(instanceConfig) {
+        addInstanceConfigToTable(instanceConfig);
+        $('.instanceConfigsTable-add_sessionId').val('');
+        $('.instanceConfigsTable-add_userId').val('');
+        $('.instanceConfigsTable-add_kinectHost').val('');
+    });
+
+    // READ
+    socket.on('get_instanceConfigs', function (instanceConfigs) {
+
+        table.empty();
+        $('.instanceConfigsList-instanceConfig').remove();
+
+        instanceConfigs.forEach(addInstanceConfigToTable);
+    });
+
+    // UPDATE
+    $(document).on('click', '.instanceConfigsTable-save', function() {
+        var row = $(this).parent().parent();
+        var id = row.find('.instanceConfigsTable-configId').text();
+        var sessionId = row.find('.instanceConfigsTable-sessionId').val();
+        var userId = row.find('.instanceConfigsTable-userId').val();
+        var kinectHost = row.find('.instanceConfigsTable-kinectHost').val();
+
+        var oldValue = row.data();
+
+        if (sessionId !== oldValue.sessionId || userId !== oldValue.userId || kinectHost !== oldValue.kinectHost) {
+            socket.emit('update_instanceConfig', id, sessionId, userId, kinectHost);
+            socket.once('update_session', function(instanceConfig) {
+                row.data(instanceConfig);
+                row.find('.sessionsTable-sessionId').val(instanceConfig.sessionId);
+                row.find('.sessionsTable-userId').val(instanceConfig.userId);
+                row.find('.sessionsTable-kinectHost').val(instanceConfig.kinectHost);
+                $('option[value="' + instanceConfig.id + '"').text(instanceConfig.sessionId);
 //            });
 //        } else {
 //            console.log('No Change to User');
@@ -93,6 +102,6 @@ $(function() {
 //        })
 //    });
 
-    // socket.emit('get_sessions');
+    socket.emit('get_instanceConfigs');
 
 });
