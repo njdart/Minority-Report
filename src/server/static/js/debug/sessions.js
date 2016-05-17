@@ -27,7 +27,7 @@ $(function() {
         table.append(row);
         sessionsLists.append($('<option class="sessionsList-session"></option>')
             .attr('value', session.id)
-            .text(session.name));
+            .text(session.name))
     };
 
     // CREATE
@@ -37,9 +37,9 @@ $(function() {
         var name = row.find('.sessionsTable-add_name').val();
         var description = row.find('.sessionsTable-add_description').val();
 
-        //if (name && description) {
-        //    socket.emit('create_session', name, description);
-        //}
+        if (name && description) {
+            socket.emit('create_session', name, description);
+        }
     });
 
     socket.on('create_session', function(session) {
