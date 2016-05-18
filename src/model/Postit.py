@@ -68,6 +68,28 @@ class Postit(SqliteObject):
 
         return image
 
+    def as_object(self):
+        return {
+            "id": str(self.id),
+            "canvas": str(self.canvas),
+            "topLeft": {
+                "x": self.topLeftX,
+                "y": self.topLeftY
+            },
+            "topRight": {
+                "x": self.topRightX,
+                "y": self.topRightY
+            },
+            "bottomRight": {
+                "x": self.bottomRightX,
+                "y": self.bottomRightY
+            },
+            "bottomLeft": {
+                "x": self.bottomLeftX,
+                "y": self.bottomLeftY
+            }
+        }
+
     def get_image_keystoned(self):
         image = self.get_image()
 

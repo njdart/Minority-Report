@@ -291,7 +291,7 @@
                 <td>
                   <div class="form-group">
                     <label>Derived From Canvas</label>
-                    <input type="text" class="canvasesTable-add_derivedFrom imagesList form-control" placeholder="None">
+                    <input type="text" class="canvasesTable-add_derivedFrom form-control" placeholder="None">
                   </div>
                   <div class="form-group">
                     <label>Derived At</label>
@@ -328,8 +328,61 @@
         </div>
       </div>
 
-      <!-- TODO: POSTITS -->
+      <!-- POSTITS -->
+      <div class="panel panel-info">
+        <div class="panel-heading">Postits</div>
+        <div class="panel-body">
+          <table class="table table-hover">
+            <thead>
+              <td class="col-md-4">ID</td>
+              <td class="col-md-2">Canvas</td>
+              <td class="col-md-2">Corners</td>
+              <td class="col-md-2">Colour</td>
+              <td class="col-md-2"></td>
+            </thead>
+            <tbody class="postitsTable">
 
+            </tbody>
+            <tfoot>
+              <tr>
+                <td></td>
+                <td>
+                  <select class="postitsTable-add_canvas canvasList form-control">
+                    <option selected="selected" value="">None</option>
+                  </select>
+                </td>
+                <td>
+                  <div class="form-group">
+                    <label>Top Left as (x,y)</label>
+                    <input type="text" class="postitsTable-add_topLeft form-control" placeholder="(x,y)">
+                  </div>
+
+                  <div class="form-group">
+                    <label>Top Right as (x,y)</label>
+                    <input type="text" class="postitsTable-add_topRight form-control" placeholder="(x,y)">
+                  </div>
+
+                  <div class="form-group">
+                    <label>Top Right as (x,y)</label>
+                    <input type="text" class="postitsTable-add_bottomRight form-control" placeholder="(x,y)">
+                  </div>
+
+                  <div class="form-group">
+                    <label>Bottom Left as (x,y)</label>
+                    <input type="text" class="postitsTable-add_bottomLeft form-control" placeholder="(x,y)">
+                  </div>
+                </td>
+                <td>
+                  <input type="text" class="form-control postitsTable-add_color" placeholder="orange">
+                </td>
+                <td>
+                  <button type="submit" class="btn btn-success postitsTable-add">Add</button>
+                </td>
+              </tr>
+            </tfoot>
+          </table>
+        </div>
+      </div>
     </div>
 
     <!-- jQuery (necessary for Bootstrap's JavaScript plugins) -->
@@ -348,5 +401,6 @@
     <script src="/static/js/debug/instanceConfiguration.js"></script>
     <script src="/static/js/debug/images.js"></script>
     <script src="/static/js/debug/canvas.js"></script>
+    <script src="/static/js/debug/postits.js"></script>
   </body>
 </html>

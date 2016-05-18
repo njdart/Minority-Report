@@ -3,6 +3,7 @@ from src.server import socketio
 from src.model.Session import Session
 import uuid
 
+
 @socketio.on('create_session')
 def create_session(name, description):
     """

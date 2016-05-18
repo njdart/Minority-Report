@@ -1,49 +1,170 @@
-var postitsTable = $('.postits-tableBody');
-var postits = [];
+$(function() {
 
-function updatePostits() {
-    console.log('Updating Postits');
-    $('.postits-PostitRow').remove();
-    var template = $('.postits-tableBody > .postits-row_template');
+    var table = $('.postitsTable');
+    var canvasesLists = $('.postitsList');
+    var coordUnpackRegexp = /^\(?\s*([0-9]{1,6})[,.:\- ]+([0-9]{1,6})\s*\)?$/g;
 
-    postits.forEach(function(postit) {
-        var tr = template.clone();
-        tr.removeClass('table-row_template');
-        tr.addClass('postits-postitRow');
+    var addPostitToTable = function(postit) {
+        var row = $('<tr></tr>').data(postit);
+    
+        // Canvas ID
+        row.append($('<td class="postitsTable-postitId"></td>')
+            .append($('<a></a>')
+                .text(postit.id)
+                .attr('target', '_blank')
+                .attr('href', '/api/postit/' + postit.id)));
+    
+        // Canvas
+        row.append($('<td></td>')
+            .append($('<input type="text" class="form-control postitsTable-canvasId">')
+                .val(postit.canvas)));
 
-        $(tr).insertBefore(postitsTable.children().last());
-        tr.find('.postits-id').text(postit.id);
-        tr.find('.postits-image').attr('src', 'api/postit/' + postit.id);
-        tr.find('.postits-x').val(postit.realX);
-        tr.find('.postits-y').val(postit.realY);
-        tr.find('.postits-width').val(postit.width);
-        tr.find('.postits-height').val(postit.height);
+        // Corners
+        row.append($('<td></td>')
+            .append($('<div class="form-group"></div>')
+                .append($('<label>TopLeft as (x,y)</label>'))
+                .append($('<input type="text" class="form-control postitsTable-topLeft" placeholder="(x,y)">')
+                    .val('(' + postit.topLeft.x + ',' + postit.topLeft.y + ')')))
+            .append($('<div class="form-group"></div>')
+                .append($('<label>TopRight as (x,y)</label>'))
+                .append($('<input type="text" class="form-control postitsTable-topRight" placeholder="(x,y)">')
+                    .val('(' + postit.topRight.x + ',' + postit.topRight.y + ')')))
+            .append($('<div class="form-group"></div>')
+                .append($('<label>BottomRight as (x,y)</label>'))
+                .append($('<input type="text" class="form-control postitsTable-bottomRight" placeholder="(x,y)">')
+                    .val('(' + postit.bottomRight.x + ',' + postit.bottomRight.y + ')')))
+            .append($('<div class="form-group"></div>')
+                .append($('<label>BottomLeft as (x,y)</label>'))
+                .append($('<input type="text" class="form-control postitsTable-bottomLeft" placeholder="(x,y)">')
+                    .val('(' + postit.bottomLeft.x + ',' + postit.bottomLeft.y + ')'))));
 
-        tr.find('.postits-keystone-x1').val(postit.keystone1X);
-        tr.find('.postits-keystone-y1').val(postit.keystone1Y);
-        tr.find('.postits-keystone-x2').val(postit.keystone2X);
-        tr.find('.postits-keystone-y2').val(postit.keystone2Y);
-        tr.find('.postits-keystone-x3').val(postit.keystone3X);
-        tr.find('.postits-keystone-y3').val(postit.keystone3Y);
-        tr.find('.postits-keystone-x4').val(postit.keystone4X);
-        tr.find('.postits-keystone-y4').val(postit.keystone4Y);
+        // Colour
+        row.append($('<td></td>')
+            .append($('<input type="text" class="form-control postitsTable-colour" placeholder="orange">')));
+
+        // Save + Remove Button
+        row.append($('<td></td>')
+            .append($('<button type="submit" class="btn btn-primary postitsTable-save">Save</button>'))
+            .append($('<button type="submit" class="btn btn-danger postitsTable-remove">Remove</button>')));
+    
+        table.append(row);
+        canvasesLists.append($('<option class="postitsList-postit"></option>')
+            .attr('value', postit.id)
+            .text(postit.id))
+    };
+
+    // CREATE
+    $('.postitsTable-add').click(function() {
+        var row = $(this).parent().parent();
+
+        var canvas = row.find('.postitsTable-add_canvas').val();
+        var colour = row.find('.postitsTable-add_colour').val() || 'orange';
+        var topLeft = coordUnpackRegexp.exec(row.find('.postitsTable-add_topLeft').val());
+        var topRight = coordUnpackRegexp.exec(row.find('.postitsTable-add_topRight').val());
+        var bottomRight = coordUnpackRegexp.exec(row.find('.postitsTable-add_bottomRight').val());
+        var bottomLeft = coordUnpackRegexp.exec(row.find('.postitsTable-add_bottomLeft').val());
+
+        var corners = {
+            topLeft: {
+                x: (topLeft) ? topLeft[1] : null,
+                y: (topLeft) ? topLeft[2] : null
+            },
+            topRight: {
+                x: (topRight) ? topRight[1] : (bottomRight) ? bottomRight[1] : null,
+                y: (topRight) ? topRight[2] : (topLeft) ? topLeft[2] : null
+            },
+            bottomLeft: {
+                x: (bottomLeft) ? bottomLeft[1] : (topLeft) ? topLeft[1] : null,
+                y: (bottomLeft) ? bottomLeft[2] : (bottomRight) ? bottomRight[2] : null
+            },
+            bottomRight: {
+                x: (bottomRight) ? bottomRight[1] : null,
+                y: (bottomRight) ? bottomRight[2] : null
+            }
+        };
+
+        console.log(corners)
+
+        socket.emit('create_postit', canvas, colour, corners);
     });
-}
 
-// Show Postit
-body.on('click', '.postits-id', function() {
-    $(this).parent().find('.postits-image').toggle()
+    socket.on('create_postit', function(canvas) {
+        addPostitToTable(canvas);
+        $('.postitsTable-add_canvas').val('');
+        $('.postitsTable-add_colour').val('');
+        $('.postitsTable-add_topLeft').val('');
+        $('.postitsTable-add_topRight').val('');
+        $('.postitsTable-add_bottomRight').val('');
+        $('.postitsTable-add_bottomLeft').val('');
+    });
+
+    // READ
+    socket.on('get_postits', function (postits) {
+
+        table.empty();
+        $('.postitsList-postit').remove();
+
+        postits.forEach(addPostitToTable);
+    });
+    //
+    // // UPDATE
+    // $(document).on('click', '.canvasesTable-save', function() {
+    //     var row = $(this).parent().parent();
+    //     var id = row.find('.canvasesTable-canvasId').text();
+    //     var image = row.find('.canvasesTable-imageId').val();
+    //     var derivedFrom = row.find('.canvasesTable-derivedFrom').val();
+    //     var derivedAt = new Date(row.find('.canvasesTable-derivedAt').val());
+    //     var topLeft = row.find('.canvasesTable-topLeft').val();
+    //     var topRight = row.find('.canvasesTable-topRight').val();
+    //     var bottomRight = row.find('.canvasesTable-bottomRight').val();
+    //     var bottomLeft = row.find('.canvasesTable-bottomLeft').val();
+    //
+    //     var corners = {
+    //         topLeft: {
+    //             x: (topLeft) ? topLeft[1] : null,
+    //             y: (topLeft) ? topLeft[2] : null
+    //         },
+    //         topRight: {
+    //             x: (topRight) ? topRight[1] : (bottomRight) ? bottomRight[1] : null,
+    //             y: (topRight) ? topRight[2] : (topLeft) ? topLeft[2] : null
+    //         },
+    //         bottomLeft: {
+    //             x: (bottomLeft) ? bottomLeft[1] : (topLeft) ? topLeft[1] : null,
+    //             y: (bottomLeft) ? bottomLeft[2] : (bottomRight) ? bottomRight[2] : null
+    //         },
+    //         bottomRight: {
+    //             x: (bottomRight) ? bottomRight[1] : null,
+    //             y: (bottomRight) ? bottomRight[2] : null
+    //         }
+    //     };
+    //
+    //     socket.emit('update_canvas', id, image, derivedFrom, derivedAt, corners);
+    //     socket.once('update_canvas', function(canvas) {
+    //         row.data(canvas);
+    //         row.find('.canvasesTable-imageId').val(canvas.imageId);
+    //         row.find('.canvasesTable-derivedFrom').val(canvas.derivedFrom);
+    //         row.find('.canvasesTable-imageId').val(new Date(canvas.derivedAt).toISOString());
+    //         row.find('.canvasesTable-topLeft').val('(' + canvas.topLeft.x + ',' + canvas.topLeft.y + ')');
+    //         row.find('.canvasesTable-topRight').val('(' + canvas.topRight.x + ',' + canvas.topRight.y + ')');
+    //         row.find('.canvasesTable-bottomRight').val('(' + canvas.bottomRight.x + ',' + canvas.bottomRight.y + ')');
+    //         row.find('.canvasesTable-bottomLeft').val('(' + canvas.bottomLeft.x + ',' + canvas.bottomLeft.y + ')');
+    //         $('option[value="' + image.id + '"').text(image.id);
+    //     });
+    // });
+    //
+    // DELETE
+    $(document).on('click', '.postitsTable-remove', function() {
+        var row = $(this).parent().parent();
+        var id = row.find('.postitsTable-postitId').text();
+
+        socket.emit('delete_postit', id);
+        socket.once('delete_postit', function(success) {
+            if (success) {
+                row.remove();
+                $('option[value="' + id + '"').remove();
+            }
+        })
+    });
+
+    socket.emit('get_postits');
 });
-
-socket.on('getPostits', function(data) {
-    console.log('GetPostits', arguments);
-    postits = data;
-    updatePostits();
-});
-
-socket.on('autoExtractPostits', function() {
-    console.log('autoExtractPostits', arguments);
-    socket.emit('getPostits');
-});
-
-socket.emit('getPostits');
