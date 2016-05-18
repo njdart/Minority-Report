@@ -106,52 +106,50 @@ $(function() {
 
         postits.forEach(addPostitToTable);
     });
-    //
-    // // UPDATE
-    // $(document).on('click', '.canvasesTable-save', function() {
-    //     var row = $(this).parent().parent();
-    //     var id = row.find('.canvasesTable-canvasId').text();
-    //     var image = row.find('.canvasesTable-imageId').val();
-    //     var derivedFrom = row.find('.canvasesTable-derivedFrom').val();
-    //     var derivedAt = new Date(row.find('.canvasesTable-derivedAt').val());
-    //     var topLeft = row.find('.canvasesTable-topLeft').val();
-    //     var topRight = row.find('.canvasesTable-topRight').val();
-    //     var bottomRight = row.find('.canvasesTable-bottomRight').val();
-    //     var bottomLeft = row.find('.canvasesTable-bottomLeft').val();
-    //
-    //     var corners = {
-    //         topLeft: {
-    //             x: (topLeft) ? topLeft[1] : null,
-    //             y: (topLeft) ? topLeft[2] : null
-    //         },
-    //         topRight: {
-    //             x: (topRight) ? topRight[1] : (bottomRight) ? bottomRight[1] : null,
-    //             y: (topRight) ? topRight[2] : (topLeft) ? topLeft[2] : null
-    //         },
-    //         bottomLeft: {
-    //             x: (bottomLeft) ? bottomLeft[1] : (topLeft) ? topLeft[1] : null,
-    //             y: (bottomLeft) ? bottomLeft[2] : (bottomRight) ? bottomRight[2] : null
-    //         },
-    //         bottomRight: {
-    //             x: (bottomRight) ? bottomRight[1] : null,
-    //             y: (bottomRight) ? bottomRight[2] : null
-    //         }
-    //     };
-    //
-    //     socket.emit('update_canvas', id, image, derivedFrom, derivedAt, corners);
-    //     socket.once('update_canvas', function(canvas) {
-    //         row.data(canvas);
-    //         row.find('.canvasesTable-imageId').val(canvas.imageId);
-    //         row.find('.canvasesTable-derivedFrom').val(canvas.derivedFrom);
-    //         row.find('.canvasesTable-imageId').val(new Date(canvas.derivedAt).toISOString());
-    //         row.find('.canvasesTable-topLeft').val('(' + canvas.topLeft.x + ',' + canvas.topLeft.y + ')');
-    //         row.find('.canvasesTable-topRight').val('(' + canvas.topRight.x + ',' + canvas.topRight.y + ')');
-    //         row.find('.canvasesTable-bottomRight').val('(' + canvas.bottomRight.x + ',' + canvas.bottomRight.y + ')');
-    //         row.find('.canvasesTable-bottomLeft').val('(' + canvas.bottomLeft.x + ',' + canvas.bottomLeft.y + ')');
-    //         $('option[value="' + image.id + '"').text(image.id);
-    //     });
-    // });
-    //
+
+    // UPDATE
+    $(document).on('click', '.postitsTable-save', function() {
+        var row = $(this).parent().parent();
+        var id = row.find('.postitsTable-postitId').text();
+        var canvas = row.find('.postitsTable-canvas').val();
+        var colour = row.find('.postitsTable-colour').val();
+        var topLeft = row.find('.postitsTable-topLeft').val();
+        var topRight = row.find('.postitsTable-topRight').val();
+        var bottomRight = row.find('.postitsTable-bottomRight').val();
+        var bottomLeft = row.find('.postitsTable-bottomLeft').val();
+
+        var corners = {
+            topLeft: {
+                x: (topLeft) ? topLeft[1] : null,
+                y: (topLeft) ? topLeft[2] : null
+            },
+            topRight: {
+                x: (topRight) ? topRight[1] : (bottomRight) ? bottomRight[1] : null,
+                 y: (topRight) ? topRight[2] : (topLeft) ? topLeft[2] : null
+            },
+            bottomLeft: {
+                x: (bottomLeft) ? bottomLeft[1] : (topLeft) ? topLeft[1] : null,
+                 y: (bottomLeft) ? bottomLeft[2] : (bottomRight) ? bottomRight[2] : null
+            },
+            bottomRight: {
+                x: (bottomRight) ? bottomRight[1] : null,
+                y: (bottomRight) ? bottomRight[2] : null
+            }
+        };
+
+        socket.emit('update_postit', id, image, derivedFrom, derivedAt, corners);
+        socket.once('update_postit', function(postit) {
+            row.data(postit);
+            row.find('.postitsTable-canvas').val(postit.canvas);
+            row.find('.postitsTable-colour').val(postit.colour);
+            row.find('.postitsTable-topLeft').val('(' + postit.topLeft.x + ',' + postit.topLeft.y + ')');
+            row.find('.postitsTable-topRight').val('(' + postit.topRight.x + ',' + postit.topRight.y + ')');
+            row.find('.postitsTable-bottomRight').val('(' + postit.bottomRight.x + ',' + postit.bottomRight.y + ')');
+            row.find('.postitsTable-bottomLeft').val('(' + postit.bottomLeft.x + ',' + postit.bottomLeft.y + ')');
+            $('option[value="' + canvas.id + '"').text(canvas.id);
+        });
+    });
+
     // DELETE
     $(document).on('click', '.postitsTable-remove', function() {
         var row = $(this).parent().parent();

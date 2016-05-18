@@ -27,6 +27,24 @@ def create_postit(canvas, colour, corners):
          .create().as_object())
 
 
+@socketio.on('update_postit')
+def update_canvas(id, canvas, colour, corners):
+    postit = Postit.get(id=id)
+
+    postit.canvas = canvas
+    postit.colour = colour
+    postit.topLeftX = corners["topLeft"]["x"] if "topLeft" in corners else None
+    postit.topLeftY = corners["topLeft"]["y"] if "topLeft" in corners else None
+    postit.topRightX = corners["topRight"]["x"] if "topRight" in corners else None
+    postit.topRightY = corners["topRight"]["y"] if "topRight" in corners else None
+    postit.bottomLeftX = corners["bottomLeft"]["x"] if "bottomLeft" in corners else None
+    postit.bottomLeftY = corners["bottomLeft"]["y"] if "bottomLeft" in corners else None
+    postit.bottomRightX = corners["bottomRight"]["x"] if "bottomRight" in corners else None
+    postit.bottomRightY = corners["bottomRight"]["y"] if "bottomRight" in corners else None
+
+    emit('update_canvas', postit.update().as_object())
+
+
 @socketio.on('delete_postit')
 def delete_postit(id):
     emit('delete_postit', Postit.get(id=id).delete())
