@@ -2,6 +2,7 @@ import datetime
 import cv2
 import numpy
 import os
+import uuid
 from flask import send_from_directory
 from flask.ext.socketio import emit
 from src.model.Image import Image
@@ -10,13 +11,13 @@ from src.server import (app, socketio)
 
 @socketio.on('create_image')
 def create_image(file, createdAt, instanceConfigurationId):
-    timestamp = datetime.datetime.strptime(createdAt, '%Y-%m-%dT%H:%M:%S.%fZ')
 
     arr = numpy.fromstring(file, numpy.uint8)
     npArr = cv2.imdecode(arr, cv2.IMREAD_COLOR)
 
     emit('create_image', Image(npArray=npArr,
-                               timestamp=timestamp,
+                               timestamp=createdAt,
+                               id=uuid.uuid4(),
                                instanceConfigurationId=instanceConfigurationId).create().as_object())
 
 

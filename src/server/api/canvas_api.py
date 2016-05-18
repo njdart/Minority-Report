@@ -15,7 +15,6 @@ def get_canvases():
 
 @socketio.on('create_canvas')
 def create_canvas(image, derivedAt, derivedFrom, corners):
-    derivedAt = datetime.datetime.strptime(derivedAt, '%Y-%m-%dT%H:%M:%S.%fZ') if derivedAt else None
     emit('create_canvas', Canvas(image=image,
                                  derivedAt=derivedAt,
                                  derivedFrom=derivedFrom,

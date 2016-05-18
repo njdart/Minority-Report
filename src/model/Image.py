@@ -1,12 +1,11 @@
 import datetime
+import os
 import uuid
 import cv2
-import os
-import requests
 import numpy
-from src.model.SqliteObject import SqliteObject
-import pytz
+import requests
 import src.model.processing
+from src.model.SqliteObject import SqliteObject
 
 
 class Image(SqliteObject):
@@ -18,7 +17,7 @@ class Image(SqliteObject):
                  instanceConfigurationId,
                  npArray=None,
                  id=uuid.uuid4(),
-                 timestamp=datetime.datetime.utcnow().replace(tzinfo=pytz.UTC),
+                 timestamp=None,
                  database=None):
         super().__init__(id=id,
                          database=database)
@@ -117,23 +116,25 @@ class Image(SqliteObject):
         before being returned (default True)
         """
 
-        # Grab a black+white smooth image
+        # Grab a grayscale smooth image
         smooth_img = src.model.processing.grayscale_smooth(self.get_image_array())
+        # Binarize image
         _, threshold_board = cv2.threshold(smooth_img, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
 
         # grab a list of contours on the board
         (_, board_contours, _) = cv2.findContours(threshold_board, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
         areas = [cv2.contourArea(c) for c in board_contours]
 
-        # get the biggest contour area
+        # Get contour with the largest area, assuming that it is the canvas
         max_index = numpy.argmax(areas)
         canvas_contour = board_contours[max_index]
         fcanvas_contours = canvas_contour.flatten()
 
+        # Create list to hold canvas x and y coordinates
         canvx = numpy.zeros([int(len(fcanvas_contours) / 2), 1])
         canvy = numpy.zeros([int(len(fcanvas_contours) / 2), 1])
 
-        # extract corner points
+        # Lists to store how well a point scores relative to the 4 corners.
         topLeft = numpy.zeros(int(len(fcanvas_contours) / 2))
         topRight = numpy.zeros(int(len(fcanvas_contours) / 2))
         bottomRight = numpy.zeros(int(len(fcanvas_contours) / 2))

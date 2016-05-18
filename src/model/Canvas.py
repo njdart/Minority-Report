@@ -94,7 +94,7 @@ class Canvas(SqliteObject):
             "id": str(self.id),
             "image": self.image,
             "derivedFrom": str(self.derivedFrom),
-            "derivedAt": self.derivedAt,
+            "derivedAt": str(self.derivedAt),
             "topLeft": {
                 "x": self.canvasTopLeftX,
                 "y": self.canvasTopLeftY

@@ -4,6 +4,7 @@ $(function() {
     var imagesList = $('.imagesList');
 
     var addImageToTable = function(image) {
+    console.log(image)
         var row = $('<tr></tr>').data(image);
     
         // Image ID
