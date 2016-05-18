@@ -39,7 +39,7 @@ $(function() {
         var row = $(this).parent().parent();
 
         var file = row.find('.imagesTable-add_image').prop('files');
-        var timestamp = row.find('.sessionsTable-add_timestamp').val();
+        var timestamp = row.find('.imagesTable-add_timestamp').val();
         timestamp = (timestamp) ? new Date(timestamp) : new Date();
         var instanceConfigId = row.find('.imagesTable-add_instanceConfigId').val();
 

@@ -5,11 +5,53 @@ from flask.ext.socketio import emit
 from werkzeug.exceptions import NotFound
 from src.model.Canvas import Canvas
 from src.server import (app, socketio)
+import datetime
 
 
-@socketio.on('getCanvases')
-def getCanvases():
-    emit('getCanvases', [canvas.as_object() for canvas in Canvas.get_all()])
+@socketio.on('get_canvases')
+def get_canvases():
+    emit('get_canvases', [canvas.as_object() for canvas in Canvas.get_all()])
+
+
+@socketio.on('create_canvas')
+def create_canvas(image, derivedAt, derivedFrom, corners):
+    derivedAt = datetime.datetime.strptime(derivedAt, '%Y-%m-%dT%H:%M:%S.%fZ') if derivedAt else None
+    emit('create_canvas', Canvas(image=image,
+                                 derivedAt=derivedAt,
+                                 derivedFrom=derivedFrom,
+                                 canvasTopLeftX=corners["topLeft"]["x"] if "topLeft" in corners else None,
+                                 canvasTopLeftY=corners["topLeft"]["y"] if "topLeft" in corners else None,
+                                 canvasTopRightX=corners["topRight"]["x"] if "topRight" in corners else None,
+                                 canvasTopRightY=corners["topRight"]["y"] if "topRight" in corners else None,
+                                 canvasBottomLeftX=corners["bottomLeft"]["x"] if "bottomLeft" in corners else None,
+                                 canvasBottomLeftY=corners["bottomLeft"]["y"] if "bottomLeft" in corners else None,
+                                 canvasBottomRightX=corners["bottomRight"]["x"] if "bottomRight" in corners else None,
+                                 canvasBottomRightY=corners["bottomRight"]["y"] if "bottomRight" in corners else None)
+         .create().as_object())
+
+
+@socketio.on('delete_canvas')
+def delete_canvas(id):
+    emit('delete_canvas', Canvas.get(id=id).delete())
+
+
+@socketio.on('update_canvas')
+def update_canvas(id, image, derivedFrom, derivedAt, corners):
+    canvas = Canvas.get(id=id)
+
+    canvas.image = image
+    canvas.derivedAt = derivedAt
+    canvas.derivedFrom = derivedFrom
+    canvas.canvasTopLeftX = corners["topLeft"]["x"] if "topLeft" in corners else None
+    canvas.canvasTopLeftY = corners["topLeft"]["y"] if "topLeft" in corners else None
+    canvas.canvasTopRightX = corners["topRight"]["x"] if "topRight" in corners else None
+    canvas.canvasTopRightY = corners["topRight"]["y"] if "topRight" in corners else None
+    canvas.canvasBottomLeftX = corners["bottomLeft"]["x"] if "bottomLeft" in corners else None
+    canvas.canvasBottomLeftY = corners["bottomLeft"]["y"] if "bottomLeft" in corners else None
+    canvas.canvasBottomRightX = corners["bottomRight"]["x"] if "bottomRight" in corners else None
+    canvas.canvasBottomRightY = corners["bottomRight"]["y"] if "bottomRight" in corners else None
+
+    emit('update_canvas', canvas.update().as_object())
 
 
 @socketio.on('autoExtractPostits')

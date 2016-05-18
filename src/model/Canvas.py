@@ -89,6 +89,30 @@ class Canvas(SqliteObject):
         self.derivedFrom = derivedFrom
         self.derivedAt = derivedAt
 
+    def as_object(self):
+        return {
+            "id": str(self.id),
+            "image": self.image,
+            "derivedFrom": str(self.derivedFrom),
+            "derivedAt": self.derivedAt,
+            "topLeft": {
+                "x": self.canvasTopLeftX,
+                "y": self.canvasTopLeftY
+            },
+            "topRight": {
+                "x": self.canvasTopRightX,
+                "y": self.canvasTopRightY
+            },
+            "bottomRight": {
+                "x": self.canvasBottomRightX,
+                "y": self.canvasBottomRightY
+            },
+            "bottomLeft": {
+                "x": self.canvasBottomLeftX,
+                "y": self.canvasBottomLeftY
+            },
+        }
+
     def get_postit(self, id):
         """
         get a postit by it's id"""

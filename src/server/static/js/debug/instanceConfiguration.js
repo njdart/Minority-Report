@@ -94,10 +94,10 @@ $(function() {
     $('.instanceConfigsTable-add').click(function() {
         var row = $(this).parent().parent();
 
-        var topLeft = row.find('.instanceConfigsTable-add_topLeft').val().match(coordUnpackRegexp);
-        var topRight = row.find('.instanceConfigsTable-add_topRight').val().match(coordUnpackRegexp);
-        var bottomRight = row.find('.instanceConfigsTable-add_bottomRight').val().match(coordUnpackRegexp);
-        var bottomLeft = row.find('.instanceConfigsTable-add_bottomLeft').val().match(coordUnpackRegexp);
+        var topLeft = coordUnpackRegexp.exec(row.find('.instanceConfigsTable-add_topLeft').val());
+        var topRight = coordUnpackRegexp.exec(row.find('.instanceConfigsTable-add_topRight').val());
+        var bottomRight = coordUnpackRegexp.exec(row.find('.instanceConfigsTable-add_bottomRight').val());
+        var bottomLeft = coordUnpackRegexp.exec(row.find('.instanceConfigsTable-add_bottomLeft').val());
 
         var data = {
             sessionId: row.find('.instanceConfigsTable-add_sessionId').val(),
@@ -144,6 +144,9 @@ $(function() {
         $('.instanceConfigsTable-add_sessionId').val('');
         $('.instanceConfigsTable-add_userId').val('');
         $('.instanceConfigsTable-add_kinectHost').val('');
+        $('.instanceConfigsTable-add_kinectPort').val('');
+        $('.instanceConfigsTable-add_cameraHost').val('');
+        $('.instanceConfigsTable-add_cameraPort').val('');
     });
 
     // READ
@@ -158,10 +161,11 @@ $(function() {
     $(document).on('click', '.instanceConfigsTable-save', function() {
         var row = $(this).parent().parent();
 
-        var topLeft = row.find('.instanceConfigsTable-add_topLeft').val().match(coordUnpackRegexp);
-        var topRight = row.find('.instanceConfigsTable-add_topRight').val().match(coordUnpackRegexp);
-        var bottomRight = row.find('.instanceConfigsTable-add_bottomRight').val().match(coordUnpackRegexp);
-        var bottomLeft = row.find('.instanceConfigsTable-add_bottomLeft').val().match(coordUnpackRegexp);
+        var id = row.find('.instanceConfigsTable-id').val().match(coordUnpackRegexp);
+        var topLeft = row.find('.instanceConfigsTable-topLeft').val().match(coordUnpackRegexp);
+        var topRight = row.find('.instanceConfigsTable-topRight').val().match(coordUnpackRegexp);
+        var bottomRight = row.find('.instanceConfigsTable-bottomRight').val().match(coordUnpackRegexp);
+        var bottomLeft = row.find('.instanceConfigsTable-bottomLeft').val().match(coordUnpackRegexp);
 
         var data = {
             sessionId: row.find('.instanceConfigsTable-add_sessionId').val(),
@@ -192,7 +196,7 @@ $(function() {
             }
         };
 
-        socket.emit('update_instanceConfig', id, sessionId, userId, kinectHost);
+        socket.emit('update_instanceConfig', data);
         socket.once('update_session', function(instanceConfig) {
             row.data(instanceConfig);
             row.find('.sessionsTable-sessionId').val(instanceConfig.sessionId);

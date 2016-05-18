@@ -264,7 +264,70 @@
           </table>
         </div>
       </div>
-      <!-- TODO: CANVASES -->
+
+      <!-- CANVASES -->
+      <div class="panel panel-info">
+        <div class="panel-heading">Canvases</div>
+        <div class="panel-body">
+          <table class="table table-hover">
+            <thead>
+              <td class="col-md-4">ID</td>
+              <td class="col-md-2">Image</td>
+              <td class="col-md-2">Derivation</td>
+              <td class="col-md-2">Corners</td>
+              <td class="col-md-2"></td>
+            </thead>
+            <tbody class="canvasesTable">
+
+            </tbody>
+            <tfoot>
+              <tr>
+                <td></td>
+                <td>
+                  <select class="canvasesTable-add_image imagesList form-control">
+                    <option selected="selected" value="">None</option>
+                  </select>
+                </td>
+                <td>
+                  <div class="form-group">
+                    <label>Derived From Canvas</label>
+                    <input type="text" class="canvasesTable-add_derivedFrom imagesList form-control" placeholder="None">
+                  </div>
+                  <div class="form-group">
+                    <label>Derived At</label>
+                    <input type="text" class="canvasesTable-add_derivedAt form-control" placeholder="Now">
+                  </div>
+                </td>
+                <td>
+                  <div class="form-group">
+                    <label>Top Left as (x,y)</label>
+                    <input type="text" class="form-control canvasesTable-add_topLeft" placeholder="(x,y)">
+                  </div>
+
+                  <div class="form-group">
+                    <label>Top Right as (x,y)</label>
+                    <input type="text" class="form-control canvasesTable-add_topRight" placeholder="(x,y)">
+                  </div>
+
+                  <div class="form-group">
+                    <label>Bottom Right as (x,y)</label>
+                    <input type="text" class="form-control canvasesTable-add_bottomRight" placeholder="(x,y)">
+                  </div>
+
+                  <div class="form-group">
+                    <label>Bottom Left as (x,y)</label>
+                    <input type="text" class="form-control canvasesTable-add_bottomLeft" placeholder="(x,y)">
+                  </div>
+                </td>
+                <td>
+                  <button type="submit" class="btn btn-success canvasesTable-add">Add</button>
+                </td>
+              </tr>
+            </tfoot>
+          </table>
+        </div>
+      </div>
+
       <!-- TODO: POSTITS -->
 
     </div>
@@ -284,5 +347,6 @@
     <script src="/static/js/debug/sessions.js"></script>
     <script src="/static/js/debug/instanceConfiguration.js"></script>
     <script src="/static/js/debug/images.js"></script>
+    <script src="/static/js/debug/canvas.js"></script>
   </body>
 </html>

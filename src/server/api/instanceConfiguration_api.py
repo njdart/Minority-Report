@@ -84,4 +84,26 @@ def delete_instance_configuration(configurationId):
     emit('delete_instance_configuration', InstanceConfiguration.get(configurationId).delete())
 
 
+@socketio.on('update_instanceConfig')
+def update_instanceConfig(details):
+    config = InstanceConfiguration.get(id=id)
+
+    config.sessionId = details["sessionId"]
+    config.userId = details["userId"]
+    config.cameraHost = details["camera"]["host"]
+    config.cameraPort = details["camera"]["port"]
+    config.kinectHost = details["kinect"]["host"]
+    config.kinectPort = details["kinect"]["port"]
+    config.topLeftX = details["topLeft"]["x"] if "topLeft" in details else None
+    config.topLeftY = details["topLeft"]["y"] if "topLeft" in details else None
+    config.topRightX = details["topRight"]["x"] if "topRight" in details else None
+    config.topRightY = details["topRight"]["y"] if "topRight" in details else None
+    config.bottomRightX = details["bottomRight"]["x"] if "bottomRight" in details else None
+    config.bottomRightY = details["bottomRight"]["y"] if "bottomRight" in details else None
+    config.bottomLeftX = details["bottomLeft"]["x"] if "bottomLeft" in details else None
+    config.bottomLeftY = details["bottomLeft"]["y"] if "bottomLeft" in details else None
+
+    emit('update_instanceConfig', config.update().as_object())
+
+
 print('Registered Instance Configuration API methods')
