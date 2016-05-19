@@ -66,4 +66,10 @@ def delete_session(id):
     """
     emit('delete_session', Session.get(id=id).delete())
 
+
+@socketio.on('get_postits_by_session')
+def get_postits_by_session(sessionId):
+    session = Session.get(sessionId)
+
+
 print('Registered Session API methods')

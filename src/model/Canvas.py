@@ -32,8 +32,8 @@ class Canvas(SqliteObject):
                  connections=[],
                  derivedFrom=None,
                  derivedAt=datetime.datetime.now(),
-                 width=1920,
-                 height=1080
+                 width=None,
+                 height=None
                  ):
         """
         :param session UUID v4 of session to which canvas belongs
@@ -50,8 +50,8 @@ class Canvas(SqliteObject):
         self.connections = connections
         self.derivedFrom = derivedFrom
         self.derivedAt = derivedAt
-        self.width = width
-        self.height = height
+        self.width = width if width is not None and height is not None else 1920
+        self.height = height if width is not None and height is not None else 1080
 
     def as_object(self):
         return {
@@ -59,8 +59,8 @@ class Canvas(SqliteObject):
             "session": str(self.session),
             "derivedFrom": str(self.derivedFrom),
             "derivedAt": str(self.derivedAt),
-            "width": str(self.width),
-            "height": str(self.height),
+            "width": self.width,
+            "height": self.height,
         }
 
     def get_postit(self, id):

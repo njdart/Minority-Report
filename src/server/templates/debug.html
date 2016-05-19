@@ -41,9 +41,11 @@
         <div class="panel-body">
           <table class="table table-hover">
             <thead>
-              <td class="col-md-4">ID</td>
-              <td class="col-md-6">Username</td>
-              <td class="col-md-2"></td>
+              <tr>
+                <td class="col-md-4">ID</td>
+                <td class="col-md-6">Username</td>
+                <td class="col-md-2"></td>
+              </tr>
             </thead>
             <tbody class="usersTable">
 
@@ -52,6 +54,7 @@
               <tr>
                 <td></td>
                 <td>
+                  <label>Username</label>
                   <input type="text" class="form-control usersTable-add_username" placeholder="Username">
                 </td>
                 <td>
@@ -69,10 +72,12 @@
         <div class="panel-body">
           <table class="table table-hover">
             <thead>
-              <td class="col-md-4">ID</td>
-              <td class="col-md-3">Name</td>
-              <td class="col-md-3">Description</td>
-              <td class="col-md-2"></td>
+              <tr>
+                <td class="col-md-4">ID</td>
+                <td class="col-md-3">Name</td>
+                <td class="col-md-3">Description</td>
+                <td class="col-md-2"></td>
+              </tr>
             </thead>
             <tbody class="sessionsTable">
 
@@ -81,9 +86,11 @@
               <tr>
                 <td></td>
                 <td>
+                  <label>Name</label>
                   <input type="text" class="form-control sessionsTable-add_name" placeholder="Name">
                 </td>
                 <td>
+                  <label>Description</label>
                   <input type="text" class="form-control sessionsTable-add_description" placeholder="Description">
                 </td>
                 <td>
@@ -101,9 +108,11 @@
         <div class="panel-body">
           <table class="table table-hover">
             <thead>
-              <td class="col-md-4">ID</td>
-              <td class="col-md-6">Details</td>
-              <td class="col-md-2"></td>
+              <tr>
+                <td class="col-md-4">ID</td>
+                <td class="col-md-6">Details</td>
+                <td class="col-md-2"></td>
+              </tr>
             </thead>
             <tbody class="instanceConfigsTable">
 
@@ -218,10 +227,12 @@
         <div class="panel-body">
           <table class="table table-hover">
             <thead>
-              <td class="col-md-4">ID</td>
-              <td class="col-md-3">Timestamp</td>
-              <td class="col-md-3">InstanceConfiguration</td>
-              <td class="col-md-2"></td>
+              <tr>
+                <td class="col-md-4">ID</td>
+                <td class="col-md-3">Timestamp</td>
+                <td class="col-md-3">InstanceConfiguration</td>
+                <td class="col-md-2"></td>
+              </tr>
             </thead>
             <tbody class="imagesTable">
 
@@ -229,12 +240,15 @@
             <tfoot>
               <tr>
                 <td>
+                  <label>File</label>
                   <input type="file" class="form-control imagesTable-add_image" placeholder="Name">
                 </td>
                 <td>
+                  <label>Timestamp</label>
                   <input type="text" class="form-control imagesTable-add_timestamp" placeholder="Now">
                 </td>
                 <td>
+                  <label>Instance Configuration</label>
                   <select class="imagesTable-add_instanceConfigId instanceConfigsList form-control">
                     <option selected="selected" value="">None</option>
                   </select>
@@ -246,12 +260,15 @@
 
               <tr>
                 <td>
+                  <label>Camera Host</label>
                   <input type="text" class="form-control imagesTable-add_imageUri" placeholder="localhost">
                 </td>
                 <td>
+                  <label>Camera Port</label>
                   <input type="text" class="form-control imagesTable-add_imagePort" placeholder="8080">
                 </td>
                 <td>
+                  <label>Instance Configuration</label>
                   <select class="imagesTable-add_instanceConfigId instanceConfigsList form-control">
                     <option selected="selected" value="">None</option>
                   </select>
@@ -271,11 +288,13 @@
         <div class="panel-body">
           <table class="table table-hover">
             <thead>
-              <td class="col-md-4">ID</td>
-              <td class="col-md-2">Image</td>
-              <td class="col-md-2">Derivation</td>
-              <td class="col-md-2">Corners</td>
-              <td class="col-md-2"></td>
+              <tr>
+                <td class="col-md-4">ID</td>
+                <td class="col-md-2">Session</td>
+                <td class="col-md-2">Derivations</td>
+                <td class="col-md-2">Size</td>
+                <td class="col-md-2"></td>
+              </tr>
             </thead>
             <tbody class="canvasesTable">
 
@@ -284,14 +303,17 @@
               <tr>
                 <td></td>
                 <td>
-                  <select class="canvasesTable-add_image imagesList form-control">
+                  <label>Session</label>
+                  <select class="canvasesTable-add_session sessionsList form-control">
                     <option selected="selected" value="">None</option>
                   </select>
                 </td>
                 <td>
                   <div class="form-group">
                     <label>Derived From Canvas</label>
-                    <input type="text" class="canvasesTable-add_derivedFrom form-control" placeholder="None">
+                    <select class="form-control canvasesTable-add_derivedFrom canvasList">
+                      <option value>None</option>
+                    </select>
                   </div>
                   <div class="form-group">
                     <label>Derived At</label>
@@ -300,23 +322,8 @@
                 </td>
                 <td>
                   <div class="form-group">
-                    <label>Top Left as (x,y)</label>
-                    <input type="text" class="form-control canvasesTable-add_topLeft" placeholder="(x,y)">
-                  </div>
-
-                  <div class="form-group">
-                    <label>Top Right as (x,y)</label>
-                    <input type="text" class="form-control canvasesTable-add_topRight" placeholder="(x,y)">
-                  </div>
-
-                  <div class="form-group">
-                    <label>Bottom Right as (x,y)</label>
-                    <input type="text" class="form-control canvasesTable-add_bottomRight" placeholder="(x,y)">
-                  </div>
-
-                  <div class="form-group">
-                    <label>Bottom Left as (x,y)</label>
-                    <input type="text" class="form-control canvasesTable-add_bottomLeft" placeholder="(x,y)">
+                    <label>Size as (width,height)</label>
+                    <input type="text" class="canvasesTable-add_size form-control" placeholder="(1920,1080)">
                   </div>
                 </td>
                 <td>
@@ -334,11 +341,13 @@
         <div class="panel-body">
           <table class="table table-hover">
             <thead>
-              <td class="col-md-4">ID</td>
-              <td class="col-md-2">Canvas</td>
-              <td class="col-md-2">Corners</td>
-              <td class="col-md-2">Colour</td>
-              <td class="col-md-2"></td>
+            <tr>
+                <td class="col-md-4">ID</td>
+                <td class="col-md-2">Canvas</td>
+                <td class="col-md-2">Corners</td>
+                <td class="col-md-2">Details</td>
+                <td class="col-md-2"></td>
+              </tr>
             </thead>
             <tbody class="postitsTable">
 
@@ -347,6 +356,7 @@
               <tr>
                 <td></td>
                 <td>
+                  <label>Canvas</label>
                   <select class="postitsTable-add_canvas canvasList form-control">
                     <option selected="selected" value="">None</option>
                   </select>
@@ -371,9 +381,33 @@
                     <label>Bottom Left as (x,y)</label>
                     <input type="text" class="postitsTable-add_bottomLeft form-control" placeholder="(x,y)">
                   </div>
+
+                  <div class="form-group">
+                    <label>Display Position (x,y)</label>
+                    <input type="text" class="postitsTable-add_displayPosition form-control" placeholder="(x,y)">
+                  </div>
+
+                  <div class="form-group">
+                    <label>Bottom Left as (x,y)</label>
+                    <input type="text" class="postitsTable-add_bottomLeft form-control" placeholder="(x,y)">
+                  </div>
                 </td>
                 <td>
-                  <input type="text" class="form-control postitsTable-add_color" placeholder="orange">
+                  <div class="form-group">
+                    <label>Colour</label>
+                    <input type="text" class="form-control postitsTable-add_color" placeholder="orange">
+                  </div>
+                  <div class="form-group">
+                    <label>Physical For</label>
+                    <select class="form-control usersList">
+                      <option value="">None</option>
+                    </select>
+                  </div>
+
+                  <div class="form-group">
+                    <label>Display Position as (x,y)</label>
+                    <input type="text" class="postitsTable-add_displayPos form-control" placeholder="(x,y)">
+                  </div>
                 </td>
                 <td>
                   <button type="submit" class="btn btn-success postitsTable-add">Add</button>

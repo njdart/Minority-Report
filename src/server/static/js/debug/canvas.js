@@ -9,16 +9,15 @@ $(function() {
     
         // Canvas ID
         row.append($('<td class="canvasesTable-canvasId"></td>')
-            .append($('<a></a>')
-                .text(canvas.id)
-                .attr('target', '_blank')
-                .attr('href', '/api/canvas/' + canvas.id)));
-    
-        // Image
+            .text(canvas.id));
+
+        // Session
         row.append($('<td></td>')
-            .append($('<input type="text" class="form-control canvasesTable-imageId">')
-                .val(canvas.image)));
-    
+            .append($('<div class="form-group"></div>')
+                .append($('<label>Session</label>'))
+                .append($('<input type="text" class="form-control canvasesTable-sessionId">')
+                    .val(canvas.session))));
+
         // Derivations
         row.append($('<td></td>')
             .append($('<div class="form-group"></div>')
@@ -30,24 +29,12 @@ $(function() {
                 .append($('<input type="text" class="form-control canvasesTable-derivedAt" placeholder="Now">')
                     .val(new Date(canvas.derivedAt).toISOString()))));
 
-        // Corners
+        // Size
         row.append($('<td></td>')
             .append($('<div class="form-group"></div>')
-                .append($('<label>TopLeft as (x,y)</label>'))
-                .append($('<input type="text" class="form-control canvasesTable-topLeft" placeholder="(x,y)">')
-                    .val('(' + canvas.topLeft.x + ',' + canvas.topLeft.y + ')')))
-            .append($('<div class="form-group"></div>')
-                .append($('<label>TopRight as (x,y)</label>'))
-                .append($('<input type="text" class="form-control canvasesTable-topRight" placeholder="(x,y)">')
-                    .val('(' + canvas.topRight.x + ',' + canvas.topRight.y + ')')))
-            .append($('<div class="form-group"></div>')
-                .append($('<label>BottomRight as (x,y)</label>'))
-                .append($('<input type="text" class="form-control canvasesTable-bottomRight" placeholder="(x,y)">')
-                    .val('(' + canvas.bottomRight.x + ',' + canvas.bottomRight.y + ')')))
-            .append($('<div class="form-group"></div>')
-                .append($('<label>BottomLeft as (x,y)</label>'))
-                .append($('<input type="text" class="form-control canvasesTable-bottomLeft" placeholder="(x,y)">')
-                    .val('(' + canvas.bottomLeft.x + ',' + canvas.bottomLeft.y + ')'))));
+                .append($('<label>Size as (width,height)</label>'))
+                .append($('<input type="text" class="form-control canvasesTable-size" placeholder="(1920,1080)">')
+                    .val('(' + canvas.width + ',' + canvas.height + ')'))));
     
         // Save + Remove Button
         row.append($('<td></td>')
@@ -64,35 +51,15 @@ $(function() {
     $('.canvasesTable-add').click(function() {
         var row = $(this).parent().parent();
 
-        var image = row.find('.canvasesTable-add_image').val();
+        var session = row.find('.canvasesTable-add_session').val();
         var derivedFrom = row.find('.canvasesTable-add_derivedFrom').val();
         var derivedAt = row.find('.canvasesTable-add_derivedAt').val();
         derivedAt = (derivedAt) ? new Date(derivedAt) : new Date();
-        var topLeft = coordUnpackRegexp.exec(row.find('.canvasesTable-add_topLeft').val());
-        var topRight = coordUnpackRegexp.exec(row.find('.canvasesTable-add_topRight').val());
-        var bottomRight = coordUnpackRegexp.exec(row.find('.canvasesTable-add_bottomRight').val());
-        var bottomLeft = coordUnpackRegexp.exec(row.find('.canvasesTable-add_bottomLeft').val());
+        var size = coordUnpackRegexp.exec(row.find('.canvasesTable-add_size').val());
 
-        var corners = {
-            topLeft: {
-                x: (topLeft) ? topLeft[1] : null,
-                y: (topLeft) ? topLeft[2] : null
-            },
-            topRight: {
-                x: (topRight) ? topRight[1] : (bottomRight) ? bottomRight[1] : null,
-                y: (topRight) ? topRight[2] : (topLeft) ? topLeft[2] : null
-            },
-            bottomLeft: {
-                x: (bottomLeft) ? bottomLeft[1] : (topLeft) ? topLeft[1] : null,
-                y: (bottomLeft) ? bottomLeft[2] : (bottomRight) ? bottomRight[2] : null
-            },
-            bottomRight: {
-                x: (bottomRight) ? bottomRight[1] : null,
-                y: (bottomRight) ? bottomRight[2] : null
-            }
-        };
-
-        socket.emit('create_canvas', image, derivedAt, derivedFrom, corners);
+        var width = (size) ? size[1] : 1920;
+        var height = (size) ? size[2] : 1080;
+        socket.emit('create_canvas', session, derivedAt, derivedFrom, width, height);
     });
 
     socket.on('create_canvas', function(canvas) {
@@ -119,44 +86,22 @@ $(function() {
     $(document).on('click', '.canvasesTable-save', function() {
         var row = $(this).parent().parent();
         var id = row.find('.canvasesTable-canvasId').text();
-        var image = row.find('.canvasesTable-imageId').val();
+        var session = row.find('.canvasesTable-sessionId').val();
         var derivedFrom = row.find('.canvasesTable-derivedFrom').val();
         var derivedAt = new Date(row.find('.canvasesTable-derivedAt').val());
-        var topLeft = row.find('.canvasesTable-topLeft').val();
-        var topRight = row.find('.canvasesTable-topRight').val();
-        var bottomRight = row.find('.canvasesTable-bottomRight').val();
-        var bottomLeft = row.find('.canvasesTable-bottomLeft').val();
+        var size = coordUnpackRegexp.exec(row.find('.canvasesTable-size').val());
 
-        var corners = {
-            topLeft: {
-                x: (topLeft) ? topLeft[1] : null,
-                y: (topLeft) ? topLeft[2] : null
-            },
-            topRight: {
-                x: (topRight) ? topRight[1] : (bottomRight) ? bottomRight[1] : null,
-                y: (topRight) ? topRight[2] : (topLeft) ? topLeft[2] : null
-            },
-            bottomLeft: {
-                x: (bottomLeft) ? bottomLeft[1] : (topLeft) ? topLeft[1] : null,
-                y: (bottomLeft) ? bottomLeft[2] : (bottomRight) ? bottomRight[2] : null
-            },
-            bottomRight: {
-                x: (bottomRight) ? bottomRight[1] : null,
-                y: (bottomRight) ? bottomRight[2] : null
-            }
-        };
+        var width = (size) ? size[1] : 1920;
+        var height = (size) ? size[2] : 1080;
 
-        socket.emit('update_canvas', id, image, derivedFrom, derivedAt, corners);
+        socket.emit('update_canvas', id, session, derivedFrom, derivedAt, width, height);
         socket.once('update_canvas', function(canvas) {
             row.data(canvas);
-            row.find('.canvasesTable-imageId').val(canvas.imageId);
+            row.find('.canvasesTable-sessionId').val(canvas.session);
             row.find('.canvasesTable-derivedFrom').val(canvas.derivedFrom);
-            row.find('.canvasesTable-imageId').val(new Date(canvas.derivedAt).toISOString());
-            row.find('.canvasesTable-topLeft').val('(' + canvas.topLeft.x + ',' + canvas.topLeft.y + ')');
-            row.find('.canvasesTable-topRight').val('(' + canvas.topRight.x + ',' + canvas.topRight.y + ')');
-            row.find('.canvasesTable-bottomRight').val('(' + canvas.bottomRight.x + ',' + canvas.bottomRight.y + ')');
-            row.find('.canvasesTable-bottomLeft').val('(' + canvas.bottomLeft.x + ',' + canvas.bottomLeft.y + ')');
-            $('option[value="' + image.id + '"').text(image.id);
+            row.find('.canvasesTable-derivedAt').val(new Date(canvas.derivedAt).toISOString());
+            row.find('.canvasesTable-size').val('(' + canvas.width + ',' + canvas.height + ')');
+            $('option[value="' + canvas.id + '"').text(canvas.id);
         });
     });
 

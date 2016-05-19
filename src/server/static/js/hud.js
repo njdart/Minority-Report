@@ -15,7 +15,12 @@ $(function() {
             splash.hide();
 
             socket.on('connect', function() {
-                
+
+                socket.on('get_postits_by_session', function(postits) {
+                    console.log(postits)
+                });
+
+                socket.emit('get_postits_by_session')
             });
 
         }

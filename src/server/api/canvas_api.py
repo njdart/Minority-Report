@@ -14,18 +14,12 @@ def get_canvases():
 
 
 @socketio.on('create_canvas')
-def create_canvas(image, derivedAt, derivedFrom, corners):
-    emit('create_canvas', Canvas(image=image,
+def create_canvas(session, derivedAt, derivedFrom, width, height):
+    emit('create_canvas', Canvas(session=session,
                                  derivedAt=derivedAt,
                                  derivedFrom=derivedFrom,
-                                 canvasTopLeftX=corners["topLeft"]["x"] if "topLeft" in corners else None,
-                                 canvasTopLeftY=corners["topLeft"]["y"] if "topLeft" in corners else None,
-                                 canvasTopRightX=corners["topRight"]["x"] if "topRight" in corners else None,
-                                 canvasTopRightY=corners["topRight"]["y"] if "topRight" in corners else None,
-                                 canvasBottomLeftX=corners["bottomLeft"]["x"] if "bottomLeft" in corners else None,
-                                 canvasBottomLeftY=corners["bottomLeft"]["y"] if "bottomLeft" in corners else None,
-                                 canvasBottomRightX=corners["bottomRight"]["x"] if "bottomRight" in corners else None,
-                                 canvasBottomRightY=corners["bottomRight"]["y"] if "bottomRight" in corners else None)
+                                 width=width,
+                                 height=height)
          .create().as_object())
 
 
@@ -35,20 +29,14 @@ def delete_canvas(id):
 
 
 @socketio.on('update_canvas')
-def update_canvas(id, image, derivedFrom, derivedAt, corners):
+def update_canvas(id, session, derivedFrom, derivedAt, width, height):
     canvas = Canvas.get(id=id)
 
-    canvas.image = image
+    canvas.session = session
     canvas.derivedAt = derivedAt
     canvas.derivedFrom = derivedFrom
-    canvas.canvasTopLeftX = corners["topLeft"]["x"] if "topLeft" in corners else None
-    canvas.canvasTopLeftY = corners["topLeft"]["y"] if "topLeft" in corners else None
-    canvas.canvasTopRightX = corners["topRight"]["x"] if "topRight" in corners else None
-    canvas.canvasTopRightY = corners["topRight"]["y"] if "topRight" in corners else None
-    canvas.canvasBottomLeftX = corners["bottomLeft"]["x"] if "bottomLeft" in corners else None
-    canvas.canvasBottomLeftY = corners["bottomLeft"]["y"] if "bottomLeft" in corners else None
-    canvas.canvasBottomRightX = corners["bottomRight"]["x"] if "bottomRight" in corners else None
-    canvas.canvasBottomRightY = corners["bottomRight"]["y"] if "bottomRight" in corners else None
+    canvas.width = width
+    canvas.height = height
 
     emit('update_canvas', canvas.update().as_object())
 
