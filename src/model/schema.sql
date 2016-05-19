@@ -40,19 +40,13 @@ CREATE TABLE IF NOT EXISTS images (
 
 CREATE TABLE IF NOT EXISTS canvases (
   id                        TEXT PRIMARY KEY,
-  image                     TEXT,
+  session                   TEXT NOT NULL,
   derivedFrom               TEXT,
   derivedAt                 TEXT,
-  canvasTopLeftX            INTEGER,
-  canvasTopLeftY            INTEGER,
-  canvasBottomLeftX         INTEGER,
-  canvasBottomLeftY         INTEGER,
-  canvasTopRightX           INTEGER,
-  canvasTopRightY           INTEGER,
-  canvasBottomRightX        INTEGER,
-  canvasBottomRightY        INTEGER,
+  height                    INTEGER NOT NULL,
+  width                     INTEGER NOT NULL,
 
-  FOREIGN KEY(image) REFERENCES images(id)
+  FOREIGN KEY(session) REFERENCES session(id)
 );
 
 CREATE TABLE IF NOT EXISTS connections (
@@ -70,6 +64,7 @@ CREATE TABLE IF NOT EXISTS connections (
 CREATE TABLE IF NOT EXISTS postits (
   id                        TEXT PRIMARY KEY,
   canvas                    TEXT NOT NULL,
+  physicalFor               TEXT,
   topLeftX                  INTEGER NOT NULL,
   topLeftY                  INTEGER NOT NULL,
   topRightX                 INTEGER NOT NULL,
@@ -78,7 +73,10 @@ CREATE TABLE IF NOT EXISTS postits (
   bottomRightY              INTEGER NOT NULL,
   bottomLeftX               INTEGER NOT NULL,
   bottomLeftY               INTEGER NOT NULL,
+  displayPosX               INTEGER NOT NULL,
+  displayPosY               INTEGER NOT NULL,
   colour                    TEXT NOT NULL,
+  image                     TEXT NOT NULL,
 
   FOREIGN KEY(canvas) REFERENCES canvases(id)
 );
