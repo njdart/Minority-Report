@@ -16,101 +16,51 @@ class Canvas(SqliteObject):
 
     properties = [
         "id",
-        "image",
+        "session",
         "derivedFrom",
         "derivedAt",
-        "canvasTopLeftX",
-        "canvasTopLeftY",
-        "canvasTopRightX",
-        "canvasTopRightY",
-        "canvasBottomLeftX",
-        "canvasBottomLeftY",
-        "canvasBottomRightX",
-        "canvasBottomRightY"
+        "height",
+        "width"
     ]
 
     table = "canvases"
 
     def __init__(self,
-                 image,
-                 canvasTopLeftX=None,
-                 canvasTopLeftY=None,
-                 canvasTopRightX=None,
-                 canvasTopRightY=None,
-                 canvasBottomLeftX=None,
-                 canvasBottomLeftY=None,
-                 canvasBottomRightX=None,
-                 canvasBottomRightY=None,
-                 canvasBounds=None,
+                 session,
                  id=uuid.uuid4(),
                  postits=[],
                  connections=[],
                  derivedFrom=None,
-                 derivedAt=datetime.datetime.now()):
+                 derivedAt=datetime.datetime.now(),
+                 width=1920,
+                 height=1080
+                 ):
         """
-        :param image OpenCV Numpy array
-        :param canvasBounds list of (x, y) tuples in the order [topLeft, topRight, bottomRight, bottomLeft]
+        :param session UUID v4 of session to which canvas belongs
         :param id UUID v4
         :param postits list of postit objects or UUID v4s
         :param connections list of (postit/postitUUID, postit/postitUUID) tuples
         :param derivedFrom canvas object or ID this object derives from
+        :param width integer width of HUD
+        :param height integer height of HUD
         """
         super(Canvas, self).__init__(id=id)
-        self.image = image
-        if canvasBounds is not None:
-            canvasTopLeft = canvasBounds[0]
-            self.canvasTopLeftX = int(canvasTopLeft[0])
-            self.canvasTopLeftY = int(canvasTopLeft[1])
-
-            canvasTopRight = canvasBounds[1]
-            self.canvasTopRightX = int(canvasTopRight[0])
-            self.canvasTopRightY = int(canvasTopRight[1])
-
-            canvasBottomRight = canvasBounds[2]
-            self.canvasBottomRightX = int(canvasBottomRight[0])
-            self.canvasBottomRightY = int(canvasBottomRight[1])
-
-            canvasBottomLeft = canvasBounds[3]
-            self.canvasBottomLeftX = int(canvasBottomLeft[0])
-            self.canvasBottomLeftY = int(canvasBottomLeft[1])
-
-        else:
-            self.canvasTopLeftX = int(canvasTopLeftX)
-            self.canvasTopLeftY = int(canvasTopLeftY)
-            self.canvasTopRightX = int(canvasTopRightX)
-            self.canvasTopRightY = int(canvasTopRightY)
-            self.canvasBottomRightX = int(canvasBottomRightX)
-            self.canvasBottomRightY = int(canvasBottomRightY)
-            self.canvasBottomLeftX = int(canvasBottomLeftX)
-            self.canvasBottomLeftY = int(canvasBottomLeftY)
-
+        self.session = session
         self.postits = postits
         self.connections = connections
         self.derivedFrom = derivedFrom
         self.derivedAt = derivedAt
+        self.width = width
+        self.height = height
 
     def as_object(self):
         return {
             "id": str(self.id),
-            "image": self.image,
+            "session": str(self.session),
             "derivedFrom": str(self.derivedFrom),
             "derivedAt": str(self.derivedAt),
-            "topLeft": {
-                "x": self.canvasTopLeftX,
-                "y": self.canvasTopLeftY
-            },
-            "topRight": {
-                "x": self.canvasTopRightX,
-                "y": self.canvasTopRightY
-            },
-            "bottomRight": {
-                "x": self.canvasBottomRightX,
-                "y": self.canvasBottomRightY
-            },
-            "bottomLeft": {
-                "x": self.canvasBottomLeftX,
-                "y": self.canvasBottomLeftY
-            },
+            "width": str(self.width),
+            "height": str(self.height),
         }
 
     def get_postit(self, id):
@@ -126,12 +76,6 @@ class Canvas(SqliteObject):
     def add_connection(self, start, end):
         self.connections.append((start, end))
 
-    def get_image(self):
-        if type(self.image) == str:
-            return Image.get(self.image)
-        else:
-            return self.image
-
     def get_canvas_keystoned(self):
         image = self.get_image().get_image_array()
         if image is None:
@@ -139,26 +83,9 @@ class Canvas(SqliteObject):
         print(image.shape)
         return src.model.processing.four_point_transform(image, self.get_canvas_corner_points())
 
-    def get_canvas_corner_points(self):
-        return numpy.array([
-            (self.canvasTopLeftX, self.canvasTopLeftY),
-            (self.canvasTopRightX, self.canvasTopRightY),
-            (self.canvasBottomRightX, self.canvasBottomRightY),
-            (self.canvasBottomLeftX, self.canvasBottomLeftY)
-        ])
-
-    def get_canvas_unkeystoned(self):
-        imgClass = self.get_image()
-
-        if imgClass is None:
-            return None
-        else:
-            image = imgClass.get_image_array()
-            print(self.canvasTopLeftY)
-            print(self.canvasBottomRightY)
-            print(self.canvasTopLeftX)
-            print(self.canvasBottomRightX)
-            return image[self.canvasTopLeftY:self.canvasBottomRightY, self.canvasTopLeftX:self.canvasBottomRightX]
+    def get_canvas(self):
+        # TODO Will return canvas objects for HUD?
+        pass
 
     def find_postits(self,
                      min_postit_area=5000,
