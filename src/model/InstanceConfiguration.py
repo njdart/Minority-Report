@@ -1,5 +1,6 @@
 import uuid
 from src.model.SqliteObject import SqliteObject
+import numpy
 
 
 class InstanceConfiguration(SqliteObject):
@@ -47,14 +48,14 @@ class InstanceConfiguration(SqliteObject):
         self.kinectPort = kinectPort
         self.cameraHost = cameraHost
         self.cameraPort = cameraPort
-        self.topLeftX = topLeftX
-        self.topLeftY = topLeftY
-        self.topRightX = topRightX
-        self.topRightY = topRightY
-        self.bottomRightX = bottomRightX
-        self.bottomRightY = bottomRightY
-        self.bottomLeftX = bottomLeftX
-        self.bottomLeftY = bottomLeftY
+        self.topLeftX = int(topLeftX)
+        self.topLeftY = int(topLeftY)
+        self.topRightX = int(topRightX)
+        self.topRightY = int(topRightY)
+        self.bottomRightX = int(bottomRightX)
+        self.bottomRightY = int(bottomRightY)
+        self.bottomLeftX = int(bottomLeftX)
+        self.bottomLeftY = int(bottomLeftY)
 
     def as_object(self):
         return {
@@ -86,3 +87,12 @@ class InstanceConfiguration(SqliteObject):
                 "y": self.bottomLeftY
             }
         }
+
+    def get_projection_corner_points(self):
+
+        return numpy.array([
+            (self.topLeftX, self.topLeftY),
+            (self.topRightX, self.topRightY),
+            (self.bottomRightX, self.bottomRightY),
+            (self.bottomLeftX, self.bottomLeftY),
+        ])

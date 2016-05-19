@@ -76,17 +76,6 @@ class Canvas(SqliteObject):
     def add_connection(self, start, end):
         self.connections.append((start, end))
 
-    def get_canvas_keystoned(self):
-        image = self.get_image().get_image_array()
-        if image is None:
-            return None
-        print(image.shape)
-        return src.model.processing.four_point_transform(image, self.get_canvas_corner_points())
-
-    def get_canvas(self):
-        # TODO Will return canvas objects for HUD?
-        pass
-
     def find_postits(self,
                      min_postit_area=5000,
                      max_postit_area=40000,

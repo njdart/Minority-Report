@@ -9,10 +9,17 @@ $(function() {
     
         // Image ID
         row.append($('<td class="imagesTable-imageId"></td>')
-            .append($('<a></a>')
-                .text(image.id)
-                .attr('target', '_blank')
-                .attr('href', '/api/image/' + image.id)));
+            .append($('<p></p>')
+                .text(image.id))
+            .append($('<div class="form-inline"></div>')
+                .append($('<div class="form-group"></div>')
+                    .append($('<a class="btn btn-default" role="button">Raw</a>')
+                        .attr('target', '_blank')
+                        .attr('href', '/api/image/' + image.id)))
+                .append($('<div class="form-group"></div>')
+                    .append($('<a class="btn btn-default" role="button">Projection</a>')
+                        .attr('target', '_blank')
+                        .attr('href', '/api/projection/' + image.id)))));
     
         // Timestamp
         row.append($('<td></td>')

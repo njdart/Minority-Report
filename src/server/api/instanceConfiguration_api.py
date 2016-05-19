@@ -85,7 +85,9 @@ def delete_instance_configuration(configurationId):
 
 
 @socketio.on('update_instanceConfig')
-def update_instanceConfig(details):
+def update_instanceConfig(id, details):
+    print(id)
+    print(details)
     config = InstanceConfiguration.get(id=id)
 
     config.sessionId = details["sessionId"]

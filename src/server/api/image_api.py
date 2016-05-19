@@ -1,10 +1,13 @@
 import datetime
 import cv2
+import io
 import numpy
 import os
 import uuid
 from flask import send_from_directory
 from flask.ext.socketio import emit
+from flask import send_file
+from werkzeug.exceptions import NotFound
 from src.model.Image import Image
 from src.server import (app, socketio)
 
@@ -96,5 +99,23 @@ def image_serve(imageId):
         return send_from_directory(path, file, mimetype='image/jpg')
     except:
         return send_from_directory(path, "testPostit1.jpg", mimetype="image/jpg")
+
+
+@app.route('/api/projection/<imageId>')
+def projection_serve(imageId):
+
+    imageModel = Image.get(id=imageId)
+
+    if imageModel is None:
+        raise NotFound()
+
+    image = imageModel.get_image_projection()
+
+    if image is None:
+        raise NotFound()
+
+    i = cv2.imencode('.jpg', image)[1].tostring()
+    return send_file(io.BytesIO(i), mimetype='image/jpg')
+
 
 print('Registered Image API methods')

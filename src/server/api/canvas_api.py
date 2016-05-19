@@ -5,7 +5,6 @@ from flask.ext.socketio import emit
 from werkzeug.exceptions import NotFound
 from src.model.Canvas import Canvas
 from src.server import (app, socketio)
-import datetime
 
 
 @socketio.on('get_canvases')

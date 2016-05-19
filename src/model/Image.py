@@ -1,4 +1,3 @@
-import datetime
 import os
 import uuid
 import cv2
@@ -64,6 +63,30 @@ class Image(SqliteObject):
 
     def get_image_path(self):
         return Image.get_image_directory(self.id)
+
+    def get_image_projection(self):
+
+        image = self.get_image_array()
+        if image is None:
+            print('Could not get Image Projection; image array was None')
+            return None
+
+        instanceConfiguration = self.get_instance_configuration()
+        if instanceConfiguration is None:
+            print('Could not get Image Projection; instance configuration was None')
+            return None
+
+        print(instanceConfiguration.get_projection_corner_points())
+
+        return src.model.processing.four_point_transform(image, instanceConfiguration.get_projection_corner_points())
+
+    def get_instance_configuration(self):
+        from src.model.InstanceConfiguration import InstanceConfiguration
+        return InstanceConfiguration.get(id=self.instanceConfigurationId)
+
+    def get_canvas(self):
+        # TODO Will return canvas objects for HUD?
+        pass
 
     @staticmethod
     def get_image_directory(id):
