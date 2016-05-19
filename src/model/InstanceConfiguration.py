@@ -31,14 +31,14 @@ class InstanceConfiguration(SqliteObject):
                  kinectPort,
                  cameraHost,
                  cameraPort,
-                 topLeftX=None,
-                 topLeftY=None,
-                 topRightX=None,
-                 topRightY=None,
-                 bottomRightX=None,
-                 bottomRightY=None,
-                 bottomLeftX=None,
-                 bottomLeftY=None,
+                 topLeftX,
+                 topLeftY,
+                 topRightX,
+                 topRightY,
+                 bottomRightX,
+                 bottomRightY,
+                 bottomLeftX,
+                 bottomLeftY,
                  id=uuid.uuid4()):
         super(InstanceConfiguration, self).__init__(id=id)
 
