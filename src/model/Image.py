@@ -108,7 +108,7 @@ class Image(SqliteObject):
 
     def find_canvas(self, save_canvas_to_db=True):
         """
-        Attempt to find bounds to a canvas in the image, using the brightest rectangular-like
+        Attempt to find corners of the canvas in the image, using the brightest rectangular-like
         area available. This method returns a tuple of x,y points in the order
         (topLeft, topRight, bottomRight, bottomLeft)
 
@@ -133,6 +133,9 @@ class Image(SqliteObject):
         # Create list to hold canvas x and y coordinates
         canvx = numpy.zeros([int(len(fcanvas_contours) / 2), 1])
         canvy = numpy.zeros([int(len(fcanvas_contours) / 2), 1])
+        for i in range(0, len(fcanvas_contours), 2):
+            canvx[int(i / 2)] = fcanvas_contours[i]
+            canvy[int(i / 2)] = fcanvas_contours[i + 1]
 
         # Lists to store how well a point scores relative to the 4 corners.
         topLeft = numpy.zeros(int(len(fcanvas_contours) / 2))
@@ -140,42 +143,54 @@ class Image(SqliteObject):
         bottomRight = numpy.zeros(int(len(fcanvas_contours) / 2))
         bottomLeft = numpy.zeros(int(len(fcanvas_contours) / 2))
 
-        for i in range(0, len(fcanvas_contours), 2):
-            canvx[int(i / 2)] = fcanvas_contours[i]
-            canvy[int(i / 2)] = fcanvas_contours[i + 1]
-
+        # Use the min and max values in order to be able to create a ratio of
         xmax = numpy.max(canvx)
         ymax = numpy.max(canvy)
         xmin = numpy.min(canvx)
         ymin = numpy.min(canvy)
-
         for n in range(0, len(canvx)):
             lx = ((canvx[n] - xmin) / (xmax - xmin))
             ly = ((canvy[n] - ymin) / (ymax - ymin))
-
+            # Score each point by its ratio of x and y relative to the range
             topLeft[n]     = (1 - lx) + (1 - ly)
             topRight[n]    = (1 - lx) + ly
             bottomRight[n] = lx + ly
             bottomLeft[n]  = lx + (1 - ly)
 
+        # The highest scoring points are those in the corners, the scores range from 0 to 2
         maxTopLeft = numpy.argmax(topLeft)
         maxTopRight = numpy.argmax(topRight)
         maxBottomRight = numpy.argmax(bottomRight)
         maxBottomLeft = numpy.argmax(bottomLeft)
 
-        # TODO: check bounds are not all equal
-        # TODO: fail should reutnr whole image as canvas, npt throw exception
+        corners = [(canvx[maxTopLeft][0], canvy[maxTopLeft][0]),
+                   (canvx[maxTopRight][0], canvy[maxTopRight][0]),
+                   (canvx[maxBottomRight][0], canvy[maxBottomRight][0]),
+                   (canvx[maxBottomLeft][0], canvy[maxBottomLeft][0])]
 
+        # If any of the points are the same return the entire image as the canvas
         from src.model.Canvas import Canvas
-        canvas = Canvas(image=self.get_id(),
-                        canvasTopLeftX=canvx[maxTopLeft][0],
-                        canvasTopLeftY=canvy[maxTopLeft][0],
-                        canvasTopRightX=canvx[maxTopRight][0],
-                        canvasTopRightY=canvy[maxTopRight][0],
-                        canvasBottomRightX=canvx[maxBottomRight][0],
-                        canvasBottomRightY=canvy[maxBottomRight][0],
-                        canvasBottomLeftX= canvx[maxBottomLeft][0],
-                        canvasBottomLeftY= canvy[maxBottomLeft][0])
+        if len(corners) != len(set(corners)):
+            canvas = Canvas(image=self.get_id(),
+                            canvasTopLeftX=0,
+                            canvasTopLeftY=0,
+                            canvasTopRightX=self.image.shape[1],
+                            canvasTopRightY=0,
+                            canvasBottomRightX=self.image.shape[1],
+                            canvasBottomRightY=self.image.shape[0],
+                            canvasBottomLeftX=0,
+                            canvasBottomLeftY=self.image.shape[0])
+
+        else:
+            canvas = Canvas(image=self.get_id(),
+                            canvasTopLeftX=canvx[maxTopLeft][0],
+                            canvasTopLeftY=canvy[maxTopLeft][0],
+                            canvasTopRightX=canvx[maxTopRight][0],
+                            canvasTopRightY=canvy[maxTopRight][0],
+                            canvasBottomRightX=canvx[maxBottomRight][0],
+                            canvasBottomRightY=canvy[maxBottomRight][0],
+                            canvasBottomLeftX=canvx[maxBottomLeft][0],
+                            canvasBottomLeftY=canvy[maxBottomLeft][0])
 
         if save_canvas_to_db:
             canvas.create(self.database)
