@@ -2,6 +2,7 @@ from flask.ext.socketio import emit
 from src.server import socketio
 from src.model.Session import Session
 import uuid
+import pdb
 
 
 @socketio.on('create_session')
@@ -69,7 +70,11 @@ def delete_session(id):
 
 @socketio.on('get_postits_by_session')
 def get_postits_by_session(sessionId):
-    session = Session.get(sessionId)
+    session = Session.get(sessionId).as_object()
+    if session is not None:
+        emit('get_postits_by_session', session)
+    else:
+        emit('get_postits_by_session', "NO SESSION EXISTS")
 
 
 print('Registered Session API methods')

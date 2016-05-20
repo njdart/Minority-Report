@@ -1,10 +1,6 @@
 from src.model.SqliteObject import SqliteObject
-import src.model.processing
 import uuid
 import datetime
-import cv2
-import numpy
-import math
 
 
 class Canvas(SqliteObject):
@@ -71,6 +67,7 @@ class Canvas(SqliteObject):
         :param id:
         :return:
         """
+        pass
 
     def add_connection(self, start, end):
         self.connections.append((start, end))

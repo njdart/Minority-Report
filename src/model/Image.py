@@ -4,6 +4,7 @@ import cv2
 import numpy
 import requests
 import src.model.processing
+import datetime
 from src.model.SqliteObject import SqliteObject
 
 
@@ -16,7 +17,7 @@ class Image(SqliteObject):
                  instanceConfigurationId,
                  npArray=None,
                  id=uuid.uuid4(),
-                 timestamp=None,
+                 timestamp=datetime.datetime.now().isoformat(),
                  database=None):
         super().__init__(id=id,
                          database=database)
