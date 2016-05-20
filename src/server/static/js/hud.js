@@ -5,8 +5,12 @@ $(function() {
 
     if (typeof(Storage) !== 'undefined') {
 
-        var user = localStorage.getItem('user');
-        var session = localStorage.getItem('session');
+//        var user = localStorage.getItem('user');
+//        var session = localStorage.getItem('session');
+//        for now let's pretend
+
+	var user = "test";
+	var session = "test";
 
         if (!user || !session) {
             console.error('Either User or Session was not set:', user, session);
@@ -20,7 +24,7 @@ $(function() {
                     console.log(postits)
                 });
 
-                socket.emit('get_postits_by_session')
+                socket.emit('get_postits_by_session', session)
             });
 
         }
