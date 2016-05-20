@@ -19,3 +19,10 @@ class Session(SqliteObject):
 
         self.name = name or "A Whiteboard Story"
         self.description = description or "Snowboard and the 7 postits"
+
+
+    def get_latest_canvas(self):
+        pass
+
+    def create_new_session(self):
+        pass
