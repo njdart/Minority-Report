@@ -41,7 +41,7 @@ namespace BoundingBoxTesting
         {
             this.kinectClient = new KinectClient("server", 8088);
             this.kinectClient.BoundingBoxesSampled += KinectClient_BoundingBoxesSampled;
-            this.kinectClient.BeginSampling();
+            // this.kinectClient.BeginSampling();
 
             InitializeComponent();
 

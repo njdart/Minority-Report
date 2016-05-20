@@ -10,8 +10,7 @@ namespace MinorityReport
     {
         static void Main()
         {
-            IKinectClient client = new KinectClient("srv", 0);
-            client.BeginSampling();
+            KinectClient client = new KinectClient("srv", 0);
             while (true);
         }
     }
