@@ -6,11 +6,15 @@ using System.Threading.Tasks;
 
 namespace MinorityReport
 {
-    static class Program
+    class KinectPoint
     {
-        static void Main()
+        public KinectPoint(int x, int y)
         {
-            KinectClient client = new KinectClient("srv", 0);
+            this.X = x;
+            this.Y = y;
         }
+
+        public int X;
+        public int Y;
     }
 }
