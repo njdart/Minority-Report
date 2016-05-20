@@ -8,8 +8,8 @@ $(function() {
         var row = $('<tr></tr>').data(image);
     
         // Image ID
-        row.append($('<td class="imagesTable-imageId"></td>')
-            .append($('<p></p>')
+        row.append($('<td></td>')
+            .append($('<p class="imagesTable-imageId"></p>')
                 .text(image.id))
             .append($('<div class="form-inline"></div>')
                 .append($('<div class="form-group"></div>')
@@ -133,9 +133,8 @@ $(function() {
     $(document).on('click', '.imagesTable-generateCanvas', function() {
         var row = $(this).parent().parent();
         var id = row.find('.imagesTable-imageId').text();
-        var instanceConfigurationId = row.find('.imagesTable-instanceConfigId').val();
 
-        socket.emit('generate_canvas', id, instanceConfigurationId)
+        socket.emit('generate_canvas', id)
     });
 
     socket.emit('get_images');
