@@ -42,7 +42,7 @@ CREATE TABLE IF NOT EXISTS canvases (
   id                        TEXT PRIMARY KEY,
   session                   TEXT NOT NULL,
   derivedFrom               TEXT,
-  derivedAt                 TEXT,
+  derivedAt                 TEXT NOT NULL,
   height                    INTEGER NOT NULL,
   width                     INTEGER NOT NULL,
 
