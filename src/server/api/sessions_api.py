@@ -1,6 +1,8 @@
 from flask.ext.socketio import emit
 from src.server import socketio
 from src.model.Session import Session
+from src.model.Canvas import Canvas
+from src.model.Postit import Postit
 import uuid
 import pdb
 
@@ -68,11 +70,20 @@ def delete_session(id):
     emit('delete_session', Session.get(id=id).delete())
 
 
+
 @socketio.on('get_postits_by_session')
 def get_postits_by_session(sessionId):
-    session = Session.get(sessionId).as_object()
+    session = Session.get(sessionId)
     if session is not None:
-        emit('get_postits_by_session', session)
+        canvases = Canvas.get_by_property(sessionId, prop="session")
+        postits = []
+        print("canvases {}".format(canvases))
+        pdb.set_trace()
+        for canvas in canvases:
+            postits.extend(Postit.get_by_property(canvas.id, prop="canvas"))
+        print("Postits {}".format(postits))
+        postits = list(set([postit.as_object() for postit in postits]))
+        emit('get_postits_by_session', postits)
     else:
         emit('get_postits_by_session', "NO SESSION EXISTS")
 
