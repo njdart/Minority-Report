@@ -5,6 +5,8 @@
 This document specifies the protocol by which the KinectClient application shall
 communicate with the Minority Report server application.
 
+(I wrote most of this way too formally pls ignore)
+
 ## Overview
 
 The data required from the Kinect sensor during normal operation is currently
@@ -19,6 +21,40 @@ shall be sent back to the KinectClient application.
 
 Body tracking data will be communicated using a coordinate system relative to
 the canvas.
+
+## Calibration stuff
+
+Kinect application's web server runs on port 8080. Send GET request to `/calibrate`
+and you will receive a colour image in PNG format.
+
+Issue a POST request to `/calibrate` with the following JSON as the body:
+
+```
+{
+	"points": [
+		[ int, int ],
+		[ int, int ],
+		[ int, int ],
+		[ int, int ]
+	],
+
+	"instanceID": string
+}
+```
+
+The points array MUST contain four arrays, which MUST contain two integers each. The
+scale is pixels.
+
+The response to that POST request will echo the instance ID:
+
+```
+{
+	"instanceID": string
+}
+```
+
+Unless you mess up the request, in which case you won't get JSON at all but receive error 200
+with some error message as the body.
 
 ### Body data requests
 
