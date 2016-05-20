@@ -24,5 +24,5 @@ class Session(SqliteObject):
     def get_latest_canvas(self):
         pass
 
-    def create_new_session(self):
+    def create_new_canvas(self):
         pass

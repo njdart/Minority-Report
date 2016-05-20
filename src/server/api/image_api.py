@@ -9,6 +9,7 @@ from flask.ext.socketio import emit
 from flask import send_file
 from werkzeug.exceptions import NotFound
 from src.model.Image import Image
+from src.model.Session import Session
 from src.server import (app, socketio)
 
 @socketio.on('create_image')
@@ -89,7 +90,10 @@ def setCameraProperties(uri, properties):
 @socketio.on('generate_canvas')
 def generate_canvas(id):
     image = Image.get(id=id)
-    canvases = image.find_postits(save=True)
+    postits = image.find_postits(save=True)
+    new_canvas = Session.get_by_property("instanceConfiguration", image.instanceConfiguration).create_new_canvas()
+    connections = image.find_connections(postits=postits, canvas=new_canvas, save=True)
+    canvases = image.update_canvases()
     emit('create_canvas', [canvas.as_object() for canvas in canvases])
 
 
