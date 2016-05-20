@@ -13,6 +13,41 @@ $(function() {
         wholeImage = "http://media4.popsugar-assets.com/files/2014/08/08/878/n/1922507/caef16ec354ca23b_thumb_temp_cover_file32304521407524949.xxxlarge/i/Funny-Cat-GIFs.jpg",
         canvasImage = "http://i.huffpost.com/gen/1975176/images/o-SLEEPY-CAT-WATERMELON-facebook.jpg";
 
+    socket.on('get_users', function(users) {
+        console.log(users)
+        $('.usersList-user').remove();
+        users.forEach(function(user) {
+            $('.usersList')
+                .append($('<option class="usersList-user"></option>')
+                    .attr('value', user.id)
+                    .text(user.name))
+        })
+    });
+    socket.on('get_sessions', function(sessions) {
+        console.log(sessions)
+        $('.sessionsList-session').remove();
+        sessions.forEach(function(session) {
+            $('.sessionsList')
+                .append($('<option class="sessionsList-session"></option>')
+                    .attr('value', session.id)
+                    .text(session.name))
+        })
+    });
+    socket.on('get_instance_configurations', function(instanceConfigurations) {
+        console.log(instanceConfigurations)
+        $('.instanceConfigurationsList-instanceConfiguration').remove();
+        instanceConfigurations.forEach(function(instanceConfiguration) {
+            $('.instanceConfigurationsList')
+                .append($('<option class="instanceConfigurationsList-instanceConfiguration"></option>')
+                    .attr('value', instanceConfiguration.id)
+                    .text(instanceConfiguration.id))
+        })
+    });
+
+    socket.emit('get_users')
+    socket.emit('get_sessions')
+    socket.emit('get_instance_configurations')
+
     $('#modalCanvas').css('background-image', wholeImage);
 
     function updateCanvas() {
@@ -54,7 +89,7 @@ $(function() {
         //adds the correct image
         $("#modalImage").attr("src", wholeImage);
 
-        //remove draggabe from image
+        //remove draggable from image
         $("img").on("dragstart", function(event){
             event.preventDefault();
         });
@@ -148,48 +183,6 @@ $(function() {
         });
 
         stage.update();
-        /*
-        var $selection = $("<div>").addClass("selection-box"),
-            topLeft,
-            topRight,
-            width,
-            height;
-
-        $("#imageModalContent").on("mousedown", function(event){
-            $selection.remove();
-
-            // coordinates of mouse relative to image
-            var xVal = event.pageX - $("#modalImage").offset().left + $("#modalImage").position().left;
-            var yVal = event.pageY - $("#modalImage").offset().top + $("#modalImage").position().top;
-
-            // add selection box to screen
-            $selection.appendTo($("#imageModalContent"));
-
-            $("#imageModalContent").on('mousemove', function(e) {
-                var xPos = e.pageX - $("#modalImage").offset().left + $("#modalImage").position().left,
-                    yPos = e.pageY - $("#modalImage").offset().top + $("#modalImage").position().top,
-                    width  = Math.abs(xPos - xVal),
-                    height = Math.abs(yPos - yVal),
-                    new_x,
-                    new_y;
-
-                //console.log(width.toString() + " " + height.toString());
-                new_x = (xPos < xVal) ? (xVal - width) : xVal;
-                new_y = (yPos < yVal) ? (yVal - height) : yVal;
-                $selection.css({
-                    'width': width,
-                    'height': height,
-                    'top': new_y,
-                    'left': new_x
-                });
-
-            });
-
-            $(document).on("mouseup", function(){
-                $("#imageModalContent").off("mousemove");
-            });
-        });
-        */
 
         $(".closeb").click(function() {
             $(".selection-box").remove();

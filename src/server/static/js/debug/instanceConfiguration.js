@@ -1,6 +1,7 @@
 $(function() {
     var table = $('.instanceConfigsTable');
     var instanceConfigurationsLists = $('.instanceConfigsList');
+    var calibrationOverlay = $('.calibrationOverlay')
     var coordUnpackRegexp = /^\(?\s*([0-9]{1,5})[,.:\- ]+([0-9]{1,5})\s*\)?$/g;
 
     var addInstanceConfigToTable = function(instanceConfiguration) {
@@ -82,7 +83,8 @@ $(function() {
         // Save + Remove Button
         row.append($('<td></td>')
             .append($('<button type="submit" class="btn btn-primary instanceConfigsTable-save">Save</button>'))
-            .append($('<button type="submit" class="btn btn-danger instanceConfigsTable-remove">Remove</button>')));
+            .append($('<button type="submit" class="btn btn-danger instanceConfigsTable-remove">Remove</button>'))
+            .append($('<button type="submit" class="btn btn-default instanceConfigsTable-calibrate">Calibrate</button>')));
 
         table.append(row);
         instanceConfigurationsLists.append($('<option class="instanceConfigsTable-config"></option>')
@@ -107,16 +109,16 @@ $(function() {
                 y: (topLeft) ? topLeft[2] : null
             },
             topRight: {
-                x: (topRight) ? topRight[1] : null,
-                y: (topRight) ? topRight[2] : null
+                x: (topRight) ? topRight[1] : (bottomRight) ? bottomRight[1] : null,
+                y: (topRight) ? topRight[2] : (topLeft) ? topLeft[2] : null
+            },
+            bottomLeft: {
+                x: (bottomLeft) ? bottomLeft[1] : (topLeft) ? topLeft[1] : null,
+                y: (bottomLeft) ? bottomLeft[2] : (bottomRight) ? bottomRight[2] : null
             },
             bottomRight: {
                 x: (bottomRight) ? bottomRight[1] : null,
                 y: (bottomRight) ? bottomRight[2] : null
-            },
-            bottomLeft: {
-                x: (bottomLeft) ? bottomLeft[1] : null,
-                y: (bottomLeft) ? bottomLeft[2] : null
             },
             camera: {
                 host: row.find('.instanceConfigsTable-add_cameraHost').val() || 'localhost',
@@ -156,6 +158,21 @@ $(function() {
 
         instanceConfigs.forEach(addInstanceConfigToTable);
     });
+
+    var updateInstanceConfigRow = function(instanceConfig) {
+        row.data(instanceConfig);
+        row.find('.instanceConfigsTable-sessionId').val(instanceConfig.sessionId);
+        row.find('.instanceConfigsTable-userId').val(instanceConfig.userId);
+        row.find('.instanceConfigsTable-topLeft').val('(' + instanceConfig.topLeft.x + ',' + instanceConfig.topLeft.y + ')');
+        row.find('.instanceConfigsTable-topRight').val('(' + instanceConfig.topRight.x + ',' + instanceConfig.topRight.y + ')');
+        row.find('.instanceConfigsTable-bottomRight').val('(' + instanceConfig.bottomRight.x + ',' + instanceConfig.bottomRight.y + ')');
+        row.find('.instanceConfigsTable-bottomLeft').val('(' + instanceConfig.bottomLeft.x + ',' + instanceConfig.bottomLeft.y + ')');
+        row.find('.instanceConfigsTable-kinectHost').val(instanceConfig.kinect.host);
+        row.find('.instanceConfigsTable-kinectPort').val(instanceConfig.kinect.port);
+        row.find('.instanceConfigsTable-cameraHost').val(instanceConfig.camera.host);
+        row.find('.instanceConfigsTable-cameraPort').val(instanceConfig.camera.port);
+        $('option[value="' + instanceConfig.id + '"').text(instanceConfig.sessionId);
+   }
 
     // UPDATE
     $(document).on('click', '.instanceConfigsTable-save', function() {
@@ -198,35 +215,35 @@ $(function() {
 
         console.log(id, data);
         socket.emit('update_instanceConfig', id, data);
-        socket.once('update_instanceConfig', function(instanceConfig) {
-            row.data(instanceConfig);
-            row.find('.instanceConfigsTable-sessionId').val(instanceConfig.sessionId);
-            row.find('.instanceConfigsTable-userId').val(instanceConfig.userId);
-            row.find('.instanceConfigsTable-topLeft').val('(' + instanceConfig.topLeft.x + ',' + instanceConfig.topLeft.y + ')');
-            row.find('.instanceConfigsTable-topRight').val('(' + instanceConfig.topRight.x + ',' + instanceConfig.topRight.y + ')');
-            row.find('.instanceConfigsTable-bottomRight').val('(' + instanceConfig.bottomRight.x + ',' + instanceConfig.bottomRight.y + ')');
-            row.find('.instanceConfigsTable-bottomLeft').val('(' + instanceConfig.bottomLeft.x + ',' + instanceConfig.bottomLeft.y + ')');
-            row.find('.instanceConfigsTable-kinectHost').val(instanceConfig.kinect.host);
-            row.find('.instanceConfigsTable-kinectPort').val(instanceConfig.kinect.port);
-            row.find('.instanceConfigsTable-cameraHost').val(instanceConfig.camera.host);
-            row.find('.instanceConfigsTable-cameraPort').val(instanceConfig.camera.port);
-            $('option[value="' + instanceConfig.id + '"').text(instanceConfig.sessionId);
-       });
-   });
+        socket.once('update_instanceConfig', updateInstanceConfigRow);
+     });
 
-   // DELETE
-   $(document).on('click', '.instanceConfigsTable-remove', function() {
-       var row = $(this).parent().parent();
-       var id = row.find('.instanceConfigsTable-configId').text();
+    // DELETE
+    $(document).on('click', '.instanceConfigsTable-remove', function() {
+        var row = $(this).parent().parent();
+        var id = row.find('.instanceConfigsTable-configId').text();
 
-       socket.emit('delete_instance_configuration', id);
-       socket.once('delete_instance_configuration', function(success) {
-           if (success) {
-               row.remove();
-               $('option[value="' + id + '"').remove();
-           }
-       })
-   });
+        socket.emit('delete_instance_configuration', id);
+        socket.once('delete_instance_configuration', function(success) {
+            if (success) {
+                row.remove();
+                $('option[value="' + id + '"').remove();
+            }
+        })
+    });
+
+    $(document).on('click', '.instanceConfigsTable-calibrate', function() {
+        calibrationOverlay.css('visibility', 'visible')
+        var row = $(this).parent().parent();
+        var id = row.find('.instanceConfigsTable-configId').text();
+
+        socket.emit('calibrate_instance_configuration', id);
+    });
+
+    socket.on('calibrate_instance_configuration', function(instanceConfiguration) {
+        calibrationOverlay.css('visibility', 'hidden')
+        updateInstanceConfigRow(instanceConfiguration);
+    });
 
     socket.emit('get_instance_configurations');
 
