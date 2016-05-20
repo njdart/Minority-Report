@@ -61,13 +61,26 @@ class Canvas(SqliteObject):
             "height": self.height
         }
 
-    def get_postits(self, id):
-        """
-        Get all postits in this canvas
-        :param id:
-        :return:
-        """
-        pass
+    def get_postits(self):
+        from src.model.Postit import Postit
+        return Postit.get_by_property('canvas', self.id)
 
     def add_connection(self, start, end):
         self.connections.append((start, end))
+
+    def clone(self):
+        postits = self.get_postits()
+
+        new_canvas_id = uuid.uuid4()
+
+        for postit in postits:
+            postit.id = uuid.uuid4()
+            postit.canvas = new_canvas_id
+            postit.create()
+
+        self.derivedAt = datetime.datetime.isoformat()
+        self.derivedFrom = self.id
+        self.id = new_canvas_id
+        self.create()
+
+        return self

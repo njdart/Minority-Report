@@ -6,13 +6,13 @@ app = Flask(__name__)
 app.config['SECRET_KEY'] = 'secret!'
 socketio = SocketIO(app)
 
+
 def databaseHandler():
     if not hasattr(g, "databaseHandler"):
         g.databaseHandler = ModelDatabase
     return g.databaseHandler()
 
 import src.server.ui
-import src.server.kinect
 import src.server.api.users_api
 import src.server.api.sessions_api
 import src.server.api.instanceConfiguration_api

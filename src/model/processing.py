@@ -74,6 +74,7 @@ def order_points(pts):
 
     # the top-left point will have the smallest sum, whereas
     # the bottom-right point will have the largest sum
+
     s = pts.sum(axis=1)
     rect[0] = pts[numpy.argmin(s)]
     rect[2] = pts[numpy.argmax(s)]
@@ -143,3 +144,28 @@ def guess_colour(r, g, b):
             return colour
 
     return None
+
+def binarize(image):
+    Z = image.reshape((-1,3))
+    # convert to np.float32
+    Z = numpy.float32(Z)
+    # define criteria, number of clusters(K) and apply kmeans()
+    criteria = (cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, 10, 1.0)
+    K = 2
+    ret,label,center = cv2.kmeans(data=Z,
+                                  K=K,
+                                  bestLabels=None,
+                                  criteria=criteria,
+                                  attempts=10,
+                                  flags=cv2.KMEANS_RANDOM_CENTERS)
+    # Now convert back into uint8, and make original image
+    center = numpy.uint8(center)
+    res = center[label.flatten()]
+    res2 = res.reshape((image.shape))
+
+    bmin = res2[..., 0].min()
+    gmin = res2[..., 1].min()
+    rmin = res2[..., 2].min()
+    image[numpy.where((res2 > [0, 0, 0]).all(axis=2))] = [0, 0, 0]
+    image[numpy.where((res2 > [bmin, gmin, rmin]).all(axis=2))] = [255, 255, 255]
+    return image

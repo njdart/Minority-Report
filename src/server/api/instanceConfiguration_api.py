@@ -108,4 +108,15 @@ def update_instanceConfig(id, details):
     emit('update_instanceConfig', config.update().as_object())
 
 
+@socketio.on('calibrate_instance_configuration')
+def calibrate_instance_configuration(instanceConfigId):
+    """
+    Calibrate an instance configuration by trying to connect to the camera and auto-extracting projector bounds
+    """
+    print('Calibrating instance configuration {}'.format(instanceConfigId))
+    ic = InstanceConfiguration.get(id=instanceConfigId).calibrate().update()
+    print('Calibrated')
+    emit('calibrate_instance_configuration', ic.as_object())
+
+
 print('Registered Instance Configuration API methods')

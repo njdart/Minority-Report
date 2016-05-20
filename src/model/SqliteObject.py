@@ -71,6 +71,39 @@ class SqliteObject(object):
 
         return cls(**props)
 
+    @classmethod
+    def get_by_property(cls, prop, value, database=None, limit=10):
+        """
+        There are many security holes in this function
+        the query is not sanitised, offering SQL injection vulns
+        if the result is large, that could offer an entry point for DDOS
+        please fix me
+        """
+        query = "SELECT * FROM {} WHERE {}='{}';".format(cls.table, prop, value)
+
+        print('Using SELECT query {}'.format(query))
+
+        if database:
+            c = database.cursor()
+        else:
+            c = databaseHandler().get_database().cursor()
+
+        c.execute(query)
+        data = c.fetchall()
+
+        if data is None:
+            return None
+
+        prop_list = []
+        for result in range(len(data)):
+            props = {}
+            for prop in range(len(cls.properties)):
+                props[cls.properties[prop]] = str(data[result][prop])
+            prop_list.append(cls(**props))
+
+        return prop_list
+
+
     def update(self, database=None):
 
         props = []
