@@ -86,6 +86,12 @@ def setCameraProperties(uri, properties):
     emit('setCameraProperties', Image.set_camera_properties(uri, properties=properties))
 
 
+@socketio.on('generate_canvas')
+def generate_canvas(id, instanceConfigurationId):
+    #emit('create_canvas', ...)
+    pass
+
+
 @app.route('/api/image/<imageId>')
 def image_serve(imageId):
 

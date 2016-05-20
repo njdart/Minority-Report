@@ -34,8 +34,9 @@ $(function() {
         // Save + Remove Button
         row.append($('<td></td>')
             .append($('<button type="submit" class="btn btn-primary imagesTable-save">Save</button>'))
-            .append($('<button type="submit" class="btn btn-danger imagesTable-remove">Remove</button>')));
-    
+            .append($('<button type="submit" class="btn btn-danger imagesTable-remove">Remove</button>'))
+            .append($('<button type="submit" class="btn btn-default imagesTable-generateCanvas">Generate Canvas</button>')));
+
         table.append(row);
         imagesList.append($('<option class="imagesList-session"></option>')
             .attr('value', image.id)
@@ -127,6 +128,14 @@ $(function() {
                 $('option[value="' + id + '"').remove();
             }
         })
+    });
+
+    $(document).on('click', '.imagesTable-generateCanvas', function() {
+        var row = $(this).parent().parent();
+        var id = row.find('.imagesTable-imageId').text();
+        var instanceConfigurationId = row.find('.imagesTable-instanceConfigId').val();
+
+        socket.emit('generate_canvas', id, instanceConfigurationId)
     });
 
     socket.emit('get_images');
