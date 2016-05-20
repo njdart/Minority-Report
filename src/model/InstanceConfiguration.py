@@ -31,14 +31,14 @@ class InstanceConfiguration(SqliteObject):
                  kinectPort,
                  cameraHost,
                  cameraPort,
-                 topLeftX,
-                 topLeftY,
-                 topRightX,
-                 topRightY,
-                 bottomRightX,
-                 bottomRightY,
-                 bottomLeftX,
-                 bottomLeftY,
+                 topLeftX=None,
+                 topLeftY=None,
+                 topRightX=None,
+                 topRightY=None,
+                 bottomRightX=None,
+                 bottomRightY=None,
+                 bottomLeftX=None,
+                 bottomLeftY=None,
                  id=uuid.uuid4()):
         super(InstanceConfiguration, self).__init__(id=id)
 
@@ -48,14 +48,14 @@ class InstanceConfiguration(SqliteObject):
         self.kinectPort = kinectPort
         self.cameraHost = cameraHost
         self.cameraPort = cameraPort
-        self.topLeftX = int(topLeftX)
-        self.topLeftY = int(topLeftY)
-        self.topRightX = int(topRightX)
-        self.topRightY = int(topRightY)
-        self.bottomRightX = int(bottomRightX)
-        self.bottomRightY = int(bottomRightY)
-        self.bottomLeftX = int(bottomLeftX)
-        self.bottomLeftY = int(bottomLeftY)
+        self.topLeftX = topLeftX
+        self.topLeftY = topLeftY
+        self.topRightX = topRightX
+        self.topRightY = topRightY
+        self.bottomRightX = bottomRightX
+        self.bottomRightY = bottomRightY
+        self.bottomLeftX = bottomLeftX
+        self.bottomLeftY = bottomLeftY
 
     def as_object(self):
         return {
