@@ -11,7 +11,6 @@ from werkzeug.exceptions import NotFound
 from src.model.Image import Image
 from src.server import (app, socketio)
 
-
 @socketio.on('create_image')
 def create_image(file, createdAt, instanceConfigurationId):
 
@@ -87,6 +86,13 @@ def setCameraProperties(uri, properties):
     emit('setCameraProperties', Image.set_camera_properties(uri, properties=properties))
 
 
+@socketio.on('generate_canvas')
+def generate_canvas(id):
+    image = Image.get(id=id)
+    canvases = image.find_postits(save=True)
+    emit('create_canvas', [canvas.as_object() for canvas in canvases])
+
+
 @app.route('/api/image/<imageId>')
 def image_serve(imageId):
 
@@ -108,7 +114,6 @@ def projection_serve(imageId):
 
     if imageModel is None:
         raise NotFound()
-
     image = imageModel.get_image_projection()
 
     if image is None:
