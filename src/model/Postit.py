@@ -13,6 +13,7 @@ class Postit(SqliteObject):
     properties = [
         "id",
         "canvas",
+        "physicalFor",
         "topLeftX",
         "topLeftY",
         "topRightX",
@@ -21,12 +22,16 @@ class Postit(SqliteObject):
         "bottomRightY",
         "bottomLeftX",
         "bottomLeftY",
-        "colour"
+        "displayPosX",
+        "displayPosY",
+        "colour",
+        "image"
     ]
 
     table = "postits"
 
     def __init__(self,
+                 canvas,
                  topLeftX,
                  topLeftY,
                  topRightX,
@@ -35,13 +40,16 @@ class Postit(SqliteObject):
                  bottomRightY,
                  bottomLeftX,
                  bottomLeftY,
+                 displayPosX,
+                 displayPosY,
                  colour,
-                 canvas,
-                 physical=True,
+                 image,
+                 physicalFor=None,
                  id=uuid.uuid4(),
                  database=None):
         super(Postit, self).__init__(id=id,
                                      database=database)
+        self.canvas = canvas
         self.topLeftX = int(topLeftX)
         self.topLeftY = int(topLeftY)
         self.topRightX = int(topRightX)
@@ -50,9 +58,11 @@ class Postit(SqliteObject):
         self.bottomRightY = int(bottomRightY)
         self.bottomLeftX = int(bottomLeftX)
         self.bottomLeftY = int(bottomLeftY)
+        self.displayPosX = int(displayPosX)
+        self.displayPosY = int(displayPosY)
         self.colour = colour
-        self.physical = physical
-        self.canvas = canvas
+        self.physicalFor = physicalFor
+        self.image = image
 
     def get_position(self):
         return (self.topLeftX, self.topLeftY)
@@ -100,10 +110,10 @@ class Postit(SqliteObject):
 
     def get_corner_points(self):
         return numpy.array([
-            (self.topLeftX, self.topLeftY),
-            (self.topRightX, self.topRightY),
-            (self.bottomRightX, self.bottomRightY),
-            (self.bottomLeftX, self.bottomLeftY)
+            (int(round(float(self.topLeftX))), int(round(float(self.topLeftY)))),
+            (int(round(float(self.topRightX))), int(round(float(self.topRightY)))),
+            (int(round(float(self.bottomRightX))), int(round(float(self.bottomRightY)))),
+            (int(round(float(self.bottomLeftX))), int(round(float(self.bottomLeftY))))
         ])
 
     def get_color(self):
@@ -130,12 +140,13 @@ class Postit(SqliteObject):
         return self.canvas
 
     def get_postit_image(self):
-        canvas = self.get_canvas().get_canvas_keystoned()
+        from src.model.Image import Image
+        image = Image.get(self.image)
 
-        if canvas is None:
+        if image is None:
             return None
 
-        return src.model.processing.four_point_transform(canvas, self.get_corner_points())
+        return src.model.processing.four_point_transform(image.get_image_projection(), self.get_corner_points())
 
     def update_postit(self,
                       x,
