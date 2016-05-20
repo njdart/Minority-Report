@@ -1,6 +1,7 @@
 $(function() {
     var table = $('.instanceConfigsTable');
     var instanceConfigurationsLists = $('.instanceConfigsList');
+    var calibrationOverlay = $('.calibrationOverlay')
     var coordUnpackRegexp = /^\(?\s*([0-9]{1,5})[,.:\- ]+([0-9]{1,5})\s*\)?$/g;
 
     var addInstanceConfigToTable = function(instanceConfiguration) {
@@ -231,14 +232,18 @@ $(function() {
         })
     });
 
-    $(document).on('click', '.instanceConfigsTable-calibrate', function() {#
+    $(document).on('click', '.instanceConfigsTable-calibrate', function() {
+        calibrationOverlay.css('visibility', 'visible')
         var row = $(this).parent().parent();
         var id = row.find('.instanceConfigsTable-configId').text();
 
         socket.emit('calibrate_instance_configuration', id);
     });
 
-    socket.on('calibrate_instance_configuration', updateInstanceConfigRow)
+    socket.on('calibrate_instance_configuration', function(instanceConfiguration) {
+        calibrationOverlay.css('visibility', 'hidden')
+        updateInstanceConfigRow(instanceConfiguration);
+    });
 
     socket.emit('get_instance_configurations');
 
