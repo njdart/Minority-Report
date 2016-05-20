@@ -107,16 +107,16 @@ $(function() {
                 y: (topLeft) ? topLeft[2] : null
             },
             topRight: {
-                x: (topRight) ? topRight[1] : null,
-                y: (topRight) ? topRight[2] : null
+                x: (topRight) ? topRight[1] : (bottomRight) ? bottomRight[1] : null,
+                y: (topRight) ? topRight[2] : (topLeft) ? topLeft[2] : null
+            },
+            bottomLeft: {
+                x: (bottomLeft) ? bottomLeft[1] : (topLeft) ? topLeft[1] : null,
+                y: (bottomLeft) ? bottomLeft[2] : (bottomRight) ? bottomRight[2] : null
             },
             bottomRight: {
                 x: (bottomRight) ? bottomRight[1] : null,
                 y: (bottomRight) ? bottomRight[2] : null
-            },
-            bottomLeft: {
-                x: (bottomLeft) ? bottomLeft[1] : null,
-                y: (bottomLeft) ? bottomLeft[2] : null
             },
             camera: {
                 host: row.find('.instanceConfigsTable-add_cameraHost').val() || 'localhost',
