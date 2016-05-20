@@ -113,7 +113,10 @@ def calibrate_instance_configuration(instanceConfigId):
     """
     Calibrate an instance configuration by trying to connect to the camera and auto-extracting projector bounds
     """
-    pass
+    print('Calibrating instance configuration {}'.format(instanceConfigId))
+    ic = InstanceConfiguration.get(id=instanceConfigId).calibrate().update()
+    print('Calibrated')
+    emit('calibrate_instance_configuration', ic.as_object())
 
 
 print('Registered Instance Configuration API methods')

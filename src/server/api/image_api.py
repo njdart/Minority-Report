@@ -11,7 +11,6 @@ from werkzeug.exceptions import NotFound
 from src.model.Image import Image
 from src.server import (app, socketio)
 
-
 @socketio.on('create_image')
 def create_image(file, createdAt, instanceConfigurationId):
 
@@ -108,7 +107,6 @@ def projection_serve(imageId):
 
     if imageModel is None:
         raise NotFound()
-
     image = imageModel.get_image_projection()
 
     if image is None:
