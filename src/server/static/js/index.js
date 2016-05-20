@@ -54,7 +54,7 @@ $(function() {
         //adds the correct image
         $("#modalImage").attr("src", wholeImage);
 
-        //remove draggabe from image
+        //remove draggable from image
         $("img").on("dragstart", function(event){
             event.preventDefault();
         });
@@ -148,48 +148,6 @@ $(function() {
         });
 
         stage.update();
-        /*
-        var $selection = $("<div>").addClass("selection-box"),
-            topLeft,
-            topRight,
-            width,
-            height;
-
-        $("#imageModalContent").on("mousedown", function(event){
-            $selection.remove();
-
-            // coordinates of mouse relative to image
-            var xVal = event.pageX - $("#modalImage").offset().left + $("#modalImage").position().left;
-            var yVal = event.pageY - $("#modalImage").offset().top + $("#modalImage").position().top;
-
-            // add selection box to screen
-            $selection.appendTo($("#imageModalContent"));
-
-            $("#imageModalContent").on('mousemove', function(e) {
-                var xPos = e.pageX - $("#modalImage").offset().left + $("#modalImage").position().left,
-                    yPos = e.pageY - $("#modalImage").offset().top + $("#modalImage").position().top,
-                    width  = Math.abs(xPos - xVal),
-                    height = Math.abs(yPos - yVal),
-                    new_x,
-                    new_y;
-
-                //console.log(width.toString() + " " + height.toString());
-                new_x = (xPos < xVal) ? (xVal - width) : xVal;
-                new_y = (yPos < yVal) ? (yVal - height) : yVal;
-                $selection.css({
-                    'width': width,
-                    'height': height,
-                    'top': new_y,
-                    'left': new_x
-                });
-
-            });
-
-            $(document).on("mouseup", function(){
-                $("#imageModalContent").off("mousemove");
-            });
-        });
-        */
 
         $(".closeb").click(function() {
             $(".selection-box").remove();
