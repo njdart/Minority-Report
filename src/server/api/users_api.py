@@ -3,6 +3,7 @@ from src.server import socketio
 from src.model.Users import User
 import uuid
 
+
 @socketio.on('create_user')
 def create_user(username):
     """
