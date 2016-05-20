@@ -27,20 +27,23 @@ class Image(SqliteObject):
 
     @staticmethod
     def from_uri(instanceConfigurationId, uri='http://localhost:8080'):
+        print('Getting image for config id {} from {}'.format(instanceConfigurationId, uri))
         response = requests.get(uri)
 
         if response.status_code == 200:
             nparray = numpy.asarray(bytearray(response.content), dtype="uint8")
+            #return nparray
             return Image(id=uuid.uuid4(),
                          instanceConfigurationId=instanceConfigurationId,
-                         npArray=cv2.imdecode(nparray, cv2.IMREAD_COLOR))
+                         npArray=cv2.imdecode(nparray, cv2.IMREAD_COLOR),
+                         timestamp=datetime.datetime.now().isoformat())
         else:
             print(response.status_code)
             print(response.json())
             return None
 
     def get_image_array(self):
-        if not self.image:
+        if self.image is None:
             self.image = cv2.imread(self.get_image_path())
 
         return self.image
@@ -66,7 +69,6 @@ class Image(SqliteObject):
         return Image.get_image_directory(self.id)
 
     def get_image_projection(self):
-
         image = self.get_image_array()
         if image is None:
             print('Could not get Image Projection; image array was None')

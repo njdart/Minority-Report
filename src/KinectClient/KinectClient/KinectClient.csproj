@@ -59,7 +59,6 @@
     <Compile Include="BodyBoundingBox.cs" />
     <Compile Include="BoundingBoxesEventArgs.cs" />
     <Compile Include="ColorFrameSampledEventArgs.cs" />
-    <Compile Include="IKinectClient.cs" />
     <Compile Include="KinectClient.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

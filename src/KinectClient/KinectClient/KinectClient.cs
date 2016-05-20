@@ -13,14 +13,20 @@ using System.Drawing.Imaging;
 using System.Runtime.InteropServices;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
+using System.Net;
 
 namespace MinorityReport
 {
-    public class KinectClient : IKinectClient
+    public class KinectClient
     {
         private KinectSensor sensor = null;
         private BodyIndexFrameReader bodyIndexReader = null;
         private ColorFrameReader colorReader = null;
+
+        private bool samplingColorFrames = false;
+        private bool samplingBodyData = false;
+
+        private byte[] latestColorPNG = null;
 
         public string Server { get; set; }
             = "localhost";
@@ -39,34 +45,61 @@ namespace MinorityReport
 
             this.bodyIndexReader = this.sensor.BodyIndexFrameSource.OpenReader();
             this.colorReader = this.sensor.ColorFrameSource.OpenReader();
-        }
-
-        public void BeginSampling()
-        {
             this.bodyIndexReader.FrameArrived += this.BodyIndexReader_FrameArrived;
             this.colorReader.FrameArrived += this.ColorReader_FrameArrived;
-        }
 
-        public void StopSampling()
-        {
-            this.bodyIndexReader.FrameArrived -= this.BodyIndexReader_FrameArrived;
+            // Listen to all HTTP requests on port 8080. This requires admin privileges.
+            HttpListener listener = new HttpListener();
+            HttpListenerPrefixCollection prefixes = listener.Prefixes;
+            prefixes.Add("http://+:8080/");
+
+            listener.Start();
+            bool active = true;
+            while (active)
+            {
+                HttpListenerContext context = listener.GetContext();
+                if (context.Request.Url.LocalPath == "/calibrate")
+                {
+                    // save a colour image
+                    this.latestColorPNG = null;
+                    this.samplingColorFrames = true;
+                    while (this.samplingColorFrames) ;
+
+                    // respond with the colour image
+                    context.Response.ContentLength64 = this.latestColorPNG.Length;
+                    context.Response.ContentType = "image/png";
+                    context.Response.OutputStream.Write(this.latestColorPNG, 0, this.latestColorPNG.Length);
+                    context.Response.Close();
+
+                    Console.Write("sent calibration image\n");
+                }
+                else if (context.Request.Url.LocalPath == "/test")
+                {
+                    Console.Write("test\n");
+                    byte[] data = Encoding.UTF8.GetBytes("test response");
+                    context.Response.ContentLength64 = data.Length;
+                    context.Response.OutputStream.Write(data, 0, data.Length);
+                }
+                context.Response.Close();
+            }
+            listener.Stop();
         }
 
         private void BodyIndexReader_FrameArrived(object sender, BodyIndexFrameArrivedEventArgs e)
         {
             // Do this logic in a separate thread (the logic is quite intensive)
-            new Task(new Action(() =>
+            // new Task(new Action(() =>
+            // {
+            using (BodyIndexFrame frame = e.FrameReference.AcquireFrame())
             {
-                using (BodyIndexFrame frame = e.FrameReference.AcquireFrame())
+                if (frame == null)
                 {
-                    if (frame == null)
-                    {
-                        Console.Write("Null body index frame acquired.\n");
-                        return;
-                    }
+                    Console.Write("Null body index frame acquired.\n");
+                    return;
+                }
 
-                    // Console.Write("acquired body index frame\n");
-
+                if (this.samplingBodyData)
+                {
                     // Initialize our bounding boxes as null.
                     IList<BodyBoundingBox> boundingBoxes = new BodyBoundingBox[this.sensor.BodyFrameSource.BodyCount];
                     for (int i = 0; i < boundingBoxes.Count; ++i)
@@ -121,29 +154,35 @@ namespace MinorityReport
                     }
 
                     string boundingBoxesJson = this.SerializeBoundingBoxes(boundingBoxes);
-
-                    if (this.BoundingBoxesSampled != null)
-                    {
-                        this.BoundingBoxesSampled.Invoke(this, new BoundingBoxesSampledEventArgs(boundingBoxes));
-                    }
+                    this.SendBoundingBoxes(boundingBoxesJson);
+                    // if (this.BoundingBoxesSampled != null)
+                    // {
+                    //     this.BoundingBoxesSampled.Invoke(this, new BoundingBoxesSampledEventArgs(boundingBoxes));
+                    // }
                 }
-            })).Start();
+                // })).Start();
+            }
+        }
+
+        private void SendBoundingBoxes(string data)
+        {
+            throw new NotImplementedException();
         }
 
         private void ColorReader_FrameArrived(object sender, ColorFrameArrivedEventArgs e)
         {
-            new Task(new Action(() =>
+        // new Task(new Action(() =>
+        // {
+            using (ColorFrame frame = e.FrameReference.AcquireFrame())
             {
-                using (ColorFrame frame = e.FrameReference.AcquireFrame())
+                if (frame == null)
                 {
-                    if (frame == null)
-                    {
-                        Console.Write("Null color frame acquired.\n");
-                        return;
-                    }
+                    Console.Write("Null color frame acquired.\n");
+                    return;
+                }
 
-                    // Console.Write("acquired color frame");
-
+                if (this.samplingColorFrames)
+                {
                     // Get pixel data
                     byte[] pixels = new byte[frame.FrameDescription.Width * frame.FrameDescription.Height * 4];
                     frame.CopyConvertedFrameDataToArray(pixels, ColorImageFormat.Bgra);
@@ -166,24 +205,22 @@ namespace MinorityReport
                         bmp.Unlock();
                     }
 
-                    // Invoke event handler
-                    if (this.ColorFrameSampled != null)
-                    {
-                        this.ColorFrameSampled.Invoke(this, new ColorFrameSampledEventArgs(bmp));
-                    }
-
                     // Encode the data into a BMP file format
-                    BmpBitmapEncoder encoder = new BmpBitmapEncoder();
+                    PngBitmapEncoder encoder = new PngBitmapEncoder();
                     encoder.Frames.Add(BitmapFrame.Create(bmp));
+//                    FileStream file = new FileStream("asdf.png", FileMode.Create);
+//                    encoder.Save(file);
+//                    file.Close();
 
-                    // Write the BMP file to a stream
                     using (MemoryStream stream = new MemoryStream())
                     {
                         encoder.Save(stream);
-                        stream.Close();
+                        this.latestColorPNG = stream.ToArray();
                     }
+                    this.samplingColorFrames = false;
                 }
-            })).Start();
+            }
+            // })).Start();
         }
 
         private string SerializeBoundingBoxes(IList<BodyBoundingBox> boundingBoxes)
