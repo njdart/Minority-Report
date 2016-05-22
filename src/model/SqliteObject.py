@@ -1,4 +1,5 @@
 from src.server import databaseHandler
+import uuid
 
 
 class SqliteObject(object):
@@ -7,7 +8,8 @@ class SqliteObject(object):
     table = ""
 
     def __init__(self, id=None, database=None):
-        self.id = id
+
+        self.id = id if type(id) is uuid.UUID else uuid.uuid4()
         self.database = database
 
     def get_id(self):
