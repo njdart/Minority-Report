@@ -68,6 +68,7 @@ class Image(SqliteObject):
         return Image.get_image_directory(self.id)
 
     def get_image_projection(self):
+
         image = self.get_image_array()
         if image is None:
             print('Could not get Image Projection; image array was None')

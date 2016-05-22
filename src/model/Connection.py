@@ -1,6 +1,4 @@
 from src.model.SqliteObject import SqliteObject
-import uuid
-import datetime
 
 
 class Connection(SqliteObject):

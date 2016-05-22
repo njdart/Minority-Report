@@ -4,7 +4,7 @@ from src.model.InstanceConfiguration import InstanceConfiguration
 
 
 @socketio.on('create_instance_configuration')
-def create_instance_configuration(e):
+def create_instance_configuration(details):
     """
     Create an instance configuration
     :param details: object details about the instance configuration
