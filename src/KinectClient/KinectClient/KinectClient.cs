@@ -28,22 +28,29 @@ namespace MinorityReport
 
         private byte[] latestColorPNG = null;
 
-        public string Server { get; set; }
-            = "localhost";
+        private string clientID;
+        private KinectPoint[] canvasCoords;
 
-        public int Port { get; set; }
-            = 8088;
+        private Timer sensorAvailableTimer;
+        private bool sensorTimerElapsed = false;
 
-        string clientID;
-        KinectPoint[] canvasCoords;
+        public string Server { get; set; } = "localhost";
 
-        public event EventHandler ServerDisconnected;
-        public event EventHandler<BoundingBoxesSampledEventArgs> BoundingBoxesSampled;
-        public event EventHandler<ColorFrameSampledEventArgs> ColorFrameSampled;
+        public int Port { get; set; } = 8088;
+
+        // public event EventHandler ServerDisconnected;
+        // public event EventHandler<BoundingBoxesSampledEventArgs> BoundingBoxesSampled;
+        // public event EventHandler<ColorFrameSampledEventArgs> ColorFrameSampled;
 
         public KinectClient(string server, int port)
         {
+            // If this timer elapses, an exception is thrown in Run().
+            this.sensorAvailableTimer = new Timer(5000);
+            this.sensorAvailableTimer.Elapsed += SensorAvailableTimer_Elapsed;
+            this.sensorAvailableTimer.Start();
+
             this.sensor = KinectSensor.GetDefault();
+            this.sensor.IsAvailableChanged += Sensor_IsAvailableChanged;
             this.sensor.Open();
 
             this.bodyIndexReader = this.sensor.BodyIndexFrameSource.OpenReader();
@@ -51,6 +58,24 @@ namespace MinorityReport
             this.bodyIndexReader.FrameArrived += this.BodyIndexReader_FrameArrived;
             this.colorReader.FrameArrived += this.ColorReader_FrameArrived;
             this.samplingBodyData = true;
+        }
+        public void Run()
+        {
+            bool active = true;
+            bool kinectFault = false;
+            // Set a background loop to continually check on the status of the Kinect sensor.
+            Task sensorTimerTask = new Task(() =>
+            {
+                while (active)
+                {
+                    if (this.sensorTimerElapsed)
+                    {
+                        kinectFault = true;
+                        break;
+                    }
+                }
+            });
+            sensorTimerTask.Start();
 
             // Listen to all HTTP requests on port 8080. This requires admin privileges.
             HttpListener listener = new HttpListener();
@@ -58,107 +83,160 @@ namespace MinorityReport
             prefixes.Add("http://+:8080/");
             listener.IgnoreWriteExceptions = true;
             listener.Start();
-            bool active = true;
-            while (active)
+
+            Task listenerTask = new Task(() =>
             {
-                HttpListenerContext context = listener.GetContext();
-                if (context.Request.Url.LocalPath == "/debug")
+                while (active && !kinectFault)
                 {
-                    string body = "debug or something";
-                    this.WriteStringResponse(context, body);
-                }
-                else if (context.Request.Url.LocalPath == "/calibrate")
-                {
-                    if (context.Request.HttpMethod == "GET")
+                    HttpListenerContext context;
+                    try
                     {
-                        // save a colour image
-                        this.latestColorPNG = null;
-                        this.samplingColorFrames = true;
-                        while (this.samplingColorFrames) ;
-
-                        // respond with the colour image (PNG)
-                        try
-                        {
-                            context.Response.ContentLength64 = this.latestColorPNG.Length;
-                            context.Response.ContentType = "image/png";
-                            context.Response.OutputStream.Write(this.latestColorPNG, 0, this.latestColorPNG.Length);
-                        }
-                        catch (HttpListenerException)
-                        {
-                            // Do nothing (the client closed the connection)
-                        }
-
-                        Console.Write("sent calibration image\n");
+                        context = listener.GetContext();
                     }
-                    else if (context.Request.HttpMethod == "POST")
+                    catch
                     {
-                        MemoryStream mstream = new MemoryStream();
-                        context.Request.InputStream.CopyTo(mstream);
-                        byte[] data = mstream.GetBuffer();
+                        // This probably means an exception has been thrown in the calling thread, invalidating the
+                        // listener object.
+                        active = false;
+                        break;
+                    }
 
-                        CalibratePOSTData postData = null;
-                        bool success = true;
-                        try
+                    if (context.Request.Url.LocalPath == "/debug")
+                    {
+                        string body = "debug or something";
+                        this.WriteStringResponse(context, body);
+                    }
+                    else if (context.Request.Url.LocalPath == "/calibrate")
+                    {
+                        if (context.Request.HttpMethod == "GET")
                         {
-                            postData = JsonConvert.DeserializeObject<CalibratePOSTData>(Encoding.UTF8.GetString(data, 0, (int)context.Request.ContentLength64));
-                            if (postData.points == null || postData.points.Count != 4)
+                            // save a colour image
+                            this.latestColorPNG = null;
+                            this.samplingColorFrames = true;
+                            while (this.samplingColorFrames) ;
+
+                            // respond with the colour image (PNG)
+                            try
+                            {
+                                context.Response.ContentLength64 = this.latestColorPNG.Length;
+                                context.Response.ContentType = "image/png";
+                                context.Response.OutputStream.Write(this.latestColorPNG, 0, this.latestColorPNG.Length);
+                            }
+                            catch (HttpListenerException)
+                            {
+                                // Do nothing (the client closed the connection)
+                            }
+
+                            Console.Write("sent calibration image\n");
+                        }
+                        else if (context.Request.HttpMethod == "POST")
+                        {
+                            MemoryStream mstream = new MemoryStream();
+                            context.Request.InputStream.CopyTo(mstream);
+                            byte[] data = mstream.GetBuffer();
+
+                            CalibratePOSTData postData = null;
+                            bool success = true;
+                            try
+                            {
+                                postData = JsonConvert.DeserializeObject<CalibratePOSTData>(Encoding.UTF8.GetString(data, 0, (int)context.Request.ContentLength64));
+                                if (postData.points == null || postData.points.Count != 4)
+                                {
+                                    success = false;
+                                }
+                                else
+                                {
+                                    this.canvasCoords = new KinectPoint[4];
+                                    int i = 0;
+                                    foreach (IList<int> p in postData.points)
+                                    {
+                                        canvasCoords[i] = new KinectPoint(p[0], p[1]);
+                                        i += 1;
+                                        Console.Write("[{0}, {1}]\n", p[0], p[1]);
+                                    }
+                                }
+                            }
+                            catch (JsonException)
                             {
                                 success = false;
                             }
+
+                            if (!success)
+                            {
+                                context.Response.StatusCode = (int)HttpStatusCode.BadRequest;
+                                string body = "Malformed JSON received";
+                                this.WriteStringResponse(context, body);
+                            }
                             else
                             {
-                                this.canvasCoords = new KinectPoint[4];
-                                int i = 0;
-                                foreach (IList<int> p in postData.points)
+                                if (postData.instanceID != null)
                                 {
-                                    canvasCoords[i] = new KinectPoint(p[0], p[1]);
-                                    i += 1;
-                                    Console.Write("[{0}, {1}]\n", p[0], p[1]);
+                                    this.clientID = postData.instanceID;
+
+                                    // echo ID
+                                    CalibratePOSTData respData = new CalibratePOSTData();
+                                    respData.instanceID = postData.instanceID;
+                                    string body = JsonConvert.SerializeObject(respData, Formatting.Indented);
+                                    this.WriteStringResponse(context, body);
+                                    Console.Write(body + "\n");
                                 }
                             }
                         }
-                        catch (JsonException)
-                        {
-                            success = false;
-                        }
+                    }
+                    else if (context.Request.Url.LocalPath == "/quit")
+                    {
+                        string body = "Goodbye";
+                        this.WriteStringResponse(context, body);
+                        active = false;
+                    }
+                    else
+                    {
+                        context.Response.StatusCode = (int)HttpStatusCode.NotFound;
+                        string body = "<html><head><title>KinectClient: 404</title></head><body><h1>404 : Not Found</h1><p>You messed up lol</p></body></html>";
+                        this.WriteStringResponse(context, body);
+                    }
+                    context.Response.Close();
+                }
+            });
+            listenerTask.Start();
 
-                        if (!success)
-                        {
-                            context.Response.StatusCode = (int)HttpStatusCode.BadRequest;
-                            string body = "Malformed JSON received";
-                            this.WriteStringResponse(context, body);
-                        }
-                        else
-                        {
-                            if (postData.instanceID != null)
-                            {
-                                this.clientID = postData.instanceID;
-
-                                // echo ID
-                                CalibratePOSTData respData = new CalibratePOSTData();
-                                respData.instanceID = postData.instanceID;
-                                string body = JsonConvert.SerializeObject(respData, Formatting.Indented);
-                                this.WriteStringResponse(context, body);
-                                Console.Write(body + "\n");
-                            }
-                        }
+            try
+            {
+                while (active)
+                {
+                    if (kinectFault)
+                    {
+                        active = false;
+                        throw new Exception("The Kinect sensor is unavailable.");
                     }
                 }
-                else if (context.Request.Url.LocalPath == "/quit")
-                {
-                    string body = "Goodbye";
-                    this.WriteStringResponse(context, body);
-                    active = false;
-                }
-                else
-                {
-                    context.Response.StatusCode = (int)HttpStatusCode.NotFound;
-                    string body = "<html><head><title>KinectClient: 404</title></head><body><h1>404 : Not Found</h1><p>You messed up lol</p></body></html>";
-                    this.WriteStringResponse(context, body);
-                }
-                context.Response.Close();
             }
-            listener.Stop();
+            finally
+            {
+                listener.Stop();
+            }
+        }
+
+        private void SensorAvailableTimer_Elapsed(object sender, ElapsedEventArgs e)
+        {
+            // If this timer has elapsed, the Kinect sensor has been unavailable for too long...
+            Console.Write("Kinect has been unavailable for {0} seconds.", ((Timer)sender).Interval / 1000);
+            this.sensorTimerElapsed = true;
+        }
+
+        private void Sensor_IsAvailableChanged(object sender, IsAvailableChangedEventArgs e)
+        {
+            // If the sensor becomes unavailable, a timer is started. If the sensor becomes available before the timer
+            // elapses, everything is fine. Otherwise, we regard this as an error, treating the Kinect as permanently
+            // unavailable.
+            if (e.IsAvailable)
+            {
+                this.sensorAvailableTimer.Stop();
+            }
+            else
+            {
+                this.sensorAvailableTimer.Start();
+            }
         }
 
         private bool WriteStringResponse(HttpListenerContext context, string str)
@@ -188,6 +266,8 @@ namespace MinorityReport
                     Console.Write("Null body index frame acquired.\n");
                     return;
                 }
+
+                Console.Write(DateTime.Now.ToString("o") + "\tbody index frame\n");
 
                 if (this.samplingBodyData)
                 {
@@ -264,6 +344,8 @@ namespace MinorityReport
                     Console.Write("Null color frame acquired.\n");
                     return;
                 }
+
+                // Console.Write("color frame\n");
 
                 if (this.samplingColorFrames)
                 {
