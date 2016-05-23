@@ -9,7 +9,7 @@ class SqliteObject(object):
 
     def __init__(self, id=None, database=None):
 
-        self.id = id if type(id) is uuid.UUID else uuid.uuid4()
+        self.id = id if id is not None else uuid.uuid4()
         self.database = database
 
     def get_id(self):
