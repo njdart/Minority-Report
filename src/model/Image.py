@@ -68,6 +68,7 @@ class Image(SqliteObject):
         return Image.get_image_directory(self.id)
 
     def get_image_projection(self):
+
         image = self.get_image_array()
         if image is None:
             print('Could not get Image Projection; image array was None')
@@ -132,14 +133,15 @@ class Image(SqliteObject):
         return response.status_code == 200
 
     def find_postits(self,
+                     canvas,
                      save=True,
                      min_postit_area=5000,
                      max_postit_area=40000,
-                     len_tolerence=0.4,
+                     len_tolerence=0.2,
                      min_colour_thresh=64,
                      max_colour_thresh=200,
                      save_postits=True):
-
+        from src.model.InstanceConfiguration import InstanceConfiguration
         from src.model.Postit import Postit
 
         found_postits = []
@@ -147,16 +149,20 @@ class Image(SqliteObject):
 
         # Finding postits is based on saturation levels, first the image must be converted to HSV format
         hsv_image = cv2.cvtColor(canvas_image.copy(), cv2.COLOR_BGR2HSV)
-        satthresh = 120  # CONST
+        satthresh = 100  # CONST
         # All pixels with a saturation below threshold are set to black
         hsv_image[numpy.where((hsv_image < [255, satthresh, 255]).all(axis=2))] = [0, 0, 0]
         hsv_image = cv2.cvtColor(hsv_image, cv2.COLOR_HSV2BGR)
         # All pixels below brightness threshold set to black
         # to remove any lines that have some saturation from reflections
         hsv_image[numpy.where((hsv_image < [100, 100, 100]).all(axis=2))] = [0, 0, 0]
+        # cv2.imshow("debug", cv2.resize(hsv_image, None, fx=0.5, fy=0.5, interpolation=cv2.INTER_AREA))
+        # cv2.waitKey(0)
         # Convert image to grayscale and then canny filter and get contour
         gray_img = cv2.cvtColor(hsv_image, cv2.COLOR_BGR2GRAY)
         edge_gray = cv2.Canny(gray_img, 1, 30)
+        # cv2.imshow("debug", cv2.resize(edge_gray, None, fx=0.5, fy=0.5, interpolation=cv2.INTER_AREA))
+        # cv2.waitKey(0)
         (_, contours, _) = cv2.findContours(edge_gray.copy(), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
 
         postitPts = []
@@ -166,6 +172,7 @@ class Image(SqliteObject):
         for c in contours:
             box = cv2.boxPoints(cv2.minAreaRect(c))
             box = numpy.int0(box)
+            # print(cv2.contourArea(box))
             # Check the area of the postits to see if they fit within the expected range
             if (cv2.contourArea(box) > min_postit_area) and (cv2.contourArea(box) < max_postit_area):
                 length = numpy.math.hypot(box[0, 0] - box[1, 0], box[0, 1] - box[1, 1])
@@ -210,10 +217,9 @@ class Image(SqliteObject):
                                   (canvx[max4][0], canvy[max4][0])]
                     # Crop and transform image based on points
                     postitimg = src.model.processing.four_point_transform(canvas_image, numpy.array(postit_pts))
-                    postitPts.append(numpy.array(postit_pts))
+                    postitPts.append(src.model.processing.order_points(numpy.array(postit_pts)))
                     postitImages.append(postitimg)
                     postitPos.append(rectangle)
-        canvas_id = uuid.uuid4()
         for idx, postit_image in enumerate(postitImages):
             # Calculate average postit colour in order to guess the colour of the postit
             gray_image = cv2.cvtColor(postit_image, cv2.COLOR_BGR2GRAY)
@@ -236,21 +242,22 @@ class Image(SqliteObject):
             guessed_colour = src.model.processing.guess_colour(red_average, green_average, blue_average)
             # Only if a postit colour valid create a postit
             if guessed_colour is not None:
-                postitPts = src.model.processing.order_points(postitPts[idx])
-
-                postit = Postit(canvas = canvas_id,
-                                topLeftX=postitPts[0][0],
-                                topLeftY=postitPts[0][1],
-                                topRightX=postitPts[1][0],
-                                topRightY=postitPts[1][1],
-                                bottomRightX=postitPts[2][0],
-                                bottomRightY=postitPts[2][1],
-                                bottomLeftX=postitPts[3][0],
-                                bottomLeftY=postitPts[3][1],
-                                displayPosX=postitPts[0][0]*(1920/canvas_image.shape[0]),
-                                displayPosY=postitPts[0][1]*(1920/canvas_image.shape[0]),
+                postit = Postit(id=uuid.uuid4(),
+                                physicalFor=InstanceConfiguration.get(self.instanceConfigurationId).userId,
+                                canvas = canvas.id,
+                                topLeftX=postitPts[idx][0][0],
+                                topLeftY=postitPts[idx][0][1],
+                                topRightX=postitPts[idx][1][0],
+                                topRightY=postitPts[idx][1][1],
+                                bottomRightX=postitPts[idx][2][0],
+                                bottomRightY=postitPts[idx][2][1],
+                                bottomLeftX=postitPts[idx][3][0],
+                                bottomLeftY=postitPts[idx][3][1],
+                                displayPosX=postitPts[idx][0][0]*(1920/canvas_image.shape[0]),
+                                displayPosY=postitPts[idx][0][1]*(1920/canvas_image.shape[0]),
                                 colour=guessed_colour,
                                 image=self.get_id())
+
                 if save_postits:
                     postit.create(self.database)
 
@@ -258,4 +265,79 @@ class Image(SqliteObject):
 
         return found_postits
 
+    def find_connections(self, postits, canvas, save=True):
+        from src.model.InstanceConfiguration import InstanceConfiguration
+        from src.model.Connection import Connection
 
+        found_connections = []
+        canvas_image = self.get_image_projection()
+        edged = src.model.processing.edge(canvas_image)
+        (_, cnts, _) = cv2.findContours(edged.copy(), cv2.RETR_TREE, cv2.CHAIN_APPROX_NONE)
+        for c in cnts:
+            debug_img = canvas_image.copy()
+            if cv2.arcLength(c, True) > 300:
+                connectionList = []
+                userId = InstanceConfiguration.get(self.instanceConfigurationId).userId
+                old_postits = canvas.get_postits()
+                for index in range(0, len(c), 10):
+                    contained = False
+                    for idx, ipostit in enumerate(postits):
+                        ipostitpoints = ipostit.get_corner_points()
+                        rectanglearea = src.model.processing.get_area(ipostitpoints)
+                        pointarea = src.model.processing.get_area((ipostitpoints[0], ipostitpoints[1], c[index][0]))\
+                                    + src.model.processing.get_area((ipostitpoints[1], ipostitpoints[2], c[index][0]))\
+                                    + src.model.processing.get_area((ipostitpoints[2], ipostitpoints[3], c[index][0]))\
+                                    + src.model.processing.get_area((ipostitpoints[3], ipostitpoints[0], c[index][0]))
+                        if pointarea < rectanglearea*1.1:
+                                contained = True
+                        if pointarea < rectanglearea*1.25 and not contained:
+                            if not connectionList:
+                                connectionList.append(ipostit.get_id())
+
+                            elif ipostit.get_id() is not connectionList[-1]:
+                                connectionList.append(ipostit.get_id())
+                    for idx, jpostit in enumerate(old_postits):
+                        if jpostit.physicalFor == userId:
+                            jpostitpoints = jpostit.get_corner_points()
+                            rectanglearea = src.model.processing.get_area(jpostitpoints)
+                            pointarea = src.model.processing.get_area((jpostitpoints[0], jpostitpoints[1], c[index][0])) \
+                                    + src.model.processing.get_area((jpostitpoints[1], jpostitpoints[2], c[index][0]))\
+                                    + src.model.processing.get_area((jpostitpoints[2], jpostitpoints[3], c[index][0]))\
+                                    + src.model.processing.get_area((jpostitpoints[3], jpostitpoints[0], c[index][0]))
+                            if pointarea < rectanglearea*1.1:
+                                contained = True
+                            if pointarea < rectanglearea*1.25 and not contained:
+                                if not connectionList:
+                                    connectionList.append(jpostit.get_id())
+                                    line_start_point = c[index][0]
+                                elif jpostit.get_id() is not connectionList[-1]:
+                                    connectionList.append(jpostit.get_id())
+                                    line_end_point = c[index][0]
+
+                if len(connectionList) > 1:
+                    for i in range(0, len(connectionList) - 1):
+                        postit_id_start = 0
+                        postit_id_end = 0
+                        if len(str(connectionList[i])) == 36:
+                            postit_id_start = connectionList[i]
+                        if len(str(connectionList[i + 1])) == 36:
+                            postit_id_end = connectionList[i + 1]
+                        if postit_id_start and postit_id_end:
+                            found_connection = {
+                                "postitIdStart": postit_id_start,
+                                "postitIdEnd": postit_id_end
+                            }
+                            found_connections.append(found_connection)
+        connections = []
+        connection = Connection(id=uuid.uuid4(),
+                                start=found_connections[0]["postitIdStart"],
+                                finish=found_connections[0]["postitIdEnd"],
+                                canvas=canvas.id)
+        if save:
+            connection.create(self.database)
+        return found_connections
+
+    def update_canvases(self, postits, connections, canvas):
+        from src.model.Canvas import Canvas
+        new_canvas = canvas.update(postits, connections)
+        return [new_canvas]

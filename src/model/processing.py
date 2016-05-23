@@ -65,7 +65,6 @@ def order_points(pts):
     [topLeft, topRight, bottomRight, bottomLeft]
     Magic taken from http://www.pyimagesearch.com/2014/08/25/4-point-opencv-getperspective-transform-example/
     """
-    print(type(pts))
     # initialzie a list of coordinates that will be ordered
     # such that the first entry in the list is the top-left,
     # the second entry is the top-right, the third is the
@@ -169,3 +168,24 @@ def binarize(image):
     image[numpy.where((res2 > [0, 0, 0]).all(axis=2))] = [0, 0, 0]
     image[numpy.where((res2 > [bmin, gmin, rmin]).all(axis=2))] = [255, 255, 255]
     return image
+
+
+def edge(img):
+    kernel = numpy.ones((5, 5), numpy.uint8)
+    #img = cv2.medianBlur(img, 9)
+    img = cv2.bilateralFilter(img,9,75,75)
+    gray_image = cv2.cvtColor(img, cv2.COLOR_RGB2GRAY)
+
+    edged = cv2.Canny(gray_image, 1, 30)
+
+    return edged
+
+
+def get_area(points):
+    #if len(points) == 4:
+    #    points = self.order_points(points)
+    pointsum = 0
+    for index in range(-1, len(points) - 1):
+        pointsum = pointsum + (points[index][0] * points[index + 1][1] - points[index][1] * points[index + 1][0])
+    area = abs(pointsum / 2)
+    return area

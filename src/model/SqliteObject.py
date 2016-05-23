@@ -1,4 +1,5 @@
 from src.server import databaseHandler
+import uuid
 
 
 class SqliteObject(object):
@@ -7,7 +8,8 @@ class SqliteObject(object):
     table = ""
 
     def __init__(self, id=None, database=None):
-        self.id = id
+
+        self.id = id if id is not None else uuid.uuid4()
         self.database = database
 
     def get_id(self):
@@ -49,8 +51,8 @@ class SqliteObject(object):
         return found
 
     @classmethod
-    def get(cls, db_id, database=None):
-        query = 'SELECT * FROM {} WHERE id=\'{}\';'.format(cls.table, db_id)
+    def get(cls, id, database=None):
+        query = 'SELECT * FROM {} WHERE id=\'{}\';'.format(cls.table, id)
 
         print('Using SELECT query {}'.format(query))
 
@@ -72,7 +74,7 @@ class SqliteObject(object):
         return cls(**props)
 
     @classmethod
-    def get_by_property(cls, value, prop='id', database=None, limit=10):
+    def get_by_property(cls, prop, value, database=None, limit=10):
         """
         There are many security holes in this function
         the query is not sanitised, offering SQL injection vulns
@@ -100,7 +102,6 @@ class SqliteObject(object):
             for prop in range(len(cls.properties)):
                 props[cls.properties[prop]] = str(data[result][prop])
             prop_list.append(cls(**props))
-
 
         return prop_list
 

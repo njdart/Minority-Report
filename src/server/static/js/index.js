@@ -201,4 +201,71 @@ $(function() {
         //the canvas image
         $("#modalImage").attr("src", canvasImage);
     });
+
+    $("#startBtn").on("click", function(){
+        selectedUserId = $(".usersList").val();
+        selectedSessionId = $(".sessionsList").val();
+        selectedInstanceConfiguration = $(".instanceConfigurationsList").val();
+        refresh = false;
+
+        if(selectedUserId == "")
+        {
+            newUserName = $("#newUserNameBox").val();
+            if(newUserName == "")
+            {
+                alert("Enter new username");
+                return;
+            }
+            socket.emit("create_user", newUserName);
+            refresh = true;
+        }
+
+        if(selectedSessionId == "")
+        {
+            newSessionName = $("#newSessionNameBox").val();
+            newSessionDesc = $("#newSessionDescBox").val();
+            if(newSessionName == "" || newSessionDesc == "")
+            {
+                alert("Enter new session details");
+                return;
+            }
+            socket.emit("create_session", newSessionName, newSessionDesc);
+            refresh = true;
+        }
+
+        if(selectedInstanceConfiguration == "")
+        {
+            newCameraUri = $("#newCameraUriBox").val();
+            newKinectUri = $("#newKinectUriBox").val();
+
+            if(newCameraUri == "" || newKinectUri == "")
+            {
+                alert("Enter instance configuration details");
+                return;
+            }
+
+            details = {};
+            details["camera"] = {};
+            details["kinect"] = {};
+            details["camera"]["host"] = "http://" + newCameraUri.split("http://")[1].split(":")[0];
+            details["camera"]["port"] = newCameraUri.split("http://")[1].split(":")[1];
+
+            details["kinect"]["host"] = "http://" + newKinectUri.split("http://")[1].split(":")[0];
+            details["kinect"]["port"] = newKinectUri.split("http://")[1].split(":")[1];
+            socket.emit("create_instance_configuration", details);
+            refresh = true;
+        }
+
+        if(refresh)
+        {
+            location.reload();
+            return;
+        }
+
+        if (selectedUserId != "" && selectedSessionId != "" && selectedInstanceConfiguration != "") {
+            localStorage.setItem('user', selectedUserId);
+            localStorage.setItem("session", selectedSessionId);
+            localStorage.setItem("instanceConfiguration", selectedInstanceConfiguration);
+        }
+    })
 });
