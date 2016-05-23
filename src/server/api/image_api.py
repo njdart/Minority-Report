@@ -90,10 +90,11 @@ def setCameraProperties(uri, properties):
 @socketio.on('generate_canvas')
 def generate_canvas(id):
     image = Image.get(id=id)
-    postits = image.find_postits(save=True)
-    new_canvas = Session.get_by_property("instanceConfiguration", image.instanceConfiguration).create_new_canvas()
+    from src.model.InstanceConfiguration import InstanceConfiguration
+    new_canvas = Session.get(InstanceConfiguration.get(id=image.instanceConfigurationId).sessionId).create_new_canvas()
+    postits = image.find_postits(canvas=new_canvas, save=True)
     connections = image.find_connections(postits=postits, canvas=new_canvas, save=True)
-    canvases = image.update_canvases()
+    canvases = image.update_canvases(postits=postits, connections=connections, canvas=new_canvas)
     emit('create_canvas', [canvas.as_object() for canvas in canvases])
 
 

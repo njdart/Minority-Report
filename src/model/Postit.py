@@ -122,9 +122,9 @@ class Postit(SqliteObject):
     def set_physical(self, state=False):
         self.physical = state
 
-    def get_descriptors(self, canvasImage):
+    def get_descriptors(self):
         sift = cv2.xfeatures2d.SIFT_create()
-        postit = self.getImage(canvasImage)
+        postit = self.get_image_keystoned()
         gray = cv2.cvtColor(postit, cv2.COLOR_BGR2GRAY)
         keypoints, descriptors = sift.detectAndCompute(gray, None)
         return descriptors

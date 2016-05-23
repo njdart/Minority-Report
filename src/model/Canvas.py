@@ -65,9 +65,6 @@ class Canvas(SqliteObject):
         from src.model.Postit import Postit
         return Postit.get_by_property('canvas', self.id)
 
-    def add_connection(self, start, end):
-        self.connections.append((start, end))
-
     def clone(self):
         postits = self.get_postits()
 
@@ -78,9 +75,15 @@ class Canvas(SqliteObject):
             postit.canvas = new_canvas_id
             postit.create()
 
-        self.derivedAt = datetime.datetime.isoformat()
+        self.derivedAt = datetime.datetime.isoformat(datetime.datetime.now())
         self.derivedFrom = self.id
         self.id = new_canvas_id
         self.create()
+
+        return self
+
+    def update(self, new_postits, new_connections):
+        self.postits = new_postits
+        self.connections = new_connections
 
         return self
