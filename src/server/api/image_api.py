@@ -91,10 +91,17 @@ def setCameraProperties(uri, properties):
 def generate_canvas(id):
     image = Image.get(id=id)
     from src.model.InstanceConfiguration import InstanceConfiguration
-    new_canvas = Session.get(InstanceConfiguration.get(id=image.instanceConfigurationId).sessionId).create_new_canvas()
-    postits = image.find_postits(canvas=new_canvas, save=True)
-    connections = image.find_connections(postits=postits, canvas=new_canvas, save=True)
-    canvases = image.update_canvases(postits=postits, connections=connections, canvas=new_canvas)
+    current_canvas = Session.get(InstanceConfiguration.get(id=image.instanceConfigurationId).sessionId).get_latest_canvas()
+    next_canvas_id = uuid.uuid4()
+    postits = image.find_postits(next_canvas_id=next_canvas_id ,save=True)
+    connections = image.find_connections(postits=postits,
+                                         current_canvas=current_canvas,
+                                         next_canvas_id=next_canvas_id,
+                                         save=True)
+    canvases = image.update_canvases(new_postits=postits,
+                                     connections=connections,
+                                     currnet_canvas=current_canvas,
+                                     next_canvas_id=next_canvas_id)
     emit('create_canvas', [canvas.as_object() for canvas in canvases])
 
 
