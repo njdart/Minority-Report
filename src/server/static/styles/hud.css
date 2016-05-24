@@ -21,3 +21,7 @@ body {
     height: 100%;
     position: absolute;
 }
+
+.blackCanvas{
+    background-color: black;
+}
