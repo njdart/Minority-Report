@@ -4,6 +4,7 @@ import numpy
 import cv2
 import src.model.processing
 from src.model.Image import Image
+import json
 
 class InstanceConfiguration(SqliteObject):
     properties = [
@@ -41,7 +42,8 @@ class InstanceConfiguration(SqliteObject):
                  bottomRightY=None,
                  bottomLeftX=None,
                  bottomLeftY=None,
-                 id=uuid.uuid4()):
+                 id=uuid.uuid4(),
+                 kinectID=uuid.uuid4()):
         super(InstanceConfiguration, self).__init__(id=id)
 
         self.sessionId = sessionId
@@ -59,6 +61,7 @@ class InstanceConfiguration(SqliteObject):
         self.bottomLeftX = bottomLeftX
         self.bottomLeftY = bottomLeftY
         self.calibSuccess = True
+        self.kinectID = kinectID
 
     def as_object(self):
         return {
@@ -107,6 +110,8 @@ class InstanceConfiguration(SqliteObject):
         kinectCalibUri = "http://{}:{}/calibrate".format(self.kinectHost, self.kinectPort)
         print("Getting Kinect calibration image from URI {}".format(kinectCalibUri))
 
+        self.calibSuccess = True
+
         calib_image = Image.from_uri(self.id, cameraUri)
         if calib_image == None:
             print("Camera calibration failed")
@@ -121,38 +126,45 @@ class InstanceConfiguration(SqliteObject):
             # Don't actually return here.
             # return self
 
-        calib_image_array = calib_image.get_image_array()
-        bin_image = cv2.cvtColor(src.model.processing.binarize(calib_image_array), cv2.COLOR_RGB2GRAY)
-        (__, board_contours, __) = cv2.findContours(bin_image, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-        areas = [cv2.contourArea(c) for c in board_contours]
-        max_index = numpy.argmax(areas)
-        canvas_contour = board_contours[max_index]
-        self.simpleBounds = cv2.boundingRect(canvas_contour)
-        fcanvas_contours = canvas_contour.flatten()
-        canvx = numpy.zeros([int(len(fcanvas_contours) / 2), 1])
-        canvy = numpy.zeros([int(len(fcanvas_contours) / 2), 1])
-        l1 = numpy.zeros(int(len(fcanvas_contours) / 2))
-        l2 = numpy.zeros(int(len(fcanvas_contours) / 2))
-        l3 = numpy.zeros(int(len(fcanvas_contours) / 2))
-        l4 = numpy.zeros(int(len(fcanvas_contours) / 2))
-        for i in range(0, len(fcanvas_contours), 2):
-            canvx[int(i / 2)] = fcanvas_contours[i]
-            canvy[int(i / 2)] = fcanvas_contours[i + 1]
-        xmax = numpy.max(canvx)
-        ymax = numpy.max(canvy)
-        xmin = numpy.min(canvx)
-        ymin = numpy.min(canvy)
-        for n in range(0, len(canvx)):
-            lx = ((canvx[n] - xmin) / (xmax - xmin))
-            ly = ((canvy[n] - ymin) / (ymax - ymin))
-            l1[n] = (1 - lx) + (1 - ly)
-            l2[n] = lx + (1 - ly)
-            l3[n] = lx + ly
-            l4[n] = (1 - lx) + ly
-        max1 = numpy.argmax(l1)
-        max2 = numpy.argmax(l2)
-        max3 = numpy.argmax(l3)
-        max4 = numpy.argmax(l4)
+        def getcanvascoords(img):
+            # Do a load of Josh magic to get the canvas coordinates.
+            calib_image_array = img.get_image_array()
+            bin_image = cv2.cvtColor(src.model.processing.binarize(calib_image_array), cv2.COLOR_RGB2GRAY)
+            (__, board_contours, __) = cv2.findContours(bin_image, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+            areas = [cv2.contourArea(c) for c in board_contours]
+            max_index = numpy.argmax(areas)
+            canvas_contour = board_contours[max_index]
+            # self.simpleBounds = cv2.boundingRect(canvas_contour)
+            bounds = cv2.boundingRect(canvas_contour)
+            fcanvas_contours = canvas_contour.flatten()
+            canvx = numpy.zeros([int(len(fcanvas_contours) / 2), 1])
+            canvy = numpy.zeros([int(len(fcanvas_contours) / 2), 1])
+            l1 = numpy.zeros(int(len(fcanvas_contours) / 2))
+            l2 = numpy.zeros(int(len(fcanvas_contours) / 2))
+            l3 = numpy.zeros(int(len(fcanvas_contours) / 2))
+            l4 = numpy.zeros(int(len(fcanvas_contours) / 2))
+            for i in range(0, len(fcanvas_contours), 2):
+                canvx[int(i / 2)] = fcanvas_contours[i]
+                canvy[int(i / 2)] = fcanvas_contours[i + 1]
+            xmax = numpy.max(canvx)
+            ymax = numpy.max(canvy)
+            xmin = numpy.min(canvx)
+            ymin = numpy.min(canvy)
+            for n in range(0, len(canvx)):
+                lx = ((canvx[n] - xmin) / (xmax - xmin))
+                ly = ((canvy[n] - ymin) / (ymax - ymin))
+                l1[n] = (1 - lx) + (1 - ly)
+                l2[n] = lx + (1 - ly)
+                l3[n] = lx + ly
+                l4[n] = (1 - lx) + ly
+            max1 = numpy.argmax(l1)
+            max2 = numpy.argmax(l2)
+            max3 = numpy.argmax(l3)
+            max4 = numpy.argmax(l4)
+            return (canvx, canvy, bounds, max1, max2, max3, max4)
+
+         # Josh magic on the camera image...
+        (canvx, canvy, bounds, max1, max2, max3, max4) = getcanvascoords(calib_image)
         self.topLeftX = canvx[max1][0]
         self.topLeftY = canvy[max1][0]
         self.topRightX = canvx[max2][0]
@@ -161,5 +173,21 @@ class InstanceConfiguration(SqliteObject):
         self.bottomRightY = canvy[max3][0]
         self.bottomLeftX = canvx[max4][0]
         self.bottomLeftY = canvy[max4][0]
-        self.calibSuccess = True
+        self.simpleBounds = bounds
+
+        if kinect_calib_image != None:
+            # Josh magic on the Kinect image...
+            (canvx, canvy, bounds, max1, max2, max3, max4) = getcanvascoords(kinect_calib_image)
+            # and send it off
+            payload = {
+                "points": [
+                    [canvx[max1][0], canvy[max1][0]],
+                    [canvx[max2][0], canvy[max2][0]],
+                    [canvx[max3][0], canvy[max3][0]],
+                    [canvx[max4][0], canvy[max4][0]]
+                ],
+                "instanceID": str(self.kinectID)
+            }
+            requests.post("http://{}:{}/calibrate", data=json.dumps(payload))
+
         return self
