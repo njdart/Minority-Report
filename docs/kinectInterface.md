@@ -56,6 +56,7 @@ The response to that POST request will echo the instance ID:
 Unless you mess up the request, in which case you won't get JSON at all but receive error 200
 with some error message as the body.
 
+<del>
 ### Body data requests
 
 The URL `/kinect/bodyTracking` is the endpoint which KinectClient shall send POST
@@ -144,3 +145,4 @@ following data:
 
 The `Status` and `Action` objects are strings which will take certain values
 (not yet determined).
+</del>
