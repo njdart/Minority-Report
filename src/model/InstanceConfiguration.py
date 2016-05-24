@@ -58,6 +58,7 @@ class InstanceConfiguration(SqliteObject):
         self.bottomRightY = bottomRightY
         self.bottomLeftX = bottomLeftX
         self.bottomLeftY = bottomLeftY
+        self.calibSuccess = True
 
     def as_object(self):
         return {
@@ -87,7 +88,8 @@ class InstanceConfiguration(SqliteObject):
             "bottomLeft": {
                 "x": self.bottomLeftX,
                 "y": self.bottomLeftY
-            }
+            },
+            "calibSuccess": self.calibSuccess
         }
 
     def get_projection_corner_points(self):
@@ -101,7 +103,24 @@ class InstanceConfiguration(SqliteObject):
     def calibrate(self):
         cameraUri = "http://{}:{}".format(self.cameraHost, self.cameraPort)
         print('Getting Calibration Image from URI {}'.format(cameraUri))
+
+        kinectCalibUri = "http://{}:{}/calibrate".format(self.kinectHost, self.kinectPort)
+        print("Getting Kinect calibration image from URI {}".format(kinectCalibUri))
+
         calib_image = Image.from_uri(self.id, cameraUri)
+        if calib_image == None:
+            print("Camera calibration failed")
+            self.calibSuccess = False
+            return self
+
+        kinect_calib_image = Image.from_uri(self.id, kinectCalibUri)
+        if kinect_calib_image == None:
+            print("Kinect calibration failed")
+            self.calibSuccess = False
+
+            # Don't actually return here.
+            # return self
+
         calib_image_array = calib_image.get_image_array()
         bin_image = cv2.cvtColor(src.model.processing.binarize(calib_image_array), cv2.COLOR_RGB2GRAY)
         (__, board_contours, __) = cv2.findContours(bin_image, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
@@ -142,4 +161,5 @@ class InstanceConfiguration(SqliteObject):
         self.bottomRightY = canvy[max3][0]
         self.bottomLeftX = canvx[max4][0]
         self.bottomLeftY = canvy[max4][0]
+        self.calibSuccess = True
         return self

@@ -85,7 +85,8 @@ $(function() {
         row.append($('<td></td>')
             .append($('<button type="submit" class="btn btn-primary instanceConfigsTable-save">Save</button>'))
             .append($('<button type="submit" class="btn btn-danger instanceConfigsTable-remove">Remove</button>'))
-            .append($('<button type="submit" class="btn btn-default instanceConfigsTable-calibrate">Calibrate</button>')));
+            .append($('<button type="submit" class="btn btn-default instanceConfigsTable-calibrate">Calibrate</button>'))
+            .append($('<span class="instanceConfigsTable-calibrateStatus" style="color:red;font-weight:bold"></span>')));
 
         table.append(row);
         instanceConfigurationsLists.append($('<option class="instanceConfigsTable-config"></option>')
@@ -161,7 +162,7 @@ $(function() {
     });
 
     var updateInstanceConfigRow = function(instanceConfig) {
-        row.data(instanceConfig);
+        var row = $(".instanceConfigsTable").find(':contains("' + instanceConfig.id + '")')
         row.find('.instanceConfigsTable-sessionId').val(instanceConfig.sessionId);
         row.find('.instanceConfigsTable-userId').val(instanceConfig.userId);
         row.find('.instanceConfigsTable-topLeft').val('(' + instanceConfig.topLeft.x + ',' + instanceConfig.topLeft.y + ')');
@@ -173,6 +174,11 @@ $(function() {
         row.find('.instanceConfigsTable-cameraHost').val(instanceConfig.camera.host);
         row.find('.instanceConfigsTable-cameraPort').val(instanceConfig.camera.port);
         $('option[value="' + instanceConfig.id + '"').text(instanceConfig.sessionId);
+
+        if (!instanceConfig.calibSuccess)
+        {
+            row.find(".instanceConfigsTable-calibrateStatus").text("Calibration failed")
+        }
    }
 
     // UPDATE

@@ -28,7 +28,12 @@ class Image(SqliteObject):
     @staticmethod
     def from_uri(instanceConfigurationId, uri='http://localhost:8080'):
         print('Getting image for config id {} from {}'.format(instanceConfigurationId, uri))
-        response = requests.get(uri)
+
+        try:
+            response = requests.get(uri)
+        except requests.exceptions.RequestException:
+            print("Getting URI {} failed".format(uri))
+            return None
 
         if response.status_code == 200:
             nparray = numpy.asarray(bytearray(response.content), dtype="uint8")
