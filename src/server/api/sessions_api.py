@@ -98,10 +98,9 @@ def get_latest_canvas_by_session(sessionId):
         connections = Connection.get_by_property("canvas", canvas.id)
         print("canvas {}".format(canvas))
         print("Postits {}".format(postits))
-        postits = list(set([postit.as_object() for postit in postits]))
-        emit('get_postits_by_session', {"canvas": canvas.as_object(), "postits": [postit.as_object() for postit in postits], "connections": [connection.as_object() for connection in connections]})
+        emit('get_latest_canvas_by_session', {"canvas": canvas.as_object(), "postits": [postit.as_object() for postit in postits], "connections": [connection.as_object() for connection in connections]})
     else:
-        emit('get_postits_by_session', None)
+        emit('get_latest_canvas_by_session', None)
 
 
 print('Registered Session API methods')
