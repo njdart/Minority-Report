@@ -90,7 +90,7 @@ def get_postits_by_session(sessionId):
 
 
 @socketio.on('get_latest_canvas_by_session')
-def get_postits_by_session(sessionId):
+def get_latest_canvas_by_session(sessionId):
     session = Session.get(sessionId)
     if session is not None:
         canvas = Canvas.get_latest_canvas_by_session(sessionId)

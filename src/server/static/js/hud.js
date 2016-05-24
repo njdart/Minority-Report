@@ -22,11 +22,11 @@ $(function() {
 
             socket.on('connect', function() {
 
-                socket.on('get_postits_by_session', function(postits) {
+                socket.on('get_latest_canvas_by_session', function(postits) {
                     console.log(postits)
                 });
 
-                socket.emit('get_postits_by_session', sessionId);
+                socket.emit('get_latest_canvas_by_session', sessionId);
             });
 
         }
@@ -34,3 +34,11 @@ $(function() {
         console.error('Local Storage Not Available!');
     }
 });
+
+function setCanvasBlack() {
+    $(".hudCanvas").addClass("blackCanvas");
+}
+
+function setCanvasWhite() {
+    $(".hudCanvas").removeClass("blackCanvas");
+}
