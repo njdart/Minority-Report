@@ -133,7 +133,7 @@ class Image(SqliteObject):
         return response.status_code == 200
 
     def find_postits(self,
-                     canvas,
+                     next_canvas_id,
                      save=True,
                      min_postit_area=5000,
                      max_postit_area=40000,
@@ -244,7 +244,7 @@ class Image(SqliteObject):
             if guessed_colour is not None:
                 postit = Postit(id=uuid.uuid4(),
                                 physicalFor=InstanceConfiguration.get(self.instanceConfigurationId).userId,
-                                canvas = canvas.id,
+                                canvas = next_canvas_id,
                                 topLeftX=postitPts[idx][0][0],
                                 topLeftY=postitPts[idx][0][1],
                                 topRightX=postitPts[idx][1][0],
@@ -265,7 +265,7 @@ class Image(SqliteObject):
 
         return found_postits
 
-    def find_connections(self, postits, canvas, save=True):
+    def find_connections(self, postits, current_canvas, next_canvas_id, save=True):
         from src.model.InstanceConfiguration import InstanceConfiguration
         from src.model.Connection import Connection
 
@@ -278,7 +278,10 @@ class Image(SqliteObject):
             if cv2.arcLength(c, True) > 300:
                 connectionList = []
                 userId = InstanceConfiguration.get(self.instanceConfigurationId).userId
-                old_postits = canvas.get_postits()
+                if current_canvas is not None:
+                    old_postits = current_canvas.get_postits()
+                else:
+                    old_postits = None
                 for index in range(0, len(c), 10):
                     contained = False
                     for idx, ipostit in enumerate(postits):
@@ -296,23 +299,24 @@ class Image(SqliteObject):
 
                             elif ipostit.get_id() is not connectionList[-1]:
                                 connectionList.append(ipostit.get_id())
-                    for idx, jpostit in enumerate(old_postits):
-                        if jpostit.physicalFor == userId:
-                            jpostitpoints = jpostit.get_corner_points()
-                            rectanglearea = src.model.processing.get_area(jpostitpoints)
-                            pointarea = src.model.processing.get_area((jpostitpoints[0], jpostitpoints[1], c[index][0])) \
-                                    + src.model.processing.get_area((jpostitpoints[1], jpostitpoints[2], c[index][0]))\
-                                    + src.model.processing.get_area((jpostitpoints[2], jpostitpoints[3], c[index][0]))\
-                                    + src.model.processing.get_area((jpostitpoints[3], jpostitpoints[0], c[index][0]))
-                            if pointarea < rectanglearea*1.1:
-                                contained = True
-                            if pointarea < rectanglearea*1.25 and not contained:
-                                if not connectionList:
-                                    connectionList.append(jpostit.get_id())
-                                    line_start_point = c[index][0]
-                                elif jpostit.get_id() is not connectionList[-1]:
-                                    connectionList.append(jpostit.get_id())
-                                    line_end_point = c[index][0]
+                    if old_postits is not None:
+                        for idx, jpostit in enumerate(old_postits):
+                            if jpostit.physicalFor == userId:
+                                jpostitpoints = jpostit.get_corner_points()
+                                rectanglearea = src.model.processing.get_area(jpostitpoints)
+                                pointarea = src.model.processing.get_area((jpostitpoints[0], jpostitpoints[1], c[index][0])) \
+                                        + src.model.processing.get_area((jpostitpoints[1], jpostitpoints[2], c[index][0]))\
+                                        + src.model.processing.get_area((jpostitpoints[2], jpostitpoints[3], c[index][0]))\
+                                        + src.model.processing.get_area((jpostitpoints[3], jpostitpoints[0], c[index][0]))
+                                if pointarea < rectanglearea*1.1:
+                                    contained = True
+                                if pointarea < rectanglearea*1.25 and not contained:
+                                    if not connectionList:
+                                        connectionList.append(jpostit.get_id())
+                                        line_start_point = c[index][0]
+                                    elif jpostit.get_id() is not connectionList[-1]:
+                                        connectionList.append(jpostit.get_id())
+                                        line_end_point = c[index][0]
 
                 if len(connectionList) > 1:
                     for i in range(0, len(connectionList) - 1):
@@ -332,16 +336,54 @@ class Image(SqliteObject):
         connection = Connection(id=uuid.uuid4(),
                                 start=found_connections[0]["postitIdStart"],
                                 finish=found_connections[0]["postitIdEnd"],
-                                canvas=canvas.id)
+                                canvas=next_canvas_id)
         if save:
             connection.create(self.database)
         return found_connections
 
-    def update_canvases(self, postits, connections, canvas):
+    def update_canvases(self, new_postits, connections, currnet_canvas, next_canvas_id):
         from src.model.Canvas import Canvas
-        for new_postit in postits:
-            nkp, ndes = new_postit.get_descriptors()
-        new_canvas = canvas.update(postits, connections)
 
+        if currnet_canvas is not None:
+            for n, new_postit in enumerate(new_postits):
+                maxidx = -1
+                IDs = []
+
+                for o, old_postit in enumerate(currnet_canvas.get_postits()):
+                    ndes = new_postit.get_descriptors()
+                    odes = old_postit.get_descriptors()
+                    good = numpy.zeros(len(currnet_canvas.get_postits()), dtype=numpy.int)
+                    # Create BFMatcher object
+                    bf = cv2.BFMatcher()
+                    if len(ndes) > 0 and len(odes) > 0:
+                        # Match descriptors
+                        matches = bf.knnMatch(ndes, odes, k=2)
+                        IDs.append(old_postit.get_id())
+                        for m, n in matches:
+                            if m.distance < (0.75*n.distance):
+                                good[o] += 1
+                    else:
+                        print("oops")
+                        cv2.imshow("debug", odes)
+                        cv2.waitKey(0)
+
+                print(good)
+                try:
+                    if max(good) > 20:
+                        maxidx = numpy.argmax(good)
+                except:
+                    pass
+                if maxidx == -1:
+                    # Add new postit
+                    pass
+                else:
+                    # Replace old Postit
+                    replaced_postits = IDs[maxidx]
+        new_canvas = Canvas(session=self.get_instance_configuration().sessionId,
+                            id=next_canvas_id,
+                            postits=new_postits,
+                            connections=connections,
+                            derivedFrom=currnet_canvas.id if currnet_canvas is not None else None)
         new_canvas.create(self.database)
+
         return [new_canvas]

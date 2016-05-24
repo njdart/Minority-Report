@@ -134,7 +134,7 @@ class Postit(SqliteObject):
                              scoreType=cv2.ORB_HARRIS_SCORE,
                              patchSize=31)
         binary_postit_image = self.get_image_binarized()
-        descriptors = orb.detectAndCompute(binary_postit_image, None)
+        __, descriptors = orb.detectAndCompute(binary_postit_image, None)
         return descriptors
 
     def get_canvas(self):
