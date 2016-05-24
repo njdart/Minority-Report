@@ -100,7 +100,8 @@ class Postit(SqliteObject):
             "displayPos": {
                 "x": self.displayPosX,
                 "y": self.displayPosY
-            }
+            },
+            "physicalFor": str(self.physicalFor)
         }
 
     def get_image_keystoned(self):
