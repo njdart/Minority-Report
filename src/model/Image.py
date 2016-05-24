@@ -259,7 +259,7 @@ class Image(SqliteObject):
                                 bottomLeftX=postitPts[idx][3][0],
                                 bottomLeftY=postitPts[idx][3][1],
                                 displayPosX=postitPts[idx][0][0]*(1920/canvas_image.shape[0]),
-                                displayPosY=postitPts[idx][0][1]*(1920/canvas_image.shape[0]),
+                                displayPosY=postitPts[idx][0][1]*(1080/canvas_image.shape[0]),
                                 colour=guessed_colour,
                                 image=self.get_id())
 
