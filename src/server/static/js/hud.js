@@ -5,15 +5,17 @@ $(function() {
 
     if (typeof(Storage) !== 'undefined') {
 
-//        var user = localStorage.getItem('user');
-//        var session = localStorage.getItem('session');
-//        for now let's pretend
+       var userId = localStorage.getItem('user');
+       var sessionId = localStorage.getItem('session');
+       console.log("user: " + userId);
+       console.log("session: " + sessionId);
+//     for now let's pretend
 
-	var user = "test";
-	var session = "test";
+	//var user = "test";
+	//var session = "test";
 
-        if (!user || !session) {
-            console.error('Either User or Session was not set:', user, session);
+        if (!userId || !sessionId) {
+            console.error('Either UserId or SessionId was not set:', userId, sessionId);
         } else {
             var socket = io();
             splash.hide();
@@ -24,7 +26,7 @@ $(function() {
                     console.log(postits)
                 });
 
-                socket.emit('get_postits_by_session', session)
+                socket.emit('get_postits_by_session', sessionId);
             });
 
         }

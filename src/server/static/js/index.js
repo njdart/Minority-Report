@@ -203,10 +203,10 @@ $(function() {
     });
 
     $("#startBtn").on("click", function(){
-        selectedUserId = $(".usersList").val();
-        selectedSessionId = $(".sessionsList").val();
-        selectedInstanceConfiguration = $(".instanceConfigurationsList").val();
-        refresh = false;
+        var selectedUserId = $(".usersList").val();
+        var selectedSessionId = $(".sessionsList").val();
+        var selectedInstanceConfiguration = $(".instanceConfigurationsList").val();
+        var refresh = false;
 
         if(selectedUserId == "")
         {
@@ -238,20 +238,29 @@ $(function() {
             newCameraUri = $("#newCameraUriBox").val();
             newKinectUri = $("#newKinectUriBox").val();
 
-            if(newCameraUri == "" || newKinectUri == "")
-            {
-                alert("Enter instance configuration details");
-                return;
-            }
-
-            details = {};
+            var details = {};
             details["camera"] = {};
             details["kinect"] = {};
-            details["camera"]["host"] = "http://" + newCameraUri.split("http://")[1].split(":")[0];
-            details["camera"]["port"] = newCameraUri.split("http://")[1].split(":")[1];
 
-            details["kinect"]["host"] = "http://" + newKinectUri.split("http://")[1].split(":")[0];
-            details["kinect"]["port"] = newKinectUri.split("http://")[1].split(":")[1];
+            if(newCameraUri == "" || newKinectUri == "")
+            {
+                details["camera"]["host"] = "http://localhost";
+                details["camera"]["port"] = "8088";
+                details["kinect"]["host"] = "http://localhost";
+                details["kinect"]["port"] = "8081";
+            }
+            else
+            {
+                details["camera"]["host"] = "http://" + newCameraUri.split("http://")[1].split(":")[0];
+                details["camera"]["port"] = newCameraUri.split("http://")[1].split(":")[1];
+
+                details["kinect"]["host"] = "http://" + newKinectUri.split("http://")[1].split(":")[0];
+                details["kinect"]["port"] = newKinectUri.split("http://")[1].split(":")[1];
+            }
+
+            details["sessionId"] = selectedSessionId;
+            details["userId"] = selectedUserId;
+            
             socket.emit("create_instance_configuration", details);
             refresh = true;
         }
@@ -266,6 +275,7 @@ $(function() {
             localStorage.setItem('user', selectedUserId);
             localStorage.setItem("session", selectedSessionId);
             localStorage.setItem("instanceConfiguration", selectedInstanceConfiguration);
+            $('#loginModal').modal('hide');
         }
     })
 });

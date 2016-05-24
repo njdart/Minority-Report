@@ -3,6 +3,7 @@ from src.server import socketio
 from src.model.Session import Session
 from src.model.Canvas import Canvas
 from src.model.Postit import Postit
+from src.model.Connection import Connection
 import uuid
 import pdb
 
@@ -85,7 +86,22 @@ def get_postits_by_session(sessionId):
         postits = list(set([postit.as_object() for postit in postits]))
         emit('get_postits_by_session', postits)
     else:
-        emit('get_postits_by_session', "NO SESSION EXISTS")
+        emit('get_postits_by_session', None)
+
+
+@socketio.on('get_latest_canvas_by_session')
+def get_postits_by_session(sessionId):
+    session = Session.get(sessionId)
+    if session is not None:
+        canvas = Canvas.get_latest_canvas_by_session(sessionId)
+        postits = Postit.get_by_property("canvas", canvas.id)
+        connections = Connection.get_by_property("canvas", canvas.id)
+        print("canvas {}".format(canvas))
+        print("Postits {}".format(postits))
+        postits = list(set([postit.as_object() for postit in postits]))
+        emit('get_postits_by_session', {"canvas": canvas.as_object(), "postits": [postit.as_object() for postit in postits], "connections": [connection.as_object() for connection in connections]})
+    else:
+        emit('get_postits_by_session', None)
 
 
 print('Registered Session API methods')

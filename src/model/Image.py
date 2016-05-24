@@ -19,7 +19,7 @@ class Image(SqliteObject):
                  id=uuid.uuid4(),
                  timestamp=datetime.datetime.now().isoformat(),
                  database=None):
-        super().__init__(id=id,
+        super(Image, self).__init__(id=id,
                          database=database)
         self.image = npArray
         self.timestamp = timestamp
