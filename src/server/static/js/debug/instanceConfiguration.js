@@ -2,7 +2,8 @@ $(function() {
     var table = $('.instanceConfigsTable');
     var instanceConfigurationsLists = $('.instanceConfigsList');
     var calibrationOverlay = $('.calibrationOverlay')
-    var coordUnpackRegexp = /^\(?\s*([0-9]{1,5})[,.:\- ]+([0-9]{1,5})\s*\)?$/g;
+    // var coordUnpackRegexp = /^\(?\s*([0-9]{1,5})[,.:\- ]+([0-9]{1,5})\s*\)?$/g;
+    var coordUnpackRegexp = /^\s*\(\s*([0-9e.\-+]+)\s*,\s*([0-9e.\-+]+)\s*\)/g;
 
     var addInstanceConfigToTable = function(instanceConfiguration) {
         var row = $('<tr></tr>').data(instanceConfiguration);
@@ -28,14 +29,14 @@ $(function() {
         leftColumn.append($('<div class="form-group"></div>')
             .append($('<label>TopLeft as (x,y)</label>'))
             .append($('<input type="text" class="form-control instanceConfigsTable-topLeft" placeholder="(x, y)">')
-                .val((instanceConfiguration.topLeft.x) ?
+                .val((instanceConfiguration.topLeft.x != null) ?
                         '(' + instanceConfiguration.topLeft.x + ',' + instanceConfiguration.topLeft.y + ')' :
                         '')));
 
         leftColumn.append($('<div class="form-group"></div>')
             .append($('<label>BottomLeft as (x,y)</label>'))
             .append($('<input type="text" class="form-control instanceConfigsTable-bottomLeft" placeholder="(x, y)">')
-                .val((instanceConfiguration.bottomLeft.x) ?
+                .val((instanceConfiguration.bottomLeft.x != null) ?
                         '(' + instanceConfiguration.bottomLeft.x + ',' + instanceConfiguration.bottomLeft.y + ')' :
                         '')));
 
@@ -54,14 +55,14 @@ $(function() {
         rightColumn.append($('<div class="form-group"></div>')
             .append($('<label>TopRight as (x,y)</label>'))
             .append($('<input type="text" class="form-control instanceConfigsTable-topRight" placeholder="(x, y)">')
-                .val((instanceConfiguration.topRight.x) ?
+                .val((instanceConfiguration.topRight.x != null) ?
                         '(' + instanceConfiguration.topRight.x + ',' + instanceConfiguration.topRight.y + ')' :
                         '')));
 
         rightColumn.append($('<div class="form-group"></div>')
             .append($('<label>BottomRight as (x,y)</label>'))
             .append($('<input type="text" class="form-control instanceConfigsTable-bottomRight" placeholder="(x, y)">')
-                .val((instanceConfiguration.bottomRight.x) ?
+                .val((instanceConfiguration.bottomRight.x != null) ?
                         '(' + instanceConfiguration.bottomRight.x + ',' + instanceConfiguration.bottomRight.y + ')' :
                         '')));
 
