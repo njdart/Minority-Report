@@ -1,4 +1,5 @@
 from src.model.SqliteObject import SqliteObject
+from src.server import databaseHandler
 import uuid
 import datetime
 
@@ -65,6 +66,27 @@ class Canvas(SqliteObject):
         from src.model.Postit import Postit
         return Postit.get_by_property('canvas', self.id)
 
+    @staticmethod
+    def get_latest_canvas_by_session(sessionId, database=None):
+        query = 'SELECT * FROM canvases WHERE session={} ORDER BY datetime(derivedAt) ASC LIMIT 1 ;'.format(sessionId)
+        if database:
+            c = database.cursor()
+        else:
+            c = databaseHandler().get_database().cursor()
+
+        c.execute(query)
+        data = c.fetchone()
+
+        if data is None:
+            return None
+
+        props = {}
+
+        for i in range(len(Canvas.properties)):
+            props[Canvas.properties[i]] = str(data[i])
+
+        return Canvas(**props)
+
     def clone(self):
         postits = self.get_postits()
 
@@ -79,11 +101,5 @@ class Canvas(SqliteObject):
         self.derivedFrom = self.id
         self.id = new_canvas_id
         self.create()
-
-        return self
-
-    def update(self, new_postits, new_connections):
-        self.postits = new_postits
-        self.connections = new_connections
 
         return self
