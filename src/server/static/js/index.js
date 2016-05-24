@@ -205,7 +205,7 @@ $(function() {
     $("#startBtn").on("click", function(){
         var selectedUserId = $(".usersList").val();
         var selectedSessionId = $(".sessionsList").val();
-        var selectedInstanceConfiguration = $(".instanceConfigurationsList").val();
+        var selectedInstanceConfigurationId = $(".instanceConfigurationsList").val();
         var refresh = false;
 
         if(selectedUserId == "")
@@ -233,7 +233,7 @@ $(function() {
             refresh = true;
         }
 
-        if(selectedInstanceConfiguration == "")
+        if(selectedInstanceConfigurationId == "")
         {
             newCameraUri = $("#newCameraUriBox").val();
             newKinectUri = $("#newKinectUriBox").val();
@@ -271,10 +271,10 @@ $(function() {
             return;
         }
 
-        if (selectedUserId != "" && selectedSessionId != "" && selectedInstanceConfiguration != "") {
-            localStorage.setItem('user', selectedUserId);
-            localStorage.setItem("session", selectedSessionId);
-            localStorage.setItem("instanceConfiguration", selectedInstanceConfiguration);
+        if (selectedUserId != "" && selectedSessionId != "" && selectedInstanceConfigurationId != "") {
+            localStorage.setItem('userId', selectedUserId);
+            localStorage.setItem("sessionId", selectedSessionId);
+            localStorage.setItem("instanceConfigurationId", selectedInstanceConfigurationId);
             $('#loginModal').modal('hide');
         }
     })

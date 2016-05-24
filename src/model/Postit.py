@@ -96,6 +96,10 @@ class Postit(SqliteObject):
             "bottomLeft": {
                 "x": self.bottomLeftX,
                 "y": self.bottomLeftY
+            },
+            "displayPos": {
+                "x": self.displayPosX,
+                "y": self.displayPosY
             }
         }
 
