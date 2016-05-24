@@ -339,5 +339,9 @@ class Image(SqliteObject):
 
     def update_canvases(self, postits, connections, canvas):
         from src.model.Canvas import Canvas
+        for new_postit in postits:
+            nkp, ndes = new_postit.get_descriptors()
         new_canvas = canvas.update(postits, connections)
+
+        new_canvas.create(self.database)
         return [new_canvas]
