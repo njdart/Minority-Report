@@ -68,15 +68,14 @@ class Postit(SqliteObject):
         return (self.topLeftX, self.topLeftY)
 
     def get_image(self):
-        canvas = self.get_canvas()
-        if canvas is None:
-            return None
+        if type(self.image) is uuid.UUID or type(self.image) is str:
+            from src.model.Image import Image
+            image = Image.get(self.image)
+            if image is None:
+                return None
+            self.image = image
 
-        image = canvas.get_image()
-        if image is None:
-            return None
-
-        return image
+        return self.image
 
     def as_object(self):
         return {
@@ -106,7 +105,11 @@ class Postit(SqliteObject):
         if image is None:
             return None
 
-        return src.model.processing.four_point_transform(image, self.get_corner_points())
+        return src.model.processing.four_point_transform(image.get_image_projection(), self.get_corner_points())
+
+    def get_image_binarized(self):
+        image = self.get_image_keystoned()
+        return src.model.processing.binarize(image)
 
     def get_corner_points(self):
         return numpy.array([
@@ -123,10 +126,15 @@ class Postit(SqliteObject):
         self.physical = state
 
     def get_descriptors(self):
-        sift = cv2.xfeatures2d.SIFT_create()
-        postit = self.get_image_keystoned()
-        gray = cv2.cvtColor(postit, cv2.COLOR_BGR2GRAY)
-        keypoints, descriptors = sift.detectAndCompute(gray, None)
+        orb = cv2.ORB_create(scaleFactor=1.2,
+                             nlevels=8,
+                             edgeThreshold=5,
+                             firstLevel=0,
+                             WTA_K=2,
+                             scoreType=cv2.ORB_HARRIS_SCORE,
+                             patchSize=31)
+        binary_postit_image = self.get_image_binarized()
+        descriptors = orb.detectAndCompute(binary_postit_image, None)
         return descriptors
 
     def get_canvas(self):
