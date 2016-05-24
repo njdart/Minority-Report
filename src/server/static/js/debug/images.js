@@ -105,12 +105,12 @@ $(function() {
         var row = $(this).parent().parent();
         var id = row.find('.imagesTable-imageId').text();
         var timestamp = new Date(row.find('.imagesTable-timestamp').val()).toISOString();
-        var instanceConfigurationId = row.find('.imagesTable-instanceConfigId').val();
+        var instanceConfigurationId = row.find('.imagesTable-InstanceConfigurationId').val();
 
         socket.emit('update_image', id, timestamp, instanceConfigurationId);
         socket.once('update_image', function(image) {
             row.data(image);
-            row.find('.imagesTable-instanceConfigId').val(image.instanceConfigId);
+            row.find('.imagesTable-InstanceConfigurationId').val(image.instanceConfigId);
             row.find('.imagesTable-timestamp').val(new Date(image.timestamp).toISOString());
             $('option[value="' + image.id + '"').text(image.id);
         });
