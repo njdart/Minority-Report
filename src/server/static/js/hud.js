@@ -10,6 +10,11 @@ function resizeCanvas() {
     console.log("resizing");
     hudContext.canvas.height = $(window).height();
     hudContext.canvas.width = $(window).width();
+    redrawCanvas();
+}
+
+function clearCanvas(){
+    hudContext.clearRect(0, 0, hudContext.canvas.width, hudContext.canvas.height);
 }
 
 function drawCanvasBin()
@@ -45,16 +50,17 @@ function redrawCanvas() {
     $.each(latestCanvas.postits, function(index, postit)
     {
         console.log(postit.displayPos);
+        hudContext.fillStyle = "#000000";
         if(postit.physicalFor == userId)
         {
-            hudContext.fillStyle = "#00FF00";
+            hudContext.strokeStyle = "#00FF00";
         }
         else
         {
-            hudContext.fillStyle = "#FFFF00";
+            hudContext.strokeStyle = "#FFFF00";
         }
-
         hudContext.fillRect(postit.displayPos.x, postit.displayPos.y, POSTIT_SIZE, POSTIT_SIZE);
+        hudContext.strokeRect(postit.displayPos.x, postit.displayPos.y, POSTIT_SIZE, POSTIT_SIZE);
     });
 }
 $(function() {
