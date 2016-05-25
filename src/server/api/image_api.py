@@ -20,7 +20,6 @@ def create_image(file, createdAt, instanceConfigurationId):
 
     emit('create_image', Image(npArray=npArr,
                                timestamp=createdAt,
-                               id=uuid.uuid4(),
                                instanceConfigurationId=instanceConfigurationId).create().as_object())
 
 

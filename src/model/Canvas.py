@@ -22,7 +22,7 @@ class Canvas(SqliteObject):
 
     def __init__(self,
                  session,
-                 id=uuid.uuid4(),
+                 id=None,
                  postits=[],
                  connections=[],
                  derivedFrom=None,

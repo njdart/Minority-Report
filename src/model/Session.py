@@ -14,8 +14,8 @@ class Session(SqliteObject):
 
     def __init__(self,
                  name=None,
-                 description = None,
-                 id=uuid.uuid4(),):
+                 description=None,
+                 id=None):
         super(Session, self).__init__(id=id)
 
         self.name = name or "A Whiteboard Story"

@@ -16,7 +16,7 @@ class Image(SqliteObject):
     def __init__(self,
                  instanceConfigurationId,
                  npArray=None,
-                 id=uuid.uuid4(),
+                 id=None,
                  timestamp=datetime.datetime.now().isoformat(),
                  database=None):
         super(Image, self).__init__(id=id,
@@ -37,8 +37,7 @@ class Image(SqliteObject):
 
         if response.status_code == 200:
             nparray = numpy.asarray(bytearray(response.content), dtype="uint8")
-            return Image(id=uuid.uuid4(),
-                         instanceConfigurationId=instanceConfigurationId,
+            return Image(instanceConfigurationId=instanceConfigurationId,
                          npArray=cv2.imdecode(nparray, cv2.IMREAD_COLOR),
                          timestamp=datetime.datetime.now().isoformat())
         else:
@@ -247,8 +246,7 @@ class Image(SqliteObject):
             guessed_colour = src.model.processing.guess_colour(red_average, green_average, blue_average)
             # Only if a postit colour valid create a postit
             if guessed_colour is not None:
-                postit = Postit(id=uuid.uuid4(),
-                                physicalFor=InstanceConfiguration.get(self.instanceConfigurationId).userId,
+                postit = Postit(physicalFor=InstanceConfiguration.get(self.instanceConfigurationId).userId,
                                 canvas = next_canvas_id,
                                 topLeftX=postitPts[idx][0][0],
                                 topLeftY=postitPts[idx][0][1],
@@ -340,8 +338,7 @@ class Image(SqliteObject):
         connections = []
         print(found_connections)
         if(found_connections):
-            connection = Connection(id=uuid.uuid4(),
-                                    start=found_connections[0]["postitIdStart"],
+            connection = Connection(start=found_connections[0]["postitIdStart"],
                                     finish=found_connections[0]["postitIdEnd"],
                                     canvas=next_canvas_id)
             if save:
