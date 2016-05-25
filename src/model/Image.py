@@ -138,6 +138,7 @@ class Image(SqliteObject):
 
     def find_postits(self,
                      next_canvas_id,
+                     current_canvas=None,
                      save=True,
                      min_postit_area=5000,
                      max_postit_area=40000,
@@ -145,15 +146,31 @@ class Image(SqliteObject):
                      min_colour_thresh=64,
                      max_colour_thresh=200,
                      save_postits=True):
+        """
+        :param next_canvas_id:
+        :param current_canvas:
+        :param save:
+        :param min_postit_area:
+        :param max_postit_area:
+        :param len_tolerence:
+        :param min_colour_thresh:
+        :param max_colour_thresh:
+        :param save_postits:
+        :return: found_postits:
+
+        Find postits in new image first
+        Compare with postits in previous canvas, those that are not in new image are included as
+        """
         from src.model.InstanceConfiguration import InstanceConfiguration
         from src.model.Postit import Postit
-
+        userId = InstanceConfiguration.get(self.instanceConfigurationId).userId
         found_postits = []
         canvas_image = self.get_image_projection()
+        display_ratio = (1920/canvas_image.shape[0])
 
         # Finding postits is based on saturation levels, first the image must be converted to HSV format
         hsv_image = cv2.cvtColor(canvas_image.copy(), cv2.COLOR_BGR2HSV)
-        satthresh = 100  # CONST
+        satthresh = 85  # CONST
         # All pixels with a saturation below threshold are set to black
         hsv_image[numpy.where((hsv_image < [255, satthresh, 255]).all(axis=2))] = [0, 0, 0]
         hsv_image = cv2.cvtColor(hsv_image, cv2.COLOR_HSV2BGR)
@@ -245,8 +262,9 @@ class Image(SqliteObject):
 
             guessed_colour = src.model.processing.guess_colour(red_average, green_average, blue_average)
             # Only if a postit colour valid create a postit
+
             if guessed_colour is not None:
-                postit = Postit(physicalFor=InstanceConfiguration.get(self.instanceConfigurationId).userId,
+                postit = Postit(physicalFor=userId,
                                 canvas = next_canvas_id,
                                 topLeftX=postitPts[idx][0][0],
                                 topLeftY=postitPts[idx][0][1],
@@ -256,8 +274,8 @@ class Image(SqliteObject):
                                 bottomRightY=postitPts[idx][2][1],
                                 bottomLeftX=postitPts[idx][3][0],
                                 bottomLeftY=postitPts[idx][3][1],
-                                displayPosX=postitPts[idx][0][0]*(1920/canvas_image.shape[0]),
-                                displayPosY=postitPts[idx][0][1]*(1920/canvas_image.shape[0]),
+                                displayPosX=postitPts[idx][0][0]*display_ratio,
+                                displayPosY=postitPts[idx][0][1]*display_ratio,
                                 colour=guessed_colour,
                                 image=self.get_id())
 
@@ -266,9 +284,56 @@ class Image(SqliteObject):
 
                 found_postits.append(postit)
 
+        if current_canvas is not None:
+            old_postits = current_canvas.get_postits()
+            missing_postits = []
+            for o, old_postit in enumerate(old_postits):
+                odes = old_postit.get_descriptors()
+                good = numpy.zeros(len(found_postits), dtype=numpy.int)
+                maxidx = -1
+                IDs = []
+                for n, new_postit in enumerate(found_postits):
+                    ndes = new_postit.get_descriptors()
+                    # Create BFMatcher object
+                    bf = cv2.BFMatcher()
+                    if len(ndes) > 0 and len(odes) > 0:
+                        # Match descriptors
+                        matches = bf.knnMatch(ndes, odes, k=2)
+                        IDs.append(old_postit.get_id())
+                        for a, b in matches:
+                            if a.distance < (0.75*b.distance):
+                                good[n] += 1
+                    else:
+                        print("oops")
+                        cv2.imshow("debug", odes)
+                        cv2.waitKey(0)
+
+                print(good)
+                if max(good) > 20:
+                    pass
+                else:
+                    missing_postits.append(old_postit)
+            for missing_postit in missing_postits:
+                postit = Postit(physicalFor=None,
+                                canvas = next_canvas_id,
+                                topLeftX=missing_postit.topLeftX,
+                                topLeftY=missing_postit.topLeftY,
+                                topRightX=missing_postit.topRightX,
+                                topRightY=missing_postit.topRightY,
+                                bottomRightX=missing_postit.bottomRightX,
+                                bottomRightY=missing_postit.bottomRightY,
+                                bottomLeftX=missing_postit.bottomLeftX,
+                                bottomLeftY=missing_postit.bottomLeftY,
+                                displayPosX=missing_postit.displayPosX,
+                                displayPosY=missing_postit.displayPosY,
+                                colour=missing_postit.colour,
+                                image=missing_postit.image.get_id())
+                if save_postits:
+                    postit.create(self.database)
+                found_postits.append(postit)
         return found_postits
 
-    def find_connections(self, postits, current_canvas, next_canvas_id, save=True):
+    def find_connections(self, postits, next_canvas_id, save=True):
         from src.model.InstanceConfiguration import InstanceConfiguration
         from src.model.Connection import Connection
 
@@ -280,11 +345,8 @@ class Image(SqliteObject):
             debug_img = canvas_image.copy()
             if cv2.arcLength(c, True) > 300:
                 connectionList = []
-                userId = InstanceConfiguration.get(self.instanceConfigurationId).userId
-                if current_canvas is not None:
-                    old_postits = current_canvas.get_postits()
-                else:
-                    old_postits = None
+
+
                 for index in range(0, len(c), 10):
                     contained = False
                     for idx, ipostit in enumerate(postits):
@@ -302,24 +364,6 @@ class Image(SqliteObject):
 
                             elif ipostit.get_id() is not connectionList[-1]:
                                 connectionList.append(ipostit.get_id())
-                    if old_postits is not None:
-                        for idx, jpostit in enumerate(old_postits):
-                            if jpostit.physicalFor == userId:
-                                jpostitpoints = jpostit.get_corner_points()
-                                rectanglearea = src.model.processing.get_area(jpostitpoints)
-                                pointarea = src.model.processing.get_area((jpostitpoints[0], jpostitpoints[1], c[index][0])) \
-                                        + src.model.processing.get_area((jpostitpoints[1], jpostitpoints[2], c[index][0]))\
-                                        + src.model.processing.get_area((jpostitpoints[2], jpostitpoints[3], c[index][0]))\
-                                        + src.model.processing.get_area((jpostitpoints[3], jpostitpoints[0], c[index][0]))
-                                if pointarea < rectanglearea*1.1:
-                                    contained = True
-                                if pointarea < rectanglearea*1.25 and not contained:
-                                    if not connectionList:
-                                        connectionList.append(jpostit.get_id())
-                                        line_start_point = c[index][0]
-                                    elif jpostit.get_id() is not connectionList[-1]:
-                                        connectionList.append(jpostit.get_id())
-                                        line_end_point = c[index][0]
 
                 if len(connectionList) > 1:
                     for i in range(0, len(connectionList) - 1):
@@ -335,61 +379,26 @@ class Image(SqliteObject):
                                 "postitIdEnd": postit_id_end
                             }
                             found_connections.append(found_connection)
-        connections = []
-        print(found_connections)
         if(found_connections):
             connection = Connection(start=found_connections[0]["postitIdStart"],
                                     finish=found_connections[0]["postitIdEnd"],
                                     canvas=next_canvas_id)
             if save:
                 connection.create(self.database)
-
         return found_connections
 
-    def update_canvases(self, new_postits, connections, currnet_canvas, next_canvas_id):
+    def update_canvases(self, new_postits, connections, current_canvas, next_canvas_id):
         from src.model.Canvas import Canvas
+        from src.model.Postit import Postit
 
-        if currnet_canvas is not None:
-            for n, new_postit in enumerate(new_postits):
-                maxidx = -1
-                IDs = []
 
-                for o, old_postit in enumerate(currnet_canvas.get_postits()):
-                    ndes = new_postit.get_descriptors()
-                    odes = old_postit.get_descriptors()
-                    good = numpy.zeros(len(currnet_canvas.get_postits()), dtype=numpy.int)
-                    # Create BFMatcher object
-                    bf = cv2.BFMatcher()
-                    if len(ndes) > 0 and len(odes) > 0:
-                        # Match descriptors
-                        matches = bf.knnMatch(ndes, odes, k=2)
-                        IDs.append(old_postit.get_id())
-                        for m, n in matches:
-                            if m.distance < (0.75*n.distance):
-                                good[o] += 1
-                    else:
-                        print("oops")
-                        cv2.imshow("debug", odes)
-                        cv2.waitKey(0)
 
-                print(good)
-                try:
-                    if max(good) > 20:
-                        maxidx = numpy.argmax(good)
-                except:
-                    pass
-                if maxidx == -1:
-                    # Add new postit
-                    pass
-                else:
-                    # Replace old Postit
-                    replaced_postits = IDs[maxidx]
         new_canvas = Canvas(session=self.get_instance_configuration().sessionId,
                             id=next_canvas_id,
                             postits=new_postits,
                             connections=connections,
-                            derivedFrom=currnet_canvas.id if currnet_canvas is not None else None)
-                            #database=self.database)
+                            derivedFrom=current_canvas.id if current_canvas is not None else None,
+                            derivedAt=datetime.datetime.now())
         new_canvas.create(self.database)
 
         return [new_canvas]
