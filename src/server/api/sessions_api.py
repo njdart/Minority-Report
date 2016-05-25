@@ -110,4 +110,10 @@ def get_latest_canvas_by_session(sessionId):
         emit('get_latest_canvas_by_session', None)
 
 
+@socketio.on("purge_sessions")
+def purge_sessions():
+    for s in Session.get_all():
+        s.delete()
+
+
 print('Registered Session API methods')

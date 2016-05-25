@@ -44,15 +44,16 @@
         <div class="panel-heading">DB Purge Panel <span class="glyphicon glyphicon-warning-sign"></span></div>
         <div class="panel-body">
           <div class="">
-              <button type="submit" class="btn btn-danger btn-block">Purge Users</button>
-              <button type="submit" class="btn btn-danger btn-block">Purge Sessions</button>
-              <button type="submit" class="btn btn-danger btn-block">Purge Instance Configurations</button>
-              <button type="submit" class="btn btn-danger btn-block">Purge Images</button>
-              <button type="submit" class="btn btn-danger btn-block">Purge Canvases</button>
-              <button type="submit" class="btn btn-danger btn-block">Purge Postits</button>
+              <button type="submit" id="purge-users" class="btn btn-danger btn-block">Purge Users</button>
+              <button type="submit" id="purge-sessions" class="btn btn-danger btn-block">Purge Sessions</button>
+              <button type="submit" id="purge-instance-configurations" class="btn btn-danger btn-block">Purge Instance Configurations</button>
+              <button type="submit" id="purge-images" class="btn btn-danger btn-block">Purge Images</button>
+              <button type="submit" id="purge-canvases" class="btn btn-danger btn-block">Purge Canvases</button>
+              <button type="submit" id="purge-postits"class="btn btn-danger btn-block">Purge Postits</button>
             <hr />
-              <button type="submit" class="btn btn-danger btn-block">Purge - Josh Protocol</button>
-              <button type="submit" class="btn btn-danger btn-block">Purge - Josh Protocol <sup>-1</sup></button>
+              <button type="submit" id="purge-josh" class="btn btn-danger btn-block">Purge - Josh Protocol</button>
+              <button type="submit" id="purge-josh-inverse" class="btn btn-danger btn-block">Purge - Josh Protocol <sup>-1</sup></button>
+             <button type="submit" id="purge-all" class="btn btn-danger btn-block">Purge Database <span class="glyphicon glyphicon-warning-sign"></span></button>
           </div>
         </div>
       </div>
@@ -459,5 +460,6 @@
     <script src="/static/js/debug/images.js"></script>
     <script src="/static/js/debug/canvas.js"></script>
     <script src="/static/js/debug/postits.js"></script>
+    <script src="/static/js/debug/purge.js"></script>
   </body>
 </html>

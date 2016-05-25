@@ -66,4 +66,10 @@ def postit_serve(postitId):
     i = cv2.imencode('.jpg', image)[1].tostring()
     return send_file(io.BytesIO(i), mimetype='image/jpg')
 
+
+@socketio.on("purge_postits")
+def purge_postits():
+    for p in Postit.get_all():
+        p.delete()
+
 print('Registered Postit API methods')

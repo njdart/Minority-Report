@@ -135,5 +135,10 @@ def projection_serve(imageId):
     i = cv2.imencode('.jpg', image)[1].tostring()
     return send_file(io.BytesIO(i), mimetype='image/jpg')
 
+@socketio.on("purge_images")
+def purge_images():
+    for i in Image.get_all():
+        i.delete()
+
 
 print('Registered Image API methods')

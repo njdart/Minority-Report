@@ -73,4 +73,11 @@ def canvas_serve(canvasId):
     i = cv2.imencode('.jpg', image)[1].tostring()
     return send_file(io.BytesIO(i), mimetype='image/jpg')
 
+
+@socketio.on("purge_canvases")
+def purge_canvases():
+    for c in Canvas.get_all():
+        c.delete()
+
 print('Registered Canvas API methods')
+

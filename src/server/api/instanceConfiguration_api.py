@@ -119,4 +119,9 @@ def calibrate_instance_configuration(instanceConfigId):
     emit('calibrate_instance_configuration', ic.as_object())
 
 
+@socketio.on("purge_instance_configurations")
+def purge_instance_configurations():
+    for ic in InstanceConfiguration.get_all():
+        ic.delete()
+
 print('Registered Instance Configuration API methods')

@@ -61,4 +61,9 @@ def delete_user(id):
     emit('delete_user', User.get(id=id).delete())
 
 
+@socketio.on("purge_users")
+def purge_users():
+    for u in User.get_all():
+        u.delete()
+
 print('Registered Users API methods')
