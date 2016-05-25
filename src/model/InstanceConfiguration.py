@@ -42,7 +42,7 @@ class InstanceConfiguration(SqliteObject):
                  bottomRightY=None,
                  bottomLeftX=None,
                  bottomLeftY=None,
-                 id=uuid.uuid4(),
+                 id=None,
                  kinectID=uuid.uuid4()):
         super(InstanceConfiguration, self).__init__(id=id)
 

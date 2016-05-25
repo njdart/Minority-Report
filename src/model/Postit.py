@@ -45,7 +45,7 @@ class Postit(SqliteObject):
                  colour,
                  image,
                  physicalFor=None,
-                 id=uuid.uuid4(),
+                 id=None,
                  database=None):
         super(Postit, self).__init__(id=id,
                                      database=database)

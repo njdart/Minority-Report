@@ -12,7 +12,7 @@ class User(SqliteObject):
 
     def __init__(self,
                  name="New User",
-                 id=uuid.uuid4(),):
+                 id=None):
         super(User, self).__init__(id=id)
 
         self.name = name

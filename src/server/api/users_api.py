@@ -15,7 +15,7 @@ def create_user(username):
         "id": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"
     }
     """
-    emit('create_user', User(name=username, id=uuid.uuid4()).create().as_object())
+    emit('create_user', User(name=username).create().as_object())
 
 
 @socketio.on('get_users')

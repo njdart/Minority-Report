@@ -21,7 +21,7 @@ def create_session(name, description):
         "description": "fooDescription in short form"
     }
     """
-    emit('create_session', Session(name=name, description=description,  id=uuid.uuid4()).create().as_object())
+    emit('create_session', Session(name=name, description=description).create().as_object())
 
 
 @socketio.on('get_sessions')

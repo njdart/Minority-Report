@@ -20,7 +20,6 @@ def create_image(file, createdAt, instanceConfigurationId):
 
     emit('create_image', Image(npArray=npArr,
                                timestamp=createdAt,
-                               id=uuid.uuid4(),
                                instanceConfigurationId=instanceConfigurationId).create().as_object())
 
 
@@ -93,14 +92,15 @@ def generate_canvas(id):
     from src.model.InstanceConfiguration import InstanceConfiguration
     current_canvas = Session.get(InstanceConfiguration.get(id=image.instanceConfigurationId).sessionId).get_latest_canvas()
     next_canvas_id = uuid.uuid4()
-    postits = image.find_postits(next_canvas_id=next_canvas_id ,save=True)
+    postits = image.find_postits(next_canvas_id=next_canvas_id,
+                                 current_canvas=current_canvas,
+                                 save=True)
     connections = image.find_connections(postits=postits,
-                                         current_canvas=current_canvas,
                                          next_canvas_id=next_canvas_id,
                                          save=True)
     canvases = image.update_canvases(new_postits=postits,
                                      connections=connections,
-                                     currnet_canvas=current_canvas,
+                                     current_canvas=current_canvas,
                                      next_canvas_id=next_canvas_id)
     #broadcasting to all connected users regardless of session???
     socketio.emit('create_canvas', [canvas.as_object() for canvas in canvases], broadcast=True)
