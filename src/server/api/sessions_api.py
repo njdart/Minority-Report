@@ -99,9 +99,13 @@ def get_latest_canvas_by_session(sessionId):
             connections = Connection.get_by_property("canvas", canvas.id)
             print("canvas {}".format(canvas))
             print("Postits {}".format(postits))
-            emit('get_latest_canvas_by_session', {"canvas": canvas.as_object(), "postits": [postit.as_object() for postit in postits], "connections": [connection.as_object() for connection in connections]})
-        else:
-            emit('get_latest_canvas_by_session', None)
+
+            data = {
+                "canvas":      canvas.as_object(),
+                "postits":     [postit.as_object() for postit in postits],
+                "connections": [connection.as_object() for connection in connections]
+            }
+            emit('get_latest_canvas_by_session', data)
     else:
         emit('get_latest_canvas_by_session', None)
 
