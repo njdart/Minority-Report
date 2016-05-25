@@ -338,7 +338,7 @@ class Image(SqliteObject):
                             }
                             found_connections.append(found_connection)
         connections = []
-        print found_connections
+        print(found_connections)
         if(found_connections):
             connection = Connection(id=uuid.uuid4(),
                                     start=found_connections[0]["postitIdStart"],
