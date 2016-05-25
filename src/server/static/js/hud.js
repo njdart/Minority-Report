@@ -123,46 +123,6 @@ function redrawCanvas() {
     });
 }
 
-$(function() {
-    var socket = io();
-    var canvas = $('.hudCanvas');
-    var splash = $('.localStorageUnset');
-
-    if (typeof(Storage) !== 'undefined') {
-
-       userId = localStorage.getItem('userId');
-       sessionId = localStorage.getItem('sessionId');
-       console.log("userId: " + userId);
-       console.log("sessionId: " + sessionId);
-
-        if (!userId || !sessionId) {
-            console.error('Either userId or sessionId was not set:', userId, sessionId);
-        } else {
-            hudContext = document.getElementById("hudCanvas").getContext("2d");
-            $(window).on("resize", resizeCanvas);
-            splash.hide();
-
-            socket.on('connect', function() {
-                socket.on('get_latest_canvas_by_session', function(canvas) {
-                    console.log("New Canvas Received");
-                    console.log(canvas);
-                    if (canvas != null)
-                    {
-                        latestCanvas = canvas;
-                        resizeCanvas();
-                        redrawCanvas();
-                    }
-                });
-
-                socket.emit('get_latest_canvas_by_session', sessionId);
-            });
-
-        }
-    } else {
-        console.error('Local Storage Not Available!');
-    }
-});
-
 function setCanvasBlack() {
     console.log("setCanvasBlack(): setting canvas background black");
     $(".hudCanvas").addClass("blackCanvas");
