@@ -64,6 +64,7 @@ function redrawCanvas() {
     });
 }
 $(function() {
+    var socket = io();
     var canvas = $('.hudCanvas');
     var splash = $('.localStorageUnset');
 
@@ -77,18 +78,20 @@ $(function() {
         if (!userId || !sessionId) {
             console.error('Either userId or sessionId was not set:', userId, sessionId);
         } else {
-             hudContext = document.getElementById("hudCanvas").getContext("2d");
+            hudContext = document.getElementById("hudCanvas").getContext("2d");
             $(window).on("resize", resizeCanvas);
-            var socket = io();
             splash.hide();
 
             socket.on('connect', function() {
                 socket.on('get_latest_canvas_by_session', function(canvas) {
                     console.log("New Canvas Received");
                     console.log(canvas);
-                    latestCanvas = canvas;
-                    resizeCanvas();
-                    redrawCanvas();
+                    if (canvas != null)
+                    {
+                        latestCanvas = canvas;
+                        resizeCanvas();
+                        redrawCanvas();
+                    }
                 });
 
                 socket.emit('get_latest_canvas_by_session', sessionId);
