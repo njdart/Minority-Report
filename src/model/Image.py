@@ -259,7 +259,7 @@ class Image(SqliteObject):
                                 bottomLeftX=postitPts[idx][3][0],
                                 bottomLeftY=postitPts[idx][3][1],
                                 displayPosX=postitPts[idx][0][0]*(1920/canvas_image.shape[0]),
-                                displayPosY=postitPts[idx][0][1]*(1080/canvas_image.shape[0]),
+                                displayPosY=postitPts[idx][0][1]*(1920/canvas_image.shape[0]),
                                 colour=guessed_colour,
                                 image=self.get_id())
 
@@ -338,12 +338,15 @@ class Image(SqliteObject):
                             }
                             found_connections.append(found_connection)
         connections = []
-        connection = Connection(id=uuid.uuid4(),
-                                start=found_connections[0]["postitIdStart"],
-                                finish=found_connections[0]["postitIdEnd"],
-                                canvas=next_canvas_id)
-        if save:
-            connection.create(self.database)
+        print found_connections
+        if(found_connections):
+            connection = Connection(id=uuid.uuid4(),
+                                    start=found_connections[0]["postitIdStart"],
+                                    finish=found_connections[0]["postitIdEnd"],
+                                    canvas=next_canvas_id)
+            if save:
+                connection.create(self.database)
+
         return found_connections
 
     def update_canvases(self, new_postits, connections, currnet_canvas, next_canvas_id):
@@ -389,6 +392,7 @@ class Image(SqliteObject):
                             postits=new_postits,
                             connections=connections,
                             derivedFrom=currnet_canvas.id if currnet_canvas is not None else None)
+                            #database=self.database)
         new_canvas.create(self.database)
 
         return [new_canvas]

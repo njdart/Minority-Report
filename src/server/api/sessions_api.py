@@ -94,11 +94,14 @@ def get_latest_canvas_by_session(sessionId):
     session = Session.get(sessionId)
     if session is not None:
         canvas = Canvas.get_latest_canvas_by_session(sessionId)
-        postits = Postit.get_by_property("canvas", canvas.id)
-        connections = Connection.get_by_property("canvas", canvas.id)
-        print("canvas {}".format(canvas))
-        print("Postits {}".format(postits))
-        emit('get_latest_canvas_by_session', {"canvas": canvas.as_object(), "postits": [postit.as_object() for postit in postits], "connections": [connection.as_object() for connection in connections]})
+        if (canvas is not None):
+            postits = Postit.get_by_property("canvas", canvas.id)
+            connections = Connection.get_by_property("canvas", canvas.id)
+            print("canvas {}".format(canvas))
+            print("Postits {}".format(postits))
+            emit('get_latest_canvas_by_session', {"canvas": canvas.as_object(), "postits": [postit.as_object() for postit in postits], "connections": [connection.as_object() for connection in connections]})
+        else:
+            emit('get_latest_canvas_by_session', None)
     else:
         emit('get_latest_canvas_by_session', None)
 

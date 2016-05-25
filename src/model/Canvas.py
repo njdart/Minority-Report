@@ -28,7 +28,7 @@ class Canvas(SqliteObject):
                  derivedFrom=None,
                  derivedAt=datetime.datetime.now(),
                  width=None,
-                 height=None
+                 height=None,
                  ):
         """
         :param session UUID v4 of session to which canvas belongs
