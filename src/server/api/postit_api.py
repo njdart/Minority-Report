@@ -58,7 +58,7 @@ def postit_serve(postitId):
     if postit is None:
         raise NotFound()
 
-    image = postit.get_postit_image()
+    image = postit.get_image_binarized()
 
     if image is None:
         raise NotFound()

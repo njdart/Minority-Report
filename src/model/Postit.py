@@ -114,7 +114,16 @@ class Postit(SqliteObject):
 
     def get_image_binarized(self):
         image = self.get_image_keystoned()
-        return src.model.processing.binarize(image)
+        postitImage = src.model.processing.binarize(image)
+        if self.colour == "ORANGE":
+            postitImage[numpy.where((postitImage > [0, 0, 0]).all(axis=2))] = [26, 160, 255]
+        elif self.colour == "YELLOW":
+            postitImage[numpy.where((postitImage > [0, 0, 0]).all(axis=2))] = [93, 255, 237]
+        elif self.colour == "BLUE":
+            postitImage[numpy.where((postitImage > [0, 0, 0]).all(axis=2))] = [255, 200, 41]
+        elif self.colour == "MAGENTA":
+            postitImage[numpy.where((postitImage > [0, 0, 0]).all(axis=2))] = [182, 90, 255]
+        return postitImage
 
     def get_corner_points(self):
         return numpy.array([
