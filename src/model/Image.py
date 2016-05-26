@@ -266,6 +266,8 @@ class Image(SqliteObject):
             # Only if a postit colour valid create a postit
 
             if guessed_colour is not None:
+                display_posX = postitPts[idx][0][0]*display_ratio
+                display_posY = postitPts[idx][0][0]*display_ratio
                 postit = Postit(physicalFor=userId,
                                 canvas = next_canvas_id,
                                 topLeftX=postitPts[idx][0][0],
@@ -276,8 +278,8 @@ class Image(SqliteObject):
                                 bottomRightY=postitPts[idx][2][1],
                                 bottomLeftX=postitPts[idx][3][0],
                                 bottomLeftY=postitPts[idx][3][1],
-                                displayPosX=postitPts[idx][0][0]*display_ratio,
-                                displayPosY=postitPts[idx][0][1]*display_ratio,
+                                displayPosX=display_posX,
+                                displayPosY=display_posY,
                                 colour=guessed_colour,
                                 image=self.get_id())
                 if save_postits:
@@ -291,7 +293,6 @@ class Image(SqliteObject):
             for o, old_postit in enumerate(old_postits):
                 odes = old_postit.get_descriptors()
                 good = numpy.zeros(len(found_postits), dtype=numpy.int)
-                maxidx = -1
                 IDs = []
                 for n, new_postit in enumerate(found_postits):
                     ndes = new_postit.get_descriptors()
@@ -337,6 +338,13 @@ class Image(SqliteObject):
                 if save_postits:
                     postit.create(self.database)
                 found_postits.append(postit)
+        postit_delete_list = []
+        for pidx, new_postit in enumerate(found_postits):
+            if new_postit.displayPosX < 200 and new_postit.displayPosY <200:
+                postit_delete_list.append((new_postit.id, new_postit))
+        for del_post in postit_delete_list:
+            found_postits.remove(del_post[1])
+            Postit.get(id=del_post[0]).delete()
         return (found_postits, old_to_new_postits)
 
     def find_connections(self, postits, old_to_new_postits, next_canvas_id, current_canvas, save=True):
@@ -425,6 +433,7 @@ class Image(SqliteObject):
 
     def update_canvases(self, new_postits, connections, current_canvas, next_canvas_id):
         from src.model.Canvas import Canvas
+
         new_canvas = Canvas(session=self.get_instance_configuration().sessionId,
                             id=next_canvas_id,
                             postits=new_postits,
