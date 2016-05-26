@@ -43,7 +43,7 @@ class InstanceConfiguration(SqliteObject):
                  bottomLeftX=None,
                  bottomLeftY=None,
                  id=None,
-                 kinectID=uuid.uuid4()):
+                 kinectID=None):
         super(InstanceConfiguration, self).__init__(id=id)
 
         self.sessionId = sessionId
@@ -61,7 +61,8 @@ class InstanceConfiguration(SqliteObject):
         self.bottomLeftX = bottomLeftX
         self.bottomLeftY = bottomLeftY
         self.calibSuccess = True
-        self.kinectID = kinectID
+
+        self.kinectID = kinectID if kinectID is not None else uuid.uuid4()
 
     def as_object(self):
         return {
