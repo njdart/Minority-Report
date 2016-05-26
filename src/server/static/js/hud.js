@@ -7,7 +7,7 @@ var sessionId;
 var POSTIT_SIZE = 100;
 
 $(function() {
-    var canvas = $('.hudCanvas');
+    //var hudCanvas = $('.hudCanvas');
     var splash = $('.localStorageUnset');
 
     if (typeof(Storage) !== 'undefined') {
@@ -19,7 +19,7 @@ $(function() {
         if (!userId || !sessionId) {
             console.error('Either userId or sessionId was not set:', userId, sessionId);
         } else {
-             hudContext = document.getElementById("hudCanvas").getContext("2d");
+            hudContext = document.getElementById("hudCanvas").getContext("2d");
             $(window).on("resize", resizeCanvas);
             var socket = io();
             splash.hide();
@@ -83,21 +83,22 @@ function drawCanvasBin()
 }
 
 function redrawCanvas() {
+    hudContext.strokeWidth = 10;
+    hudContext.lineWidth = 10;
     console.log("redrawCanvas(): redrawing canvas");
     drawCanvasBin();
 
-    console.log("redrawCanvas(): mapping postit ids to coords");
+    console.log("redrawCanvas(): mapping " + latestCanvas.postits.length + " postit ids to coords");
     postitIdToCoords = {};
     $.each(latestCanvas.postits, function(index, postit){
        postitIdToCoords[postit.id] = postit.displayPos;
     });
 
-    console.log("redrawCanvas(): drawing connections");
+    console.log("redrawCanvas(): drawing " + latestCanvas.connections.length + " connections");
     $.each(latestCanvas.connections, function(index, connection)
     {
         console.log("   connection from " + connection.start + " to " + connection.finish);
         hudContext.strokeStyle = "#0000FF";
-        hudContext.lineWidth = 10;
         hudContext.beginPath();
         hudContext.moveTo(postitIdToCoords[connection.start].x + POSTIT_SIZE/2, postitIdToCoords[connection.start].y + POSTIT_SIZE/2);
         hudContext.lineTo(postitIdToCoords[connection.finish].x + POSTIT_SIZE/2, postitIdToCoords[connection.finish].y + POSTIT_SIZE/2);
@@ -105,7 +106,7 @@ function redrawCanvas() {
         hudContext.stroke();
     });
 
-    console.log("redrawCanvas(): drawing postits");
+    console.log("redrawCanvas(): drawing " + latestCanvas.postits.length + " postits");
     $.each(latestCanvas.postits, function(index, postit)
     {
         console.log("   postit at (" + postit.displayPos.x + "," + postit.displayPos.y + ")");
