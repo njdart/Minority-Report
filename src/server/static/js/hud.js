@@ -51,6 +51,7 @@ $(function() {
                     //resizeCanvas();
 
                     //create_canvas isn't working properly, so we just use get_latest_canvas_by_session
+                    console.log("Requesting latest canvas");
                     socket.emit('get_latest_canvas_by_session', sessionId);
                 }
             });
