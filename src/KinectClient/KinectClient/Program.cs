@@ -19,6 +19,7 @@ namespace MinorityReport
             catch (Exception ex)
             {
                 MessageBox.Show(ex.Message, "KinectClient");
+                Environment.Exit(1);
             }
         }
     }

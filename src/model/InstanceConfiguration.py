@@ -5,6 +5,7 @@ import cv2
 import src.model.processing
 from src.model.Image import Image
 import json
+import requests
 
 class InstanceConfiguration(SqliteObject):
     properties = [
@@ -105,10 +106,10 @@ class InstanceConfiguration(SqliteObject):
         ])
 
     def calibrate(self):
-        cameraUri = "http://{}:{}".format(self.cameraHost, self.cameraPort)
+        cameraUri = "{}:{}".format(self.cameraHost, self.cameraPort)
         print('Getting Calibration Image from URI {}'.format(cameraUri))
 
-        kinectCalibUri = "http://{}:{}/calibrate".format(self.kinectHost, self.kinectPort)
+        kinectCalibUri = "{}:{}/calibrate".format(self.kinectHost, self.kinectPort)
         print("Getting Kinect calibration image from URI {}".format(kinectCalibUri))
 
         self.calibSuccess = True
@@ -117,15 +118,11 @@ class InstanceConfiguration(SqliteObject):
         if calib_image == None:
             print("Camera calibration failed")
             self.calibSuccess = False
-            return self
 
         kinect_calib_image = Image.from_uri(self.id, kinectCalibUri)
         if kinect_calib_image == None:
             print("Kinect calibration failed")
             self.calibSuccess = False
-
-            # Don't actually return here.
-            # return self
 
         def getcanvascoords(img):
             # Do a load of Josh magic to get the canvas coordinates.
@@ -164,21 +161,24 @@ class InstanceConfiguration(SqliteObject):
             max4 = numpy.argmax(l4)
             return (canvx, canvy, bounds, max1, max2, max3, max4)
 
-         # Josh magic on the camera image...
-        (canvx, canvy, bounds, max1, max2, max3, max4) = getcanvascoords(calib_image)
-        self.topLeftX = canvx[max1][0]
-        self.topLeftY = canvy[max1][0]
-        self.topRightX = canvx[max2][0]
-        self.topRightY = canvy[max2][0]
-        self.bottomRightX = canvx[max3][0]
-        self.bottomRightY = canvy[max3][0]
-        self.bottomLeftX = canvx[max4][0]
-        self.bottomLeftY = canvy[max4][0]
-        self.simpleBounds = bounds
+        # Josh magic on the camera image...
+        if calib_image != None:
+            (canvx, canvy, bounds, max1, max2, max3, max4) = getcanvascoords(calib_image)
+            self.topLeftX = canvx[max1][0]
+            self.topLeftY = canvy[max1][0]
+            self.topRightX = canvx[max2][0]
+            self.topRightY = canvy[max2][0]
+            self.bottomRightX = canvx[max3][0]
+            self.bottomRightY = canvy[max3][0]
+            self.bottomLeftX = canvx[max4][0]
+            self.bottomLeftY = canvy[max4][0]
+            self.simpleBounds = bounds
+            print("Calibrated from camera image")
 
         if kinect_calib_image != None:
             # Josh magic on the Kinect image...
             (canvx, canvy, bounds, max1, max2, max3, max4) = getcanvascoords(kinect_calib_image)
+            print("Calibrated from Kinect image")
             # and send it off
             payload = {
                 "points": [
@@ -189,6 +189,17 @@ class InstanceConfiguration(SqliteObject):
                 ],
                 "instanceID": str(self.kinectID)
             }
-            requests.post("http://{}:{}/calibrate", data=json.dumps(payload))
+            try:
+                response = requests.post("{}:{}/calibrate".format(self.kinectHost, self.kinectPort), data=json.dumps(payload))
+                print("Sent calibration data to Kinect server application")
+                try:
+                    if json.loads(response.text)["instanceID"] != str(self.kinectID):
+                        print("WARNING: Kinect did not echo back its ID...")
+                    else:
+                        print("Kinect echoed back successfully.")
+                except Exception as e:
+                    print("WARNING: Kinect did not send back coherent echo...", e)
+            except requests.exceptions.RequestException as e:
+                print("Failed to send calibration data to Kinect:", e)
 
         return self

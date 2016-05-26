@@ -10,7 +10,7 @@ namespace MinorityReport
     class CalibratePOSTData
     {
         [JsonProperty( NullValueHandling = NullValueHandling.Ignore )]
-        public IList<IList<int>> points;
+        public IList<IList<float>> points;
 
         public string instanceID;
     }

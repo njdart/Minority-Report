@@ -127,10 +127,11 @@ namespace MinorityReport
                                 // Do nothing (the client closed the connection)
                             }
 
-                            Console.Write("sent calibration image\n");
+                            Console.Write("Sent calibration image to {0}\n", context.Request.RemoteEndPoint.Address);
                         }
                         else if (context.Request.HttpMethod == "POST")
                         {
+                            Console.Write("Received calibration data from {0}\n", context.Request.RemoteEndPoint.Address);
                             MemoryStream mstream = new MemoryStream();
                             context.Request.InputStream.CopyTo(mstream);
                             byte[] data = mstream.GetBuffer();
@@ -139,25 +140,30 @@ namespace MinorityReport
                             bool success = true;
                             try
                             {
-                                postData = JsonConvert.DeserializeObject<CalibratePOSTData>(Encoding.UTF8.GetString(data, 0, (int)context.Request.ContentLength64));
+                                string content = Encoding.UTF8.GetString(data, 0, (int)context.Request.ContentLength64);
+                                Console.Write("\n{0}\n", content);
+                                postData = JsonConvert.DeserializeObject<CalibratePOSTData>(content);
                                 if (postData.points == null || postData.points.Count != 4)
                                 {
+                                    Console.Write("Invalid data.\n");
                                     success = false;
                                 }
                                 else
                                 {
                                     this.canvasCoords = new KinectPoint[4];
                                     int i = 0;
-                                    foreach (IList<int> p in postData.points)
+                                    Console.Write("Parsing...");
+                                    foreach (IList<float> p in postData.points)
                                     {
-                                        canvasCoords[i] = new KinectPoint(p[0], p[1]);
+                                        canvasCoords[i] = new KinectPoint((int)(p[0]), (int)(p[1]));
+                                        Console.Write("[{0}, {1}]\n", canvasCoords[i].X, canvasCoords[i].Y);
                                         i += 1;
-                                        Console.Write("[{0}, {1}]\n", p[0], p[1]);
                                     }
                                 }
                             }
-                            catch (JsonException)
+                            catch (JsonException e)
                             {
+                                Console.Write("Invalid JSON. Exception: {0}\n", e.Message);
                                 success = false;
                             }
 
@@ -267,7 +273,7 @@ namespace MinorityReport
                     return;
                 }
 
-                Console.Write(DateTime.Now.ToString("o") + "\tbody index frame\n");
+                // Console.Write(DateTime.Now.ToString("o") + "\tbody index frame\n");
 
                 if (this.samplingBodyData)
                 {
