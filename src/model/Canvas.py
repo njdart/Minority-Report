@@ -68,7 +68,7 @@ class Canvas(SqliteObject):
 
     @staticmethod
     def get_latest_canvas_by_session(sessionId, database=None):
-        query = 'SELECT * FROM canvases WHERE session=\'{}\' ORDER BY datetime(derivedAt) ASC LIMIT 1 ;'.format(str(sessionId))
+        query = 'SELECT * FROM canvases WHERE session=\'{}\' ORDER BY datetime(derivedAt) DESC LIMIT 1 ;'.format(str(sessionId))
         if database:
             c = database.cursor()
         else:
