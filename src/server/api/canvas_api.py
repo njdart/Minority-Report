@@ -79,5 +79,7 @@ def purge_canvases():
     for c in Canvas.get_all():
         c.delete()
 
+
+
 print('Registered Canvas API methods')
 

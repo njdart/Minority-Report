@@ -115,5 +115,10 @@ def purge_sessions():
     for s in Session.get_all():
         s.delete()
 
+@socketio.on("purge_connections")
+def purge_connections():
+    for c in Connection.get_all():
+        c.delete()
+
 
 print('Registered Session API methods')
