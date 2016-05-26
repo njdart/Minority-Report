@@ -341,6 +341,9 @@ class Image(SqliteObject):
             if new_postit.displayPosX < 200 and new_postit.displayPosY <200:
                 postit_delete_list.append((new_postit.id, new_postit))
         for del_post in postit_delete_list:
+            rmv_from_old_to_new = [i for i, pair in enumerate(old_to_new_postits) if pair[1] == del_post[0]]
+            for index in reversed(rmv_from_old_to_new):
+                del old_to_new_postits[index]
             found_postits.remove(del_post[1])
             Postit.get(id=del_post[0]).delete()
         return (found_postits, old_to_new_postits)
