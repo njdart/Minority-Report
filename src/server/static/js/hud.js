@@ -143,12 +143,14 @@ function redrawCanvas() {
             }
             else
             {
-                hudContext.strokeStyle = "#FFFF00";
+
                 postitImage = new Image();
                 postitImage.src = "";
-                //postitImage.onload = drawImageOnCanvas(postitImage, postit.displayPos.x, postit.displayPos.y);
                 postitImage.onload = function(evt){
                     console.log("       drawing virtual " + evt.currentTarget.height + "x" + evt.currentTarget.width + " postit at (" + postit.displayPos.x + "," + postit.displayPos.y + ")");
+                    hudContext.strokeStyle = "#FFFF00";
+                    hudContext.strokeWidth = 20;
+                    hudContext.strokeRect(postit.displayPos.x, postit.displayPos.y, evt.currentTarget.width, evt.currentTarget.height)
                     hudContext.drawImage(evt.currentTarget, postit.displayPos.x, postit.displayPos.y);
                 }
                 postitImage.src = "/api/postit/" + postit.id;
