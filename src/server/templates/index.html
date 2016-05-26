@@ -111,9 +111,9 @@
             <div class="jumbotron">
                 <div class="row">
                     <div>
-                        <img class="img-responsive" src="http://media4.popsugar-assets.com/files/2014/08/08/878/n/1922507/caef16ec354ca23b_thumb_temp_cover_file32304521407524949.xxxlarge/i/Funny-Cat-GIFs.jpg">
+                        <img id="currentRaw" class="img-responsive" src="">
 
-                        <a id="editCanvasBtn" href="#" data-toggle="modal" data-target="#imageModal" class="btn btn-default btn-block">Edit canvas</a>
+                        <a id="editCanvasBtn" href="#" data-toggle="modal" data-target="#imageModal" class="btn btn-default btn-block">Redefine Canvas Points</a>
                     </div>
                 </div>
             </div>
@@ -132,7 +132,7 @@
 
                         <div class="modal-body" id="imageModalContent">
                             <div >
-                              <canvas style="height:100%;width:100%;" id="modalCanvas" ></canvas>
+                              <canvas style="width:100%; height:100%;" id="rawPointRedefineCanvas" ></canvas>
                             </div>
                         </div>
 

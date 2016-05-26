@@ -119,8 +119,14 @@ def calibrate_instance_configuration(instanceConfigId):
     emit('calibrate_instance_configuration', ic.as_object())
 
 
-@socketio.on("purge_instance_configurations")
+@socketio.on('purge_instance_configurations')
 def purge_instance_configurations():
     InstanceConfiguration.delete_all()
+
+@socketio.on('get_latest_image_id_by_instance_configuration')
+def get_latest_image_id_by_instance_configuration(instanceConfigId):
+    ic = InstanceConfiguration.get(instanceConfigId)
+    emit('get_latest_image_id_by_instance_configuration', ic.get_latest_image_id())
+
 
 print('Registered Instance Configuration API methods')

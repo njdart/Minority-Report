@@ -1,5 +1,6 @@
 import uuid
 from src.model.SqliteObject import SqliteObject
+from src.server import databaseHandler
 import numpy
 import cv2
 import src.model.processing
@@ -203,3 +204,19 @@ class InstanceConfiguration(SqliteObject):
                 print("Failed to send calibration data to Kinect:", e)
 
         return self
+
+    def get_latest_image_id(self):
+        if self.database:
+            c = self.database.cursor()
+        else:
+            c = databaseHandler().get_database().cursor()
+
+        query = 'SELECT (id) FROM images WHERE instanceConfigurationId="{}" ORDER BY datetime(timestamp) DESC LIMIT 1;'.format(self.id)
+
+        c.execute(query)
+        data = c.fetchone()
+
+        if data is None:
+            return None
+
+        return data[0]

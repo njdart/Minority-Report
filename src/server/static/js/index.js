@@ -2,18 +2,77 @@ $(function() {
     $('#loginModal').modal({
         keyboard: false,
         backdrop: 'static',
-        show: true
+        show: false
     });
 
     var socket = io(),
         image,
         canvas,
-        postits = [],
+        postits = []
 
-        wholeImage = "http://media4.popsugar-assets.com/files/2014/08/08/878/n/1922507/caef16ec354ca23b_thumb_temp_cover_file32304521407524949.xxxlarge/i/Funny-Cat-GIFs.jpg",
-        canvasImage = "http://i.huffpost.com/gen/1975176/images/o-SLEEPY-CAT-WATERMELON-facebook.jpg";
+    var RAW_IMAGE_PREFIX = "/api/image/";
+    var latestRawId = ""
+    canvasImage = "http://i.huffpost.com/gen/1975176/images/o-SLEEPY-CAT-WATERMELON-facebook.jpg";
 
-    socket.on('get_users', function(users) {
+    socket.on("get_latest_image_id_by_instance_configuration", function (imageId) {
+        latestRawId = imageId;
+        updateRawImage();
+        //other image updates here?
+    });
+
+    socket.emit('get_latest_image_id_by_instance_configuration',  localStorage["instanceConfigurationId"]);
+
+
+    function updateRawImage()
+    {
+        $("#currentRaw").attr("src", RAW_IMAGE_PREFIX + latestRawId);
+        $("#canvasBackgroundRaw").attr("src", RAW_IMAGE_PREFIX + latestRawId);
+
+        pointCanvas = document.getElementById("rawPointRedefineCanvas");
+        pointCanvasContext = pointCanvas.getContext("2d");
+
+        var img = new Image;
+
+        var fitImageOn = function(canvas, imageObj) {
+            var imageAspectRatio = imageObj.width / imageObj.height;
+            var canvasAspectRatio = canvas.width / canvas.height;
+            var renderableHeight, renderableWidth, xStart, yStart;
+
+            // If image's aspect ratio is less than canvas's we fit on height
+            // and place the image centrally along width
+            if(imageAspectRatio < canvasAspectRatio) {
+                renderableHeight = canvas.height;
+                renderableWidth = imageObj.width * (renderableHeight / imageObj.height);
+                xStart = (canvas.width - renderableWidth) / 2;
+                yStart = 0;
+            }
+
+            // If image's aspect ratio is greater than canvas's we fit on width
+            // and place the image centrally along height
+            else if(imageAspectRatio > canvasAspectRatio) {
+                renderableWidth = canvas.width
+                renderableHeight = imageObj.height * (renderableWidth / imageObj.width);
+                xStart = 0;
+                yStart = (canvas.height - renderableHeight) / 2;
+            }
+
+            // Happy path - keep aspect ratio
+            else {
+                renderableHeight = canvas.height;
+                renderableWidth = canvas.width;
+                xStart = 0;
+                yStart = 0;
+            }
+            pointCanvasContext.drawImage(imageObj, xStart, yStart, renderableWidth, renderableHeight);
+        };
+
+        img.onload = function() {
+            fitImageOn(pointCanvas, img);
+        };
+        img.src = RAW_IMAGE_PREFIX + latestRawId;
+    }
+
+    /*socket.on('get_users', function(users) {
         console.log(users)
         $('.usersList-user').remove();
         users.forEach(function(user) {
@@ -46,32 +105,28 @@ $(function() {
 
     socket.emit('get_users')
     socket.emit('get_sessions')
-    socket.emit('get_instance_configurations')
+    socket.emit('get_instance_configurations');*/
 
-    $('#modalCanvas').css('background-image', wholeImage);
 
-    function updateCanvas() {
-        wholeImage = image.last().id;
-    }
 
     function updateCanvas() {
         canvasImage = canvas.last().id;
     }
 
     function updatePostits() {
-
+        canvasImage = postits.last().id;
     }
 
     socket.on('getImages', function(data) {
         console.log('getImages', arguments);
-        image = data;
+        imageId = data;
         updateImages();
     });
 
     socket.on('getCanvases', function(data) {
         console.log('getCanavses', arguments);
         canvas = data;
-        updateCanavs();
+        updateCanvas();
     });
 
     socket.on('getPostits', function(data) {
@@ -84,10 +139,10 @@ $(function() {
     $("#editCanvasBtn").on("click", function() {
 
         console.log('#editCanvasBtn Click');
-        socket.emit('getImages');
+        //socket.emit('getImages');
 
         //adds the correct image
-        $("#modalImage").attr("src", wholeImage);
+        //$("#modalImage").attr("src", RAW_IMAGE_PREFIX + latestRawId);
 
         //remove draggable from image
         $("img").on("dragstart", function(event){
@@ -95,7 +150,7 @@ $(function() {
         });
 
         // draggable canvas objects
-        var stage = new createjs.Stage("modalCanvas");
+        var stage = new createjs.Stage("rawPointRedefineCanvas");
         stage.mouseMoveOutside = true;
 
         var topLeft = new createjs.Shape(),
@@ -125,7 +180,7 @@ $(function() {
         };
 
         var createLines = function() {
-            var c = $("#modalCanvas")[0];
+            var c = $("#rawPointRedefineCanvas")[0];
             var ctx = c.getContext("2d");
             ctx.beginPath();
             ctx.moveTo(x1, y1);
