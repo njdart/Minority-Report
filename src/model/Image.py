@@ -163,7 +163,9 @@ class Image(SqliteObject):
         """
         from src.model.InstanceConfiguration import InstanceConfiguration
         from src.model.Postit import Postit
+
         userId = InstanceConfiguration.get(self.instanceConfigurationId).userId
+        old_to_new_postits = []
         found_postits = []
         canvas_image = self.get_image_projection()
         display_ratio = (1920/canvas_image.shape[0])
@@ -278,7 +280,6 @@ class Image(SqliteObject):
                                 displayPosY=postitPts[idx][0][1]*display_ratio,
                                 colour=guessed_colour,
                                 image=self.get_id())
-
                 if save_postits:
                     postit.create(self.database)
 
@@ -310,7 +311,9 @@ class Image(SqliteObject):
 
                 print(good)
                 if max(good) > 20:
-                    pass
+                    match_idx = numpy.argmax(good)
+                    old_to_new_postit = (old_postit.id, found_postits[match_idx].id)
+                    old_to_new_postits.append(old_to_new_postit)
                 else:
                     missing_postits.append(old_postit)
             for missing_postit in missing_postits:
@@ -328,12 +331,15 @@ class Image(SqliteObject):
                                 displayPosY=missing_postit.displayPosY,
                                 colour=missing_postit.colour,
                                 image=missing_postit.image.get_id())
+
+                old_to_new_postit = (missing_postit.id, postit.id)
+                old_to_new_postits.append(old_to_new_postit)
                 if save_postits:
                     postit.create(self.database)
                 found_postits.append(postit)
-        return found_postits
+        return (found_postits, old_to_new_postits)
 
-    def find_connections(self, postits, next_canvas_id, save=True):
+    def find_connections(self, postits, old_to_new_postits, next_canvas_id, current_canvas, save=True):
         from src.model.InstanceConfiguration import InstanceConfiguration
         from src.model.Connection import Connection
 
@@ -379,6 +385,24 @@ class Image(SqliteObject):
                             }
                             found_connections.append(found_connection)
         new_connections = []
+        if current_canvas:
+            old_connections = Connection.get_by_property(prop="canvas", value=current_canvas.id)
+            for old_connection in old_connections:
+                new_start_id = 0
+                new_finish_id = 0
+                for id_pair in old_to_new_postits:
+                    if old_connection.start == id_pair[0]:
+                        new_start_id = id_pair[1]
+                    if old_connection.finish == id_pair[0]:
+                        new_finish_id = id_pair[1]
+                if new_start_id and new_finish_id:
+                    connection = Connection(start=new_start_id,
+                                                    finish=new_finish_id,
+                                                    canvas=next_canvas_id)
+                    if save:
+                        connection.create(self.database)
+                    new_connections.append(connection)
+
         if found_connections:
             for next_connection in found_connections:
                 unique = True
