@@ -266,8 +266,6 @@ class Image(SqliteObject):
             # Only if a postit colour valid create a postit
 
             if guessed_colour is not None:
-                display_posX = postitPts[idx][0][0]*display_ratio
-                display_posY = postitPts[idx][0][0]*display_ratio
                 postit = Postit(physicalFor=userId,
                                 canvas = next_canvas_id,
                                 topLeftX=postitPts[idx][0][0],
@@ -278,8 +276,8 @@ class Image(SqliteObject):
                                 bottomRightY=postitPts[idx][2][1],
                                 bottomLeftX=postitPts[idx][3][0],
                                 bottomLeftY=postitPts[idx][3][1],
-                                displayPosX=display_posX,
-                                displayPosY=display_posY,
+                                displayPosX=postitPts[idx][0][0]*display_ratio,
+                                displayPosY=postitPts[idx][0][1]*display_ratio,
                                 colour=guessed_colour,
                                 image=self.get_id())
                 if save_postits:
