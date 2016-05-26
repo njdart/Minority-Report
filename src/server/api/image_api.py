@@ -105,6 +105,7 @@ def generate_canvas(id):
                                      current_canvas=current_canvas,
                                      next_canvas_id=next_canvas_id)
     #broadcasting to all connected users regardless of session???
+    #this create_canvas emit does not work as expected - only returns canvas without postits and connections etc.
     socketio.emit('create_canvas', [canvas.as_object() for canvas in canvases], broadcast=True)
 
 

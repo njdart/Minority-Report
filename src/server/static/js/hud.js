@@ -46,9 +46,12 @@ $(function() {
                     console.log("(Received canvas is empty, not calling resizeCanvas() and redrawCanvas())");
                 }
                 else {
-                    console.log(canvas);
-                    latestCanvas = canvas;
-                    resizeCanvas();
+                    //console.log(canvas);
+                    //latestCanvas = canvas;
+                    //resizeCanvas();
+
+                    //create_canvas isn't working properly, so we just use get_latest_canvas_by_session
+                    socket.emit('get_latest_canvas_by_session', sessionId);
                 }
             });
         }
