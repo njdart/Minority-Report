@@ -136,16 +136,32 @@ function redrawCanvas() {
             console.log("   postit at (" + postit.displayPos.x + "," + postit.displayPos.y + ")");
             hudContext.fillStyle = "#000000";
             if (postit.physicalFor == userId) {
+                //postit is physical for this user
                 hudContext.strokeStyle = "#00FF00";
+                hudContext.fillRect(postit.displayPos.x, postit.displayPos.y, POSTIT_SIZE, POSTIT_SIZE);
+                hudContext.strokeRect(postit.displayPos.x, postit.displayPos.y, POSTIT_SIZE, POSTIT_SIZE);
             }
             else
             {
                 hudContext.strokeStyle = "#FFFF00";
+                postitImage = new Image();
+                postitImage.src = "";
+                //postitImage.onload = drawImageOnCanvas(postitImage, postit.displayPos.x, postit.displayPos.y);
+                postitImage.onload = function(evt){
+                    console.log("drawing image with size " + evt.currentTarget.height + "x" + evt.currentTarget.width + " to canvas at (" + postit.displayPos.x + "," + postit.displayPos.y + ")");
+                    hudContext.drawImage(evt.currentTarget, postit.displayPos.x, postit.displayPos.y);
+                }
+                postitImage.src = "/api/postit/" + postit.id;
+
             }
-            hudContext.fillRect(postit.displayPos.x, postit.displayPos.y, POSTIT_SIZE, POSTIT_SIZE);
-            hudContext.strokeRect(postit.displayPos.x, postit.displayPos.y, POSTIT_SIZE, POSTIT_SIZE);
+
         });
     }
+}
+
+var drawImageOnCanvas = function(image, x, y) {
+    console.log("drawImageOnCanvas(): drawing image with size " + image.height + "x" + image.width + " to canvas at (" + x + "," + y + ")");
+    hudContext.drawImage(image, x, y);
 }
 
 function setCanvasBlack() {
