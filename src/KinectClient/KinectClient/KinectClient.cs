@@ -8,12 +8,14 @@ using System.Timers;
 using Newtonsoft.Json;
 using System.IO;
 using System.Windows;
-using System.Drawing;
 using System.Drawing.Imaging;
 using System.Runtime.InteropServices;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Net;
+using MathNet.Numerics.LinearAlgebra;
+
+using Draw = System.Drawing;
 
 namespace MinorityReport
 {
@@ -27,10 +29,11 @@ namespace MinorityReport
         private bool samplingBodyData = false;
 
         private byte[] latestColorPNG = null;
+        private Draw.PointF latestPNGDimensions;
 
         private string instanceID;
 
-        private PointF[] canvasCoords;
+        private Draw.PointF[] canvasCoords;
 
         private Timer sensorAvailableTimer;
         private bool sensorTimerElapsed = false;
@@ -154,17 +157,18 @@ namespace MinorityReport
                                 else
                                 {
                                     // Store the sent coordinates
-                                    this.canvasCoords = new PointF[4];
+                                    this.canvasCoords = new Draw.PointF[4];
                                     int i = 0;
                                     Console.Write("Coordinates got:\n");
                                     foreach (IList<float> p in postData.points)
                                     {
-                                        this.canvasCoords[i] = new PointF(p[0], p[1]);
+                                        this.canvasCoords[i] = new Draw.PointF(p[0], p[1]);
                                         Console.Write("[{0}, {1}]\n", this.canvasCoords[i].X, this.canvasCoords[i].Y);
                                         i += 1;
                                     }
-                                    
-                                    // 
+
+                                    // Calculate perspective matrix
+                                    this.canvasCoords = ImageWarping.OrderPoints(this.canvasCoords);
                                 }
                             }
                             catch (JsonException e)
@@ -182,6 +186,8 @@ namespace MinorityReport
                             }
                             else
                             {
+                                // Success!
+
                                 if (postData.instanceID != null)
                                 {
                                     // Store the sent ID
@@ -194,6 +200,33 @@ namespace MinorityReport
                                     this.WriteStringResponse(context, body);
                                     Console.Write(body + "\n");
                                 }
+                                else
+                                {
+                                    // No ID sent to us; send empty object back
+                                    this.WriteStringResponse(context, "{ }");
+                                }
+
+                                // Store the sent coordinates
+                                this.canvasCoords = new Draw.PointF[4];
+                                int i = 0;
+                                Console.Write("Coordinates got:\n");
+                                foreach (IList<float> p in postData.points)
+                                {
+                                    this.canvasCoords[i] = new Draw.PointF(p[0], p[1]);
+                                    Console.Write("[{0}, {1}]\n", this.canvasCoords[i].X, this.canvasCoords[i].Y);
+                                    i += 1;
+                                }
+
+                                // Calculate perspective matrix
+                                this.canvasCoords = ImageWarping.OrderPoints(this.canvasCoords);
+                                Draw.PointF[] imageCorners = new Draw.PointF[4] {
+                                    new Draw.PointF(0, 0),
+                                    new Draw.PointF(0, this.latestPNGDimensions.Y),
+                                    new Draw.PointF(this.latestPNGDimensions.X, 0),
+                                    new Draw.PointF(this.latestPNGDimensions.X, this.latestPNGDimensions.Y)
+                                };
+                                imageCorners = ImageWarping.OrderPoints(imageCorners);
+                                Matrix<float> perspectiveMatrix = ImageWarping.GetPerspectiveTransform(imageCorners, this.canvasCoords);
                             }
                         }
                     }
@@ -366,6 +399,10 @@ namespace MinorityReport
                     // Get pixel data
                     byte[] pixels = new byte[frame.FrameDescription.Width * frame.FrameDescription.Height * 4];
                     frame.CopyConvertedFrameDataToArray(pixels, ColorImageFormat.Bgra);
+
+                    // Store dimensions
+                    this.latestPNGDimensions = new Draw.PointF(frame.FrameDescription.Width,
+                                                               frame.FrameDescription.Height);
 
                     // Create a bitmap structure to hold data
                     WriteableBitmap bmp = new WriteableBitmap(frame.FrameDescription.Width,
