@@ -28,8 +28,9 @@ namespace MinorityReport
 
         private byte[] latestColorPNG = null;
 
-        private string clientID;
-        private KinectPoint[] canvasCoords;
+        private string instanceID;
+
+        private PointF[] canvasCoords;
 
         private Timer sensorAvailableTimer;
         private bool sensorTimerElapsed = false;
@@ -131,11 +132,13 @@ namespace MinorityReport
                         }
                         else if (context.Request.HttpMethod == "POST")
                         {
+                            // Get the sent data
                             Console.Write("Received calibration data from {0}\n", context.Request.RemoteEndPoint.Address);
                             MemoryStream mstream = new MemoryStream();
                             context.Request.InputStream.CopyTo(mstream);
                             byte[] data = mstream.GetBuffer();
 
+                            // deserialize the sent data
                             CalibratePOSTData postData = null;
                             bool success = true;
                             try
@@ -150,15 +153,18 @@ namespace MinorityReport
                                 }
                                 else
                                 {
-                                    this.canvasCoords = new KinectPoint[4];
+                                    // Store the sent coordinates
+                                    this.canvasCoords = new PointF[4];
                                     int i = 0;
-                                    Console.Write("Parsing...");
+                                    Console.Write("Coordinates got:\n");
                                     foreach (IList<float> p in postData.points)
                                     {
-                                        canvasCoords[i] = new KinectPoint((int)(p[0]), (int)(p[1]));
-                                        Console.Write("[{0}, {1}]\n", canvasCoords[i].X, canvasCoords[i].Y);
+                                        this.canvasCoords[i] = new PointF(p[0], p[1]);
+                                        Console.Write("[{0}, {1}]\n", this.canvasCoords[i].X, this.canvasCoords[i].Y);
                                         i += 1;
                                     }
+                                    
+                                    // 
                                 }
                             }
                             catch (JsonException e)
@@ -169,6 +175,7 @@ namespace MinorityReport
 
                             if (!success)
                             {
+                                // Handle errors
                                 context.Response.StatusCode = (int)HttpStatusCode.BadRequest;
                                 string body = "Malformed JSON received";
                                 this.WriteStringResponse(context, body);
@@ -177,7 +184,8 @@ namespace MinorityReport
                             {
                                 if (postData.instanceID != null)
                                 {
-                                    this.clientID = postData.instanceID;
+                                    // Store the sent ID
+                                    this.instanceID = postData.instanceID;
 
                                     // echo ID
                                     CalibratePOSTData respData = new CalibratePOSTData();

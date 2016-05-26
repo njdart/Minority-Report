@@ -59,6 +59,7 @@
     <Compile Include="BodyBoundingBox.cs" />
     <Compile Include="BoundingBoxesEventArgs.cs" />
     <Compile Include="ColorFrameSampledEventArgs.cs" />
+    <Compile Include="ImageWarping.cs" />
     <Compile Include="KinectClient.cs" />
     <Compile Include="KinectPoint.cs" />
     <Compile Include="Program.cs" />

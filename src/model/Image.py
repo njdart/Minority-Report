@@ -168,7 +168,7 @@ class Image(SqliteObject):
         old_to_new_postits = []
         found_postits = []
         canvas_image = self.get_image_projection()
-        display_ratio = (1920/canvas_image.shape[0])
+        display_ratio = (1920/canvas_image.shape[1])
 
         # Finding postits is based on saturation levels, first the image must be converted to HSV format
         hsv_image = cv2.cvtColor(canvas_image.copy(), cv2.COLOR_BGR2HSV)
