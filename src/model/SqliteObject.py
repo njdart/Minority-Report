@@ -150,20 +150,19 @@ class SqliteObject(object):
 
         return True
 
-    def delete_all(self, database=None):
-        query = 'DELETE * FROM {};'.format(self.table)
+    @classmethod
+    def delete_all(cls, database=None):
+        query = 'DELETE FROM {};'.format(cls.table)
+
         print('Using DELETE query \'{}\''.format(query))
 
-        if self.database:
-            db = self.database
-        elif database:
-            db = database
-        else:
-            db = databaseHandler().get_database()
+        if not database:
+            database = databaseHandler().get_database()
 
-        c = db.cursor()
-        c.execute(query, (self.id,))
-        db.commit()
+        c = database.cursor()
+
+        c.execute(query)
+        database.commit()
 
         return True
 

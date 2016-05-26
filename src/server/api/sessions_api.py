@@ -112,8 +112,7 @@ def get_latest_canvas_by_session(sessionId):
 
 @socketio.on("purge_sessions")
 def purge_sessions():
-    for s in Session.get_all():
-        s.delete()
+    Session.delete_all()
 
 @socketio.on("purge_connections")
 def purge_connections():
