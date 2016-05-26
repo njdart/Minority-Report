@@ -69,7 +69,6 @@ def postit_serve(postitId):
 
 @socketio.on("purge_postits")
 def purge_postits():
-    for p in Postit.get_all():
-        p.delete()
+    Postit.delete_all()
 
 print('Registered Postit API methods')

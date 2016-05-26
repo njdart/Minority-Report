@@ -62,7 +62,7 @@ function resizeCanvas() {
     console.log("resizeCanvas(): resizing canvas");
     hudContext.canvas.height = $(window).height();
     hudContext.canvas.width = $(window).width();
-    redrawCanvas();
+    redrawCanvas(); //should probably be somewhere else, but this works...
 }
 
 function clearCanvas(){
@@ -88,40 +88,60 @@ function redrawCanvas() {
     console.log("redrawCanvas(): redrawing canvas");
     drawCanvasBin();
 
-    console.log("redrawCanvas(): mapping " + latestCanvas.postits.length + " postit ids to coords");
-    postitIdToCoords = {};
-    $.each(latestCanvas.postits, function(index, postit){
-       postitIdToCoords[postit.id] = postit.displayPos;
-    });
-
-    console.log("redrawCanvas(): drawing " + latestCanvas.connections.length + " connections");
-    $.each(latestCanvas.connections, function(index, connection)
+    if(latestCanvas.postits == undefined || latestCanvas.postits == null)
     {
-        console.log("   connection from " + connection.start + " to " + connection.finish);
-        hudContext.strokeStyle = "#0000FF";
-        hudContext.beginPath();
-        hudContext.moveTo(postitIdToCoords[connection.start].x + POSTIT_SIZE/2, postitIdToCoords[connection.start].y + POSTIT_SIZE/2);
-        hudContext.lineTo(postitIdToCoords[connection.finish].x + POSTIT_SIZE/2, postitIdToCoords[connection.finish].y + POSTIT_SIZE/2);
-        hudContext.closePath();
-        hudContext.stroke();
-    });
-
-    console.log("redrawCanvas(): drawing " + latestCanvas.postits.length + " postits");
-    $.each(latestCanvas.postits, function(index, postit)
+        console.log("redrawCanvas(): No postits on canvas");
+    }
+    else
     {
-        console.log("   postit at (" + postit.displayPos.x + "," + postit.displayPos.y + ")");
-        hudContext.fillStyle = "#000000";
-        if(postit.physicalFor == userId)
+        console.log("redrawCanvas(): mapping " + latestCanvas.postits.length + " postit ids to coords");
+        postitIdToCoords = {};
+        $.each(latestCanvas.postits, function(index, postit)
         {
-            hudContext.strokeStyle = "#00FF00";
-        }
-        else
+           postitIdToCoords[postit.id] = postit.displayPos;
+        });
+    }
+
+    if(latestCanvas.connections == undefined || latestCanvas.connections == null)
+    {
+        console.log("redrawCanvas(): No connections on canvas");
+    }
+    else
+    {
+        console.log("redrawCanvas(): drawing " + latestCanvas.connections.length + " connections");
+        $.each(latestCanvas.connections, function(index, connection)
         {
-            hudContext.strokeStyle = "#FFFF00";
-        }
-        hudContext.fillRect(postit.displayPos.x, postit.displayPos.y, POSTIT_SIZE, POSTIT_SIZE);
-        hudContext.strokeRect(postit.displayPos.x, postit.displayPos.y, POSTIT_SIZE, POSTIT_SIZE);
-    });
+            console.log("   connection from " + connection.start + " to " + connection.finish);
+            hudContext.strokeStyle = "#0000FF";
+            hudContext.beginPath();
+            hudContext.moveTo(postitIdToCoords[connection.start].x + POSTIT_SIZE/2, postitIdToCoords[connection.start].y + POSTIT_SIZE/2);
+            hudContext.lineTo(postitIdToCoords[connection.finish].x + POSTIT_SIZE/2, postitIdToCoords[connection.finish].y + POSTIT_SIZE/2);
+            hudContext.closePath();
+            hudContext.stroke();
+        });
+    }
+
+    if(latestCanvas.postits == undefined || latestCanvas.postits == null)
+    {
+        console.log("redrawCanvas(): No postits on canvas");
+    }
+    else
+    {
+        console.log("redrawCanvas(): drawing " + latestCanvas.postits.length + " postits");
+        $.each(latestCanvas.postits, function (index, postit) {
+            console.log("   postit at (" + postit.displayPos.x + "," + postit.displayPos.y + ")");
+            hudContext.fillStyle = "#000000";
+            if (postit.physicalFor == userId) {
+                hudContext.strokeStyle = "#00FF00";
+            }
+            else
+            {
+                hudContext.strokeStyle = "#FFFF00";
+            }
+            hudContext.fillRect(postit.displayPos.x, postit.displayPos.y, POSTIT_SIZE, POSTIT_SIZE);
+            hudContext.strokeRect(postit.displayPos.x, postit.displayPos.y, POSTIT_SIZE, POSTIT_SIZE);
+        });
+    }
 }
 
 function setCanvasBlack() {

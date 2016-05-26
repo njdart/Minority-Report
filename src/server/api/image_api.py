@@ -139,8 +139,7 @@ def projection_serve(imageId):
 
 @socketio.on("purge_images")
 def purge_images():
-    for i in Image.get_all():
-        i.delete()
+    Image.delete_all()
 
 
 print('Registered Image API methods')

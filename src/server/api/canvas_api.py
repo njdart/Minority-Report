@@ -76,8 +76,7 @@ def canvas_serve(canvasId):
 
 @socketio.on("purge_canvases")
 def purge_canvases():
-    for c in Canvas.get_all():
-        c.delete()
+    Canvas.delete_all()
 
 
 
