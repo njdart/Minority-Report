@@ -315,7 +315,7 @@ class Image(SqliteObject):
                     missing_postits.append(old_postit)
             for missing_postit in missing_postits:
                 postit = Postit(physicalFor=None,
-                                canvas = next_canvas_id,
+                                canvas=next_canvas_id,
                                 topLeftX=missing_postit.topLeftX,
                                 topLeftY=missing_postit.topLeftY,
                                 topRightX=missing_postit.topRightX,
@@ -343,9 +343,8 @@ class Image(SqliteObject):
         (_, cnts, _) = cv2.findContours(edged.copy(), cv2.RETR_TREE, cv2.CHAIN_APPROX_NONE)
         for c in cnts:
             debug_img = canvas_image.copy()
-            if cv2.arcLength(c, True) > 300:
+            if cv2.arcLength(c, True) > 100:
                 connectionList = []
-
 
                 for index in range(0, len(c), 10):
                     contained = False
@@ -379,20 +378,29 @@ class Image(SqliteObject):
                                 "postitIdEnd": postit_id_end
                             }
                             found_connections.append(found_connection)
-        if(found_connections):
-            connection = Connection(start=found_connections[0]["postitIdStart"],
-                                    finish=found_connections[0]["postitIdEnd"],
-                                    canvas=next_canvas_id)
-            if save:
-                connection.create(self.database)
-        return found_connections
+        new_connections = []
+        if found_connections:
+            for next_connection in found_connections:
+                unique = True
+                if new_connections:
+                    for new_connection in new_connections:
+                        if (str(next_connection["postitIdStart"]) == str(new_connection.start) and str(next_connection["postitIdEnd"]) == str(new_connection.finish)
+                            or (str(next_connection["postitIdEnd"]) == str(new_connection.start) and str(next_connection["postitIdStart"]) == str(new_connection.finish))):
+                            unique = False
+
+                if unique:
+                    connection = Connection(start=next_connection["postitIdStart"],
+                                                finish=next_connection["postitIdEnd"],
+                                                canvas=next_canvas_id)
+                    if save:
+                        connection.create(self.database)
+                    new_connections.append(connection)
+
+
+        return new_connections
 
     def update_canvases(self, new_postits, connections, current_canvas, next_canvas_id):
         from src.model.Canvas import Canvas
-        from src.model.Postit import Postit
-
-
-
         new_canvas = Canvas(session=self.get_instance_configuration().sessionId,
                             id=next_canvas_id,
                             postits=new_postits,
