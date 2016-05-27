@@ -83,7 +83,7 @@ class Image(SqliteObject):
             print('Could not get Image Projection; instance configuration was None')
             return None
 
-        print(instanceConfiguration.get_projection_corner_points())
+        # print(instanceConfiguration.get_projection_corner_points())
 
         return src.model.processing.four_point_transform(image, instanceConfiguration.get_projection_corner_points())
 
@@ -179,7 +179,7 @@ class Image(SqliteObject):
         # All pixels below brightness threshold set to black
         # to remove any lines that have some saturation from reflections
         hsv_image[numpy.where((hsv_image < [100, 100, 100]).all(axis=2))] = [0, 0, 0]
-        # cv2.imshow("debug", cv2.resize(hsv_image, None, fx=0.5, fy=0.5, interpolation=cv2.INTER_AREA))
+        # cv2.imwrite("debug.png", cv2.resize(hsv_image, None, fx=0.5, fy=0.5, interpolation=cv2.INTER_AREA))
         # cv2.waitKey(0)
         # Convert image to grayscale and then canny filter and get contour
         gray_img = cv2.cvtColor(hsv_image, cv2.COLOR_BGR2GRAY)
@@ -240,6 +240,7 @@ class Image(SqliteObject):
                                   (canvx[max4][0], canvy[max4][0])]
                     # Crop and transform image based on points
                     postitimg = src.model.processing.four_point_transform(canvas_image, numpy.array(postit_pts))
+                    cv2.imwrite("debug1.png", postitimg)
                     postitPts.append(src.model.processing.order_points(numpy.array(postit_pts)))
                     postitImages.append(postitimg)
                     postitPos.append(rectangle)
@@ -308,7 +309,7 @@ class Image(SqliteObject):
                         cv2.imshow("debug", odes)
                         cv2.waitKey(0)
 
-                print(good)
+                # print(good)
                 if max(good) > 20:
                     match_idx = numpy.argmax(good)
                     old_to_new_postit = (old_postit.id, found_postits[match_idx].id)

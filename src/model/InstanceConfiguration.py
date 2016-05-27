@@ -129,6 +129,7 @@ class InstanceConfiguration(SqliteObject):
             # Do a load of Josh magic to get the canvas coordinates.
             calib_image_array = img.get_image_array()
             bin_image = cv2.cvtColor(src.model.processing.binarize(calib_image_array), cv2.COLOR_RGB2GRAY)
+            cv2.imwrite("debug.png",cv2.resize(bin_image, None, fx=0.25, fy=0.25, interpolation=cv2.INTER_AREA))
             (__, board_contours, __) = cv2.findContours(bin_image, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
             areas = [cv2.contourArea(c) for c in board_contours]
             max_index = numpy.argmax(areas)

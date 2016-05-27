@@ -55,6 +55,18 @@ $(function() {
                     socket.emit('get_latest_canvas_by_session', sessionId);
                 }
             });
+
+            socket.on("blank_canvas_black", function () {
+                console.log("received blank_canvas_black message, blacking out canvas");
+                setCanvasBlack();
+                clearCanvas();
+            });
+
+            socket.on("blank_canvas_white", function () {
+                console.log("received blank_canvas_white message, whiting out canvas");
+                setCanvasWhite();
+                clearCanvas();
+            });
         }
     } else {
         console.error('Local Storage Not Available!');
