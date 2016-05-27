@@ -9,6 +9,15 @@ $('#loginModal').on('hidden.bs.modal', function (e) {
     socket.emit('get_latest_image_id_by_instance_configuration',  localStorage["instanceConfigurationId"]);
 })
 
+$('#imageModal').on('show.bs.modal', function (e) {
+    setTimeout(function(){
+        ctx = document.getElementById("rawPointRedefineCanvas").getContext("2d");
+        ctx.canvas.width = document.getElementById("canvasBackgroundRaw").clientWidth;
+        ctx.canvas.height = document.getElementById("canvasBackgroundRaw").height;
+        updateRawImage();
+    }, 300);
+});
+
     var socket = io(),
         image,
         canvas,
