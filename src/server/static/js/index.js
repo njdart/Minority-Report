@@ -2,8 +2,12 @@ $(function() {
     $('#loginModal').modal({
         keyboard: false,
         backdrop: 'static',
-        show: false
+        show: true
     });
+
+$('#loginModal').on('hidden.bs.modal', function (e) {
+    socket.emit('get_latest_image_id_by_instance_configuration',  localStorage["instanceConfigurationId"]);
+})
 
     var socket = io(),
         image,
@@ -19,8 +23,6 @@ $(function() {
         updateRawImage();
         //other image updates here?
     });
-
-    socket.emit('get_latest_image_id_by_instance_configuration',  localStorage["instanceConfigurationId"]);
 
 
     function updateRawImage()
@@ -72,7 +74,7 @@ $(function() {
         img.src = RAW_IMAGE_PREFIX + latestRawId;
     }
 
-    /*socket.on('get_users', function(users) {
+    socket.on('get_users', function(users) {
         console.log(users)
         $('.usersList-user').remove();
         users.forEach(function(user) {
@@ -105,7 +107,7 @@ $(function() {
 
     socket.emit('get_users')
     socket.emit('get_sessions')
-    socket.emit('get_instance_configurations');*/
+    socket.emit('get_instance_configurations');
 
 
 
