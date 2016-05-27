@@ -2,7 +2,7 @@ $(function() {
     $('#loginModal').modal({
         keyboard: false,
         backdrop: 'static',
-        show: false
+        show: true
     });
 
     var socket = io(),
