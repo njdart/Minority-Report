@@ -12,3 +12,11 @@
 	height: 100%;
 }
 
+#canvasBackgroundRaw {
+    position: absolute;
+}
+
+#rawPointRedefineCanvas {
+    position: relative;
+    z-index: 20;
+}
