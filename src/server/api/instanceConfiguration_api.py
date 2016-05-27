@@ -114,9 +114,11 @@ def calibrate_instance_configuration(instanceConfigId):
     Calibrate an instance configuration by trying to connect to the camera and auto-extracting projector bounds
     """
     print('Calibrating instance configuration {}'.format(instanceConfigId))
+    emit('blank_canvas_white', broadcast=True)
     ic = InstanceConfiguration.get(id=instanceConfigId).calibrate().update()
     print('Calibrated')
     emit('calibrate_instance_configuration', ic.as_object())
+    emit('blank_canvas_black', broadcast=True)
 
 
 @socketio.on('purge_instance_configurations')
