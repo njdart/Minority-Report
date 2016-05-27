@@ -107,10 +107,10 @@ class InstanceConfiguration(SqliteObject):
         ])
 
     def calibrate(self):
-        cameraUri = "{}:{}".format(self.cameraHost, self.cameraPort)
+        cameraUri = "http://{}:{}".format(self.cameraHost, self.cameraPort)
         print('Getting Calibration Image from URI {}'.format(cameraUri))
 
-        kinectCalibUri = "{}:{}/calibrate".format(self.kinectHost, self.kinectPort)
+        kinectCalibUri = "http://{}:{}/calibrate".format(self.kinectHost, self.kinectPort)
         print("Getting Kinect calibration image from URI {}".format(kinectCalibUri))
 
         self.calibSuccess = True
@@ -191,7 +191,7 @@ class InstanceConfiguration(SqliteObject):
                 "instanceID": str(self.kinectID)
             }
             try:
-                response = requests.post("{}:{}/calibrate".format(self.kinectHost, self.kinectPort), data=json.dumps(payload))
+                response = requests.post("http://{}:{}/calibrate".format(self.kinectHost, self.kinectPort), data=json.dumps(payload))
                 print("Sent calibration data to Kinect server application")
                 try:
                     if json.loads(response.text)["instanceID"] != str(self.kinectID):
