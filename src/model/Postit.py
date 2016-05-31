@@ -142,7 +142,7 @@ class Postit(SqliteObject):
     def get_descriptors(self):
         orb = cv2.ORB_create(scaleFactor=1.2,
                              nlevels=8,
-                             edgeThreshold=5,
+                             edgeThreshold=3,
                              firstLevel=0,
                              WTA_K=2,
                              scoreType=cv2.ORB_HARRIS_SCORE,

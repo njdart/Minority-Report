@@ -11,6 +11,7 @@ from werkzeug.exceptions import NotFound
 from src.model.Image import Image
 from src.model.Session import Session
 from src.server import (app, socketio)
+from time import sleep
 
 @socketio.on('create_image')
 def create_image(file, createdAt, instanceConfigurationId):
@@ -63,6 +64,7 @@ def autoExtractCanvas(image_id):
 def get_image(instanceConfigurationId, uri):
     print('Getting image from URI ', uri)
     emit('blank_canvas_black', broadcast=True)
+    sleep(0.5)
     image = Image.from_uri(uri=uri, instanceConfigurationId=instanceConfigurationId)
 
     if image is None:

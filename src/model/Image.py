@@ -179,8 +179,7 @@ class Image(SqliteObject):
         # All pixels below brightness threshold set to black
         # to remove any lines that have some saturation from reflections
         hsv_image[numpy.where((hsv_image < [100, 100, 100]).all(axis=2))] = [0, 0, 0]
-        # cv2.imwrite("debug.png", cv2.resize(hsv_image, None, fx=0.5, fy=0.5, interpolation=cv2.INTER_AREA))
-        # cv2.waitKey(0)
+        cv2.imwrite("debug-postit-"+str(next_canvas_id)+".png", cv2.resize(hsv_image, None, fx=0.5, fy=0.5, interpolation=cv2.INTER_AREA))
         # Convert image to grayscale and then canny filter and get contour
         gray_img = cv2.cvtColor(hsv_image, cv2.COLOR_BGR2GRAY)
         edge_gray = cv2.Canny(gray_img, 1, 30)
@@ -195,9 +194,9 @@ class Image(SqliteObject):
         for c in contours:
             box = cv2.boxPoints(cv2.minAreaRect(c))
             box = numpy.int0(box)
-            # print(cv2.contourArea(box))
             # Check the area of the postits to see if they fit within the expected range
             if (cv2.contourArea(box) > min_postit_area) and (cv2.contourArea(box) < max_postit_area):
+                print(cv2.contourArea(box))
                 length = numpy.math.hypot(box[0, 0] - box[1, 0], box[0, 1] - box[1, 1])
                 height = numpy.math.hypot(box[2, 0] - box[1, 0], box[2, 1] - box[1, 1])
                 # Check to see how similar the lengths are as a measure of squareness
@@ -297,19 +296,22 @@ class Image(SqliteObject):
                     ndes = new_postit.get_descriptors()
                     # Create BFMatcher object
                     bf = cv2.BFMatcher()
-                    if len(ndes) > 0 and len(odes) > 0:
-                        # Match descriptors
-                        matches = bf.knnMatch(ndes, odes, k=2)
-                        IDs.append(old_postit.get_id())
-                        for a, b in matches:
-                            if a.distance < (0.75*b.distance):
-                                good[n] += 1
-                    else:
-                        print("oops")
-                        cv2.imshow("debug", odes)
-                        cv2.waitKey(0)
+                    if ndes is not None and odes is not None:
+                        if len(ndes) > 0 and len(odes) > 0:
+                            # print(len(odes))
+                            # print(len(ndes))
+                            # Match descriptors
+                            matches = bf.knnMatch(ndes, odes, k=2)
+                            IDs.append(old_postit.get_id())
+                            for a, b in matches:
+                                if a.distance < (0.75*b.distance):
+                                    good[n] += 1
+                        else:
+                            print("oops")
+                            cv2.imshow("debug", odes)
+                            cv2.waitKey(0)
 
-                # print(good)
+                print(good)
                 if max(good) > 20:
                     match_idx = numpy.argmax(good)
                     old_to_new_postit = (old_postit.id, found_postits[match_idx].id)
@@ -357,6 +359,7 @@ class Image(SqliteObject):
         found_connections = []
         canvas_image = self.get_image_projection()
         edged = src.model.processing.edge(canvas_image)
+        cv2.imwrite("debug-lines-"+str(next_canvas_id)+".png", cv2.resize(edged, None, fx=0.5, fy=0.5, interpolation=cv2.INTER_AREA))
         (_, cnts, _) = cv2.findContours(edged.copy(), cv2.RETR_TREE, cv2.CHAIN_APPROX_NONE)
         for c in cnts:
             debug_img = canvas_image.copy()
