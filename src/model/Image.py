@@ -168,8 +168,7 @@ class Image(SqliteObject):
         old_to_new_postits = []
         found_postits = []
         canvas_image = self.get_image_projection()
-        display_ratio = (1920/canvas_image.shape[1])
-
+        display_ratio = (1920.0/canvas_image.shape[1])
         # Finding postits is based on saturation levels, first the image must be converted to HSV format
         hsv_image = cv2.cvtColor(canvas_image.copy(), cv2.COLOR_BGR2HSV)
         satthresh = 85  # CONST
@@ -196,7 +195,7 @@ class Image(SqliteObject):
             box = numpy.int0(box)
             # Check the area of the postits to see if they fit within the expected range
             if (cv2.contourArea(box) > min_postit_area) and (cv2.contourArea(box) < max_postit_area):
-                print(cv2.contourArea(box))
+                # print(cv2.contourArea(box))
                 length = numpy.math.hypot(box[0, 0] - box[1, 0], box[0, 1] - box[1, 1])
                 height = numpy.math.hypot(box[2, 0] - box[1, 0], box[2, 1] - box[1, 1])
                 # Check to see how similar the lengths are as a measure of squareness
@@ -264,7 +263,6 @@ class Image(SqliteObject):
 
             guessed_colour = src.model.processing.guess_colour(red_average, green_average, blue_average)
             # Only if a postit colour valid create a postit
-
             if guessed_colour is not None:
                 postit = Postit(physicalFor=userId,
                                 canvas = next_canvas_id,
@@ -276,13 +274,12 @@ class Image(SqliteObject):
                                 bottomRightY=postitPts[idx][2][1],
                                 bottomLeftX=postitPts[idx][3][0],
                                 bottomLeftY=postitPts[idx][3][1],
-                                displayPosX=postitPts[idx][0][0]*display_ratio,
-                                displayPosY=postitPts[idx][0][1]*display_ratio,
+                                displayPosX=(postitPts[idx][0][0]+postitPts[idx][2][0])*display_ratio*0.5,
+                                displayPosY=(postitPts[idx][0][1]+postitPts[idx][2][1])*display_ratio*0.5,
                                 colour=guessed_colour,
                                 image=self.get_id())
                 if save_postits:
                     postit.create(self.database)
-
                 found_postits.append(postit)
 
         if current_canvas is not None:
@@ -342,6 +339,8 @@ class Image(SqliteObject):
         postit_delete_list = []
         for pidx, new_postit in enumerate(found_postits):
             if new_postit.displayPosX < 200 and new_postit.displayPosY <200:
+                print(str(new_postit.displayPosX)+", "+str(new_postit.displayPosY))
+
                 postit_delete_list.append((new_postit.id, new_postit))
                 print("deleting postit:", new_postit.id, new_postit.displayPosX, new_postit.displayPosY)
         for del_post in postit_delete_list:
