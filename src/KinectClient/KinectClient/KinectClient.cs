@@ -37,7 +37,7 @@ namespace MinorityReport
         private string instanceID;
 
         private Draw.PointF[] canvasCoords;
-        private bool boardObscured;
+        private bool boardObscured = false;
 
         private Timer sensorAvailableTimer;
         private bool sensorTimerElapsed = false;
@@ -78,16 +78,27 @@ namespace MinorityReport
             //tell server
             HttpClient client = new HttpClient();
 
-            string payload = String.Format("{{ boardObscured : {0}, kinectID : \"{1}\" }}", obscured ? "true" : "false", this.instanceID);
+            string payload = String.Format("{{ \"boardObscured\" : {0}, \"kinectID\" : \"{1}\" }}", obscured ? "true" : "false", this.instanceID);
             StringContent content = new StringContent(payload);
+
+            if (content.Headers.Contains("Content-Type")) content.Headers.Remove("Content-Type");
             content.Headers.Add("Content-Type", "application/json");
 
             string uri = String.Format("http://{0}:{1}/boardObscured", this.Server, this.Port);
 
             Console.Write("Sending to {1} :\n{0}\n", payload, uri);
-
-            Task<HttpResponseMessage> req = client.PostAsync(uri, content);
-            req.Wait();
+            Task<HttpResponseMessage> req;
+            try
+            {
+                req = client.PostAsync(uri, content);
+                req.Wait();
+            }
+            catch (AggregateException e)
+            {
+                Console.Write("Error occurred sending data to the server:\n");
+                Console.Write(e.ToString());
+                return;
+            }
 
             Task<byte[]> dataTask = req.Result.Content.ReadAsByteArrayAsync();
             dataTask.Wait();
