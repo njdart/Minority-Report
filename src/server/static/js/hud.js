@@ -99,6 +99,14 @@ function drawCanvasBin()
 }
 
 function redrawCanvas() {
+    function drawPostitAroundCoords(x, y, ctx)
+    {
+        var startx = x - POSTIT_SIZE/2;
+        var starty = y - POSTIT_SIZE/2;
+        ctx.moveTo(startx, starty);
+        ctx.fillRect(x, y, POSTIT_SIZE, POSTIT_SIZE);
+        ctx.strokeRect(x, y, POSTIT_SIZE, POSTIT_SIZE);
+    }
     hudContext.strokeWidth = 10;
     hudContext.lineWidth = 10;
     console.log("redrawCanvas(): redrawing canvas");
@@ -150,19 +158,20 @@ function redrawCanvas() {
             if (postit.physicalFor == userId) {
                 //postit is physical for this user
                 hudContext.strokeStyle = "#00FF00";
-                hudContext.fillRect(postit.displayPos.x, postit.displayPos.y, POSTIT_SIZE, POSTIT_SIZE);
-                hudContext.strokeRect(postit.displayPos.x, postit.displayPos.y, POSTIT_SIZE, POSTIT_SIZE);
+                //hudContext.fillRect(postit.displayPos.x, postit.displayPos.y, POSTIT_SIZE, POSTIT_SIZE);
+                //hudContext.strokeRect(postit.displayPos.x, postit.displayPos.y, POSTIT_SIZE, POSTIT_SIZE);
+                drawPostitAroundCoords(postit.displayPos.x, postit.displayPos.y, hudContext);
             }
             else
             {
-
                 postitImage = new Image();
                 postitImage.src = "";
                 postitImage.onload = function(evt){
                     console.log("       drawing virtual " + evt.currentTarget.height + "x" + evt.currentTarget.width + " postit at (" + postit.displayPos.x + "," + postit.displayPos.y + ")");
                     hudContext.strokeStyle = "#FFFF00";
                     hudContext.strokeWidth = 20;
-                    hudContext.strokeRect(postit.displayPos.x, postit.displayPos.y, evt.currentTarget.width, evt.currentTarget.height)
+                    //hudContext.strokeRect(postit.displayPos.x, postit.displayPos.y, evt.currentTarget.width, evt.currentTarget.height);
+                    drawPostitAroundCoords(postit.displayPos.x, postit.displayPos.y, hudContext);
                     hudContext.drawImage(evt.currentTarget, postit.displayPos.x, postit.displayPos.y);
                 }
                 postitImage.src = "/api/postit/" + postit.id;
