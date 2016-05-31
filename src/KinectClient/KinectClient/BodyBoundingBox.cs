@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
+using System.Drawing;
 
 namespace MinorityReport
 {
@@ -13,13 +14,13 @@ namespace MinorityReport
     public class BodyBoundingBox
     {
         public int bodyIndex;
-        public Point topLeft;
-        public Point bottomRight;
+        public PointF topLeft;
+        public PointF bottomRight;
 
         public BodyBoundingBox()
         {
-            this.topLeft = new Point();
-            this.bottomRight = new Point();
+            this.topLeft = new PointF();
+            this.bottomRight = new PointF();
         }
     }
 }

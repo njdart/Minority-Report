@@ -221,3 +221,21 @@ class InstanceConfiguration(SqliteObject):
             return None
 
         return data[0]
+
+    @staticmethod
+    def get_config_by_kinect(kinectHost):
+        c = databaseHandler().get_database().cursor()
+        query = 'SELECT * FROM instanceConfiguration WHERE kinectHost = {}'.format(kinectHost)
+        c.execute(query)
+        data = c.fetchone()
+
+        if data is None:
+            return None
+        return data[0]
+
+    def get_camera_image(self):
+        cameraUri = "http://{}:{}".format(self.cameraHost, self.cameraPort)
+        img = Image.from_uri(self.id, cameraUri)
+        if img is None:
+            return None
+        return img.create().id

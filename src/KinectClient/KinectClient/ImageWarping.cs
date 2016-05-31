@@ -102,8 +102,8 @@ namespace MinorityReport
             ordered[2] = points.MaxBy(p => p.X + p.Y);
 
             // The top-right point has the largest (x - y); the bottom-left point has the smallest (x - y).
-            ordered[1] = points.Select(p => new { Diff = p.X - p.Y, Point = p }).MinBy(obj => obj.Diff).Point;
-            ordered[3] = points.Select(p => new { Diff = p.X - p.Y, Point = p }).MaxBy(obj => obj.Diff).Point;
+            ordered[1] = points.Select(p => new { Diff = p.X - p.Y, Point = p }).MaxBy(obj => obj.Diff).Point;
+            ordered[3] = points.Select(p => new { Diff = p.X - p.Y, Point = p }).MinBy(obj => obj.Diff).Point;
 
             return ordered;
         }

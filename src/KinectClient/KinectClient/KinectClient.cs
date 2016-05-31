@@ -16,6 +16,7 @@ using System.Net;
 using MathNet.Numerics.LinearAlgebra;
 
 using Draw = System.Drawing;
+using System.Net.Http;
 
 namespace MinorityReport
 {
@@ -31,20 +32,24 @@ namespace MinorityReport
         private byte[] latestColorPNG = null;
         private Draw.PointF latestPNGDimensions;
 
+        private Matrix<float> perspectiveMatrix = null;
+
         private string instanceID;
 
         private Draw.PointF[] canvasCoords;
+        private bool boardObscured;
 
         private Timer sensorAvailableTimer;
         private bool sensorTimerElapsed = false;
 
-        public string Server { get; set; } = "localhost";
+        public string Server { get; set; } = null;
 
         public int Port { get; set; } = 8088;
 
         // public event EventHandler ServerDisconnected;
         // public event EventHandler<BoundingBoxesSampledEventArgs> BoundingBoxesSampled;
         // public event EventHandler<ColorFrameSampledEventArgs> ColorFrameSampled;
+        public event EventHandler<bool> BoardObscuredChanged;
 
         public KinectClient(string server, int port)
         {
@@ -62,7 +67,34 @@ namespace MinorityReport
             this.bodyIndexReader.FrameArrived += this.BodyIndexReader_FrameArrived;
             this.colorReader.FrameArrived += this.ColorReader_FrameArrived;
             this.samplingBodyData = true;
+
+            this.BoardObscuredChanged += this.KinectClient_BoardObscuredChanged;
         }
+
+        private void KinectClient_BoardObscuredChanged(object sender, bool obscured)
+        {
+            Console.Write("Board " + ((!obscured) ? "no longer " : "") + "obscured!\n");
+
+            //tell server
+            HttpClient client = new HttpClient();
+
+            string payload = String.Format("{{ boardObscured : {0}, kinectID : \"{1}\" }}", obscured ? "true" : "false", this.instanceID);
+            StringContent content = new StringContent(payload);
+            content.Headers.Add("Content-Type", "application/json");
+
+            string uri = String.Format("http://{0}:{1}/boardObscured", this.Server, this.Port);
+
+            Console.Write("Sending to {1} :\n{0}\n", payload, uri);
+
+            Task<HttpResponseMessage> req = client.PostAsync(uri, content);
+            req.Wait();
+
+            Task<byte[]> dataTask = req.Result.Content.ReadAsByteArrayAsync();
+            dataTask.Wait();
+            string data = Encoding.UTF8.GetString(dataTask.Result);
+            Console.Write("Response (status {1}): {0}.\n", data, req.Result.StatusCode);
+        }
+
         public void Run()
         {
             bool active = true;
@@ -81,10 +113,11 @@ namespace MinorityReport
             });
             sensorTimerTask.Start();
 
-            // Listen to all HTTP requests on port 8080. This requires admin privileges.
+            // Listen to all HTTP requests on port 8081. This requires the URI http://+:8081 to be reserved for the
+            // current user.
             HttpListener listener = new HttpListener();
             HttpListenerPrefixCollection prefixes = listener.Prefixes;
-            prefixes.Add("http://+:8080/");
+            prefixes.Add("http://+:8081/");
             listener.IgnoreWriteExceptions = true;
             listener.Start();
 
@@ -118,6 +151,12 @@ namespace MinorityReport
                             this.latestColorPNG = null;
                             this.samplingColorFrames = true;
                             while (this.samplingColorFrames) ;
+
+                            // save image to file for debug purposes
+                            string pngname = String.Format("{0}.png", DateTime.Now.ToString("o")).Replace(":", ".");
+                            FileStream debugPNG = new FileStream(pngname, FileMode.CreateNew);
+                            debugPNG.Write(this.latestColorPNG, 0, this.latestColorPNG.Length);
+                            debugPNG.Close();
 
                             // respond with the colour image (PNG)
                             try
@@ -154,22 +193,6 @@ namespace MinorityReport
                                     Console.Write("Invalid data.\n");
                                     success = false;
                                 }
-                                else
-                                {
-                                    // Store the sent coordinates
-                                    this.canvasCoords = new Draw.PointF[4];
-                                    int i = 0;
-                                    Console.Write("Coordinates got:\n");
-                                    foreach (IList<float> p in postData.points)
-                                    {
-                                        this.canvasCoords[i] = new Draw.PointF(p[0], p[1]);
-                                        Console.Write("[{0}, {1}]\n", this.canvasCoords[i].X, this.canvasCoords[i].Y);
-                                        i += 1;
-                                    }
-
-                                    // Calculate perspective matrix
-                                    this.canvasCoords = ImageWarping.OrderPoints(this.canvasCoords);
-                                }
                             }
                             catch (JsonException e)
                             {
@@ -181,7 +204,7 @@ namespace MinorityReport
                             {
                                 // Handle errors
                                 context.Response.StatusCode = (int)HttpStatusCode.BadRequest;
-                                string body = "Malformed JSON received";
+                                string body = "Bad request innit haha";
                                 this.WriteStringResponse(context, body);
                             }
                             else
@@ -192,6 +215,11 @@ namespace MinorityReport
                                 {
                                     // Store the sent ID
                                     this.instanceID = postData.instanceID;
+
+                                    // Store the server details (assume port 8088).
+                                    this.Server = context.Request.RemoteEndPoint.Address.ToString();
+                                    this.Port = 8088;
+                                    Console.Write("Data POSTed from {0}.\n", this.Server);
 
                                     // echo ID
                                     CalibratePOSTData respData = new CalibratePOSTData();
@@ -208,25 +236,54 @@ namespace MinorityReport
 
                                 // Store the sent coordinates
                                 this.canvasCoords = new Draw.PointF[4];
-                                int i = 0;
                                 Console.Write("Coordinates got:\n");
-                                foreach (IList<float> p in postData.points)
+                                for (int i = 0; i < postData.points.Count; ++i)
                                 {
+                                    IList<float> p = postData.points[i];
                                     this.canvasCoords[i] = new Draw.PointF(p[0], p[1]);
                                     Console.Write("[{0}, {1}]\n", this.canvasCoords[i].X, this.canvasCoords[i].Y);
-                                    i += 1;
                                 }
 
                                 // Calculate perspective matrix
                                 this.canvasCoords = ImageWarping.OrderPoints(this.canvasCoords);
                                 Draw.PointF[] imageCorners = new Draw.PointF[4] {
                                     new Draw.PointF(0, 0),
-                                    new Draw.PointF(0, this.latestPNGDimensions.Y),
-                                    new Draw.PointF(this.latestPNGDimensions.X, 0),
-                                    new Draw.PointF(this.latestPNGDimensions.X, this.latestPNGDimensions.Y)
+                                    new Draw.PointF(0, this.latestPNGDimensions.Y - 1),
+                                    new Draw.PointF(this.latestPNGDimensions.X - 1, 0),
+                                    new Draw.PointF(this.latestPNGDimensions.X - 1, this.latestPNGDimensions.Y - 1)
                                 };
                                 imageCorners = ImageWarping.OrderPoints(imageCorners);
-                                Matrix<float> perspectiveMatrix = ImageWarping.GetPerspectiveTransform(imageCorners, this.canvasCoords);
+                                this.perspectiveMatrix = ImageWarping.GetPerspectiveTransform(this.canvasCoords, imageCorners);
+
+                                // Console.Write("Matrix generated:\n");
+                                // for (int i = 0; i < 3; ++i)
+                                // {
+                                //     for (int j = 0; j < 3; ++j)
+                                //     {
+                                //         Console.Write("{0} ", perspectiveMatrix[i, j]);
+                                //     }
+                                //     Console.Write("\n");
+                                // }
+
+                                // Console.Write("Transforming canvas coords.\n");
+                                // foreach (Draw.PointF coord in this.canvasCoords)
+                                // {
+                                //     Vector<float> vec = CreateVector.Dense<float>(3);
+                                //     vec[0] = coord.X;
+                                //     vec[1] = coord.Y;
+                                //     vec[2] = 1;
+                                //     Vector<float> output = perspectiveMatrix.Multiply(vec);
+                                //     foreach (float thing in vec)
+                                //     {
+                                //         Console.Write("{0}, ", thing);
+                                //     }
+                                //     Console.Write("\n");
+                                //     foreach (float thing in output)
+                                //     {
+                                //         Console.Write("{0}, ", thing);
+                                //     }
+                                //     Console.Write("\n");
+                                // }
                             }
                         }
                     }
@@ -261,6 +318,38 @@ namespace MinorityReport
             finally
             {
                 listener.Stop();
+            }
+        }
+
+        private Vector<float> TransformToCanvasSpace(Vector<float> vec)
+        {
+            if (this.perspectiveMatrix != null)
+            {
+                Vector<float> output = this.perspectiveMatrix.Multiply(vec);
+                // Divide by third, homogeneous, coordinate
+                output.Divide(output[2]);
+                return output;
+            }
+            else
+            {
+                return null;
+            }
+        }
+
+        private bool IsVectorObstructingCanvas(Vector<float> transformedVec)
+        {
+            // this function expects transformedVec to have 3 components; the 2D components have already been divided
+            // through by the 3rd ("homogeneous") component.
+
+            // this is ridiculously simple and i'm just lazy
+            if (transformedVec[0] > 0 && transformedVec[0] < 1920 &&
+                transformedVec[1] > 0 && transformedVec[1] < 1080)
+            {
+                return true;
+            }
+            else
+            {
+                return false;
             }
         }
 
@@ -314,67 +403,147 @@ namespace MinorityReport
                     return;
                 }
 
-                // Console.Write(DateTime.Now.ToString("o") + "\tbody index frame\n");
-
-                if (this.samplingBodyData)
+                if (this.samplingBodyData && this.perspectiveMatrix != null)
                 {
-                    // Initialize our bounding boxes as null.
-                    IList<BodyBoundingBox> boundingBoxes = new BodyBoundingBox[this.sensor.BodyFrameSource.BodyCount];
-                    for (int i = 0; i < boundingBoxes.Count; ++i)
-                    {
-                        boundingBoxes[i] = null;
-                    }
-
                     // Copy frame into accessible buffer
                     byte[] frameBuf = new byte[frame.FrameDescription.Width * frame.FrameDescription.Height];
                     frame.CopyFrameDataToArray(frameBuf);
 
-                    // Iterate over every pixel, top to bottom, left to right
-                    for (int y = 0; y < frame.FrameDescription.Height; ++y)
+                    bool obscured = false;
+
+                    string kekname = string.Format("KEK-{0}.txt", DateTime.Now.ToString("hh-mm-ss-ffffff"));
+                    FileStream debugOut = new FileStream(kekname, FileMode.CreateNew);
+
+                    string matrix = "";
+                    for (int j = 0; j < 3; ++j)
                     {
-                        for (int x = 0; x < frame.FrameDescription.Width; ++x)
+                        for (int i = 0; i < 3; ++i)
+                        {
+                            matrix += string.Format("{0}, ", this.perspectiveMatrix[i, j]);
+                        }
+                        matrix += "\n\n";
+                    }
+                    debugOut.Write(Encoding.UTF8.GetBytes(matrix), 0, matrix.Length);
+
+                    // Iterate over every pixel, top to bottom, left to right
+                    for (int y = 0; y < frame.FrameDescription.Height && !obscured; ++y)
+                    {
+                        for (int x = 0; x < frame.FrameDescription.Width && !obscured; ++x)
                         {
                             // Get the value at the pixel
                             int bufIdx = y * frame.FrameDescription.Width + x;
                             int bodyIdx = frameBuf[bufIdx];
-                            if (bodyIdx >= 0 && bodyIdx < boundingBoxes.Count)
+                            if (bodyIdx <= 5 && bodyIdx >= 0)
                             {
-                                // The pixel is part of a body, so record
-                                if (boundingBoxes[bodyIdx] == null)
+                                // is this within the canvas?
+                                // float ratioX = 686 / 512;
+                                // float ratioY = 567 / 424;
+                                float ratioX = 2.86f;
+                                float ratioY = 2.86f;
+                                float offsetX = 253;
+                                float offsetY = -35;
+
+                                float xf = x * ratioX + offsetX;
+                                float yf = y * ratioY + offsetY;
+                                Vector<float> v = CreateVector.Dense<float>(3);
+                                v[0] = xf;
+                                v[1] = yf;
+                                v[2] = 1;
+
+                                Vector<float> vout = this.TransformToCanvasSpace(v);
+
+                                string line = string.Format("({0}, {1}) -> ({2}, {3})\n",
+                                    x, y,
+                                    vout[0], vout[1]);
+                                debugOut.Write(Encoding.UTF8.GetBytes(line), 0, line.Length);
+
+                                if (this.IsVectorObstructingCanvas(vout))
                                 {
-                                    // Create a new bounding box since this is the first time we have seen the body
-                                    boundingBoxes[bodyIdx] = new BodyBoundingBox();
-                                    boundingBoxes[bodyIdx].bodyIndex = bodyIdx;
-
-                                    // Set up initial coordinates.
-                                    //
-                                    // Note: topLeft.y is guaranteed to be this coordinate because we are scanning from
-                                    // top to bottom, so we never try to update it later.
-                                    //
-                                    // Note: the maximum values are set to absolute minimum so that they are later
-                                    // guaranteed to be updated.
-                                    boundingBoxes[bodyIdx].topLeft = new System.Windows.Point(x, y);
-                                    boundingBoxes[bodyIdx].bottomRight = new System.Windows.Point(x + 1, y + 1);
-                                }
-                                else
-                                {
-                                    // Update the minimum x-coordinate if it is a minimum.
-                                    boundingBoxes[bodyIdx].topLeft.X = Math.Min(boundingBoxes[bodyIdx].topLeft.X, x);
-
-                                    // Update the maximum x-coordinate if it is a maximum.
-                                    boundingBoxes[bodyIdx].bottomRight.X = Math.Max(boundingBoxes[bodyIdx].bottomRight.X, x);
-
-                                    // The y-coordinate is guaranteed to be a maximum since we are scanning top to bottom.
-                                    boundingBoxes[bodyIdx].bottomRight.Y = y;
+                                    debugOut.Write(Encoding.UTF8.GetBytes("Obscured.\n"), 0, "Obscured.\n".Length);
+                                    obscured = true;
+                                    break;
                                 }
                             }
                         }
                     }
 
-                    string boundingBoxesJson = this.SerializeBoundingBoxes(boundingBoxes);
-                    this.SendBoundingBoxes(boundingBoxesJson);
+                    debugOut.Close();
+                    if (obscured != this.boardObscured)
+                    {
+                        if (this.BoardObscuredChanged != null) this.BoardObscuredChanged.Invoke(this, obscured);
+                    }
+                    this.boardObscured = obscured;
+
+                    // if (this.perspectiveMatrix != null)
+                    // {
+                    //     bool obscured = false;
+                    //     foreach (BodyBoundingBox bounds in boundingBoxes)
+                    //     {
+                    //         if (bounds != null)
+                    //         {
+                    //             // Console.Write("transforming coords\n");
+
+                    //             Vector<float> tl, tr, bl, br;
+                    //             tl = this.PointFToVector(bounds.topLeft);
+                    //             br = this.PointFToVector(bounds.bottomRight);
+
+                    //             float ratioX = 686 / 512;
+                    //             float ratioY = 567 / 424;
+                    //             float offsetX = 137;
+                    //             float offsetY = -19;
+
+                    //             tl[0] *= ratioX;
+                    //             br[0] *= ratioX;
+
+                    //             tl[1] *= ratioY;
+                    //             br[1] *= ratioY;
+
+                    //             tl[0] += offsetX;
+                    //             br[0] += offsetX;
+
+                    //             tl[1] += offsetY;
+                    //             br[1] += offsetY;
+
+                    //             tl = this.TransformToCanvasSpace(tl);
+                    //             br = this.TransformToCanvasSpace(br);
+
+                    //             tr = CreateVector.Dense<float>(3);
+                    //             tr[0] = br[0];
+                    //             tr[1] = tl[1];
+                    //             tr[2] = 1;
+
+                    //             bl = CreateVector.Dense<float>(3);
+                    //             bl[0] = tl[0];
+                    //             bl[1] = br[1];
+                    //             tr[2] = 1;
+
+                    //             Console.Write("{0}, {1}\n", tl[0], tl[1]);
+
+                    //             if (this.IsVectorObstructingCanvas(tl) ||
+                    //                 this.IsVectorObstructingCanvas(tr) ||
+                    //                 this.IsVectorObstructingCanvas(bl) ||
+                    //                 this.IsVectorObstructingCanvas(br))
+                    //             {
+                    //                 obscured = true;
+                    //                 break;
+                    //             }
+                    //         }
+                    //     }
+
+                    //     string boundingBoxesJson = this.SerializeBoundingBoxes(boundingBoxes, obscured);
+                    //     this.SendBoundingBoxes(boundingBoxesJson);
+                    // }
                 }
             }
+        }
+
+        private Vector<float> PointFToVector(Draw.PointF point)
+        {
+            Vector<float> v = CreateVector.Dense<float>(3);
+            v[0] = point.X;
+            v[1] = point.Y;
+            v[2] = 1;
+            return v;
         }
 
         private void SendBoundingBoxes(string data)
@@ -436,7 +605,7 @@ namespace MinorityReport
             }
         }
 
-        private string SerializeBoundingBoxes(IList<BodyBoundingBox> boundingBoxes)
+        private string SerializeBoundingBoxes(IList<BodyBoundingBox> boundingBoxes, bool obscuredCanvas)
         {
             // Setup serialization into a string
             TextWriter stringWriter = new StringWriter();
@@ -446,6 +615,11 @@ namespace MinorityReport
             // Make it neat
             jsonWriter.Formatting = Formatting.Indented;
             jsonSerializer.Formatting = Formatting.Indented;
+
+            jsonWriter.WriteStartObject();
+
+            jsonWriter.WritePropertyName("canvasObscured");
+            jsonWriter.WriteValue(obscuredCanvas);
 
             jsonWriter.WritePropertyName("bodies");
             jsonWriter.WriteStartArray();
@@ -458,6 +632,7 @@ namespace MinorityReport
             }
 
             jsonWriter.WriteEndArray();
+            jsonWriter.WriteEndObject();
 
             if (boundingBoxes.Where(x => x != null).Count() > 1)
             {

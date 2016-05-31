@@ -13,6 +13,7 @@ def databaseHandler():
     return g.databaseHandler()
 
 import src.server.ui
+import src.server.kinect
 import src.server.api.users_api
 import src.server.api.sessions_api
 import src.server.api.instanceConfiguration_api
