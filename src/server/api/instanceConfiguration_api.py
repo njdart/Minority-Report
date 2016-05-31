@@ -108,6 +108,17 @@ def update_instanceConfig(id, details):
 
     emit('update_instanceConfig', config.update().as_object())
 
+@socketio.on('update_instanceConfig_coords')
+def update_instanceConfig_coords(id, data):
+    config = InstanceConfiguration.get(id=id)
+    config.topLeftY = data["topLeft"]["y"]
+    config.topRightX = data["topRight"]["x"]
+    config.topRightY = data["topRight"]["y"]
+    config.bottomRightX = data["bottomRight"]["x"]
+    config.bottomRightY = data["bottomRight"]["y"]
+    config.bottomLeftX = data["bottomLeft"]["x"]
+    config.bottomLeftY = data["bottomLeft"]["y"]
+    config.update()
 
 @socketio.on('calibrate_instance_configuration')
 def calibrate_instance_configuration(instanceConfigId):
