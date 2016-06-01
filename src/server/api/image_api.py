@@ -63,7 +63,7 @@ def autoExtractCanvas(image_id):
 @socketio.on('get_image')
 def get_image(instanceConfigurationId, uri):
     print('Getting image from URI ', uri)
-    emit('blank_canvas_black', broadcast=True)
+    emit('blank_canvas_black', instanceConfigurationId)
     sleep(0.5)
     image = Image.from_uri(uri=uri, instanceConfigurationId=instanceConfigurationId)
 
