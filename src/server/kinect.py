@@ -19,12 +19,13 @@ def boardObscured():
 
     if request.get_json()["boardObscured"]:
         print("board obscured")
+        socketio.emit("body_detected", broadcast=True)
         return jsonify({"message": "nothing to do"}), 200
 
     print("board not obscured")
-
+    socketio.emit("body_not_detected", broadcast=True)
     # ignore message if global flag is set
-    if not GetKinectEnable():
+    if not kinectEnable:
         print("ignoring (kinectEnable = False)")
         return jsonify({"message": "echo that. ignoring due to kinectEnable flag."}), 200
 
@@ -42,7 +43,7 @@ def boardObscured():
 
     # blank canvas
     socketio.emit("blank_canvas_black", config.id, broadcast=True)
-    time.sleep(0.25)
+    time.sleep(0.5)
 
     # take picture
     id = config.get_camera_image()
