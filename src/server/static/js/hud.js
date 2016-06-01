@@ -4,6 +4,8 @@ var latestCanvas;
 var userId;
 var sessionId;
 
+var postitIdToCoords;
+
 var POSTIT_SIZE = 100;
 
 $(function() {
@@ -28,11 +30,12 @@ $(function() {
                 socket.on('get_latest_canvas_by_session', function(canvas) {
                     console.log("HUD initial canvas received");
                     if(canvas == null){
-                        console.log("(Received canvas is empty, not calling resizeCanvas() and redrawCanvas())");
+                        console.log("(Received canvas is empty, not calling mapPostitsToCanvasCoords(), resizeCanvas() and redrawCanvas())");
                     }
                     else {
                         console.log(canvas);
                         latestCanvas = canvas;
+                        mapPostitsToCanvasCoords();
                         resizeCanvas();
                     }
                 });
@@ -40,10 +43,10 @@ $(function() {
                 socket.emit('get_latest_canvas_by_session', sessionId);
             });
 
-            socket.on("create_canvas", function(canvas){
+            /*socket.on("create_canvas", function(canvas){
                 console.log("create_canvas message received");
                 if(canvas == null){
-                    console.log("(Received canvas is empty, not calling resizeCanvas() and redrawCanvas())");
+                    console.log("(Received canvas is empty, not calling mapPostitsToCanvasCoords(), resizeCanvas() and redrawCanvas())");
                 }
                 else {
                     //console.log(canvas);
@@ -54,7 +57,7 @@ $(function() {
                     console.log("Requesting latest canvas");
                     socket.emit('get_latest_canvas_by_session', sessionId);
                 }
-            });
+            });*/
 
             socket.on("blank_canvas_black", function () {
                 console.log("received blank_canvas_black message, blacking out canvas");
@@ -98,6 +101,18 @@ function drawCanvasBin()
     hudContext.drawImage(drawing, 0,0);
 }
 
+function mapPostitsToCanvasCoords()
+{
+    console.log("mapPostitsToCanvasCoords(): mapping " + latestCanvas.postits.length + " postit ids to coords");
+    postitIdToCoords = {};
+    $.each(latestCanvas.postits, function(index, postit)
+    {
+       postitIdToCoords[postit.id] = postit.displayPos;
+       postitIdToCoords[postit.id].x = postitIdToCoords[postit.id].x - POSTIT_SIZE/2;
+       postitIdToCoords[postit.id].y = postitIdToCoords[postit.id].y - POSTIT_SIZE/2;
+    });
+}
+
 function redrawCanvas() {
     function drawPostitAroundCoords(x, y, ctx)
     {
@@ -127,33 +142,12 @@ function redrawCanvas() {
     }
     else
     {
-        console.log("redrawCanvas(): mapping " + latestCanvas.postits.length + " postit ids to coords");
-        postitIdToCoords = {};
-        $.each(latestCanvas.postits, function(index, postit)
-        {
-           postitIdToCoords[postit.id] = postit.displayPos;
-           postitIdToCoords[postit.id].x = postitIdToCoords[postit.id].x - POSTIT_SIZE/2;
-           postitIdToCoords[postit.id].y = postitIdToCoords[postit.id].y - POSTIT_SIZE/2;
-        });
+
     }
 
     if(latestCanvas.connections == undefined || latestCanvas.connections == null)
     {
         console.log("redrawCanvas(): No connections on canvas");
-    }
-    else
-    {
-        console.log("redrawCanvas(): drawing " + latestCanvas.connections.length + " connections");
-        $.each(latestCanvas.connections, function(index, connection)
-        {
-            console.log("   connection from " + connection.start + " to " + connection.finish);
-            hudContext.strokeStyle = "#0000FF";
-            hudContext.beginPath();
-            hudContext.moveTo(postitIdToCoords[connection.start].x + POSTIT_SIZE/2, postitIdToCoords[connection.start].y + POSTIT_SIZE/2);
-            hudContext.lineTo(postitIdToCoords[connection.finish].x + POSTIT_SIZE/2, postitIdToCoords[connection.finish].y + POSTIT_SIZE/2);
-            hudContext.closePath();
-            hudContext.stroke();
-        });
     }
 
     if(latestCanvas.postits == undefined || latestCanvas.postits == null)
