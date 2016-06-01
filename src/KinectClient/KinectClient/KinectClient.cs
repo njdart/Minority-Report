@@ -42,15 +42,10 @@ namespace MinorityReport
         private Timer sensorAvailableTimer;
         private bool sensorTimerElapsed = false;
 
-        private Timer boardNonObscuredTimer;
-
         public string Server { get; set; } = null;
 
         public int Port { get; set; } = 8088;
 
-        // public event EventHandler ServerDisconnected;
-        // public event EventHandler<BoundingBoxesSampledEventArgs> BoundingBoxesSampled;
-        // public event EventHandler<ColorFrameSampledEventArgs> ColorFrameSampled;
         public event EventHandler<bool> BoardObscuredChanged;
 
         public KinectClient(string server, int port)
@@ -59,10 +54,6 @@ namespace MinorityReport
             this.sensorAvailableTimer = new Timer(5000);
             this.sensorAvailableTimer.Elapsed += this.SensorAvailableTimer_Elapsed;
             this.sensorAvailableTimer.Start();
-
-            // If this timer elapses, the server is signalled that the board is non-obscured.
-            this.boardNonObscuredTimer = new Timer(500);
-            this.boardNonObscuredTimer.Elapsed += this.BoardNonObscuredTimer_Elapsed;
 
             this.sensor = KinectSensor.GetDefault();
             this.sensor.IsAvailableChanged += Sensor_IsAvailableChanged;
@@ -281,36 +272,6 @@ namespace MinorityReport
                                 };
                                 imageCorners = ImageWarping.OrderPoints(imageCorners);
                                 this.perspectiveMatrix = ImageWarping.GetPerspectiveTransform(this.canvasCoords, imageCorners);
-
-                                // Console.Write("Matrix generated:\n");
-                                // for (int i = 0; i < 3; ++i)
-                                // {
-                                //     for (int j = 0; j < 3; ++j)
-                                //     {
-                                //         Console.Write("{0} ", perspectiveMatrix[i, j]);
-                                //     }
-                                //     Console.Write("\n");
-                                // }
-
-                                // Console.Write("Transforming canvas coords.\n");
-                                // foreach (Draw.PointF coord in this.canvasCoords)
-                                // {
-                                //     Vector<float> vec = CreateVector.Dense<float>(3);
-                                //     vec[0] = coord.X;
-                                //     vec[1] = coord.Y;
-                                //     vec[2] = 1;
-                                //     Vector<float> output = perspectiveMatrix.Multiply(vec);
-                                //     foreach (float thing in vec)
-                                //     {
-                                //         Console.Write("{0}, ", thing);
-                                //     }
-                                //     Console.Write("\n");
-                                //     foreach (float thing in output)
-                                //     {
-                                //         Console.Write("{0}, ", thing);
-                                //     }
-                                //     Console.Write("\n");
-                                // }
                             }
                         }
                     }
@@ -479,66 +440,6 @@ namespace MinorityReport
                         if (this.BoardObscuredChanged != null) this.BoardObscuredChanged.Invoke(this, obscured);
                     }
                     this.boardObscured = obscured;
-
-                    // if (this.perspectiveMatrix != null)
-                    // {
-                    //     bool obscured = false;
-                    //     foreach (BodyBoundingBox bounds in boundingBoxes)
-                    //     {
-                    //         if (bounds != null)
-                    //         {
-                    //             // Console.Write("transforming coords\n");
-
-                    //             Vector<float> tl, tr, bl, br;
-                    //             tl = this.PointFToVector(bounds.topLeft);
-                    //             br = this.PointFToVector(bounds.bottomRight);
-
-                    //             float ratioX = 686 / 512;
-                    //             float ratioY = 567 / 424;
-                    //             float offsetX = 137;
-                    //             float offsetY = -19;
-
-                    //             tl[0] *= ratioX;
-                    //             br[0] *= ratioX;
-
-                    //             tl[1] *= ratioY;
-                    //             br[1] *= ratioY;
-
-                    //             tl[0] += offsetX;
-                    //             br[0] += offsetX;
-
-                    //             tl[1] += offsetY;
-                    //             br[1] += offsetY;
-
-                    //             tl = this.TransformToCanvasSpace(tl);
-                    //             br = this.TransformToCanvasSpace(br);
-
-                    //             tr = CreateVector.Dense<float>(3);
-                    //             tr[0] = br[0];
-                    //             tr[1] = tl[1];
-                    //             tr[2] = 1;
-
-                    //             bl = CreateVector.Dense<float>(3);
-                    //             bl[0] = tl[0];
-                    //             bl[1] = br[1];
-                    //             tr[2] = 1;
-
-                    //             Console.Write("{0}, {1}\n", tl[0], tl[1]);
-
-                    //             if (this.IsVectorObstructingCanvas(tl) ||
-                    //                 this.IsVectorObstructingCanvas(tr) ||
-                    //                 this.IsVectorObstructingCanvas(bl) ||
-                    //                 this.IsVectorObstructingCanvas(br))
-                    //             {
-                    //                 obscured = true;
-                    //                 break;
-                    //             }
-                    //         }
-                    //     }
-
-                    //     string boundingBoxesJson = this.SerializeBoundingBoxes(boundingBoxes, obscured);
-                    //     this.SendBoundingBoxes(boundingBoxesJson);
-                    // }
                 }
             }
         }

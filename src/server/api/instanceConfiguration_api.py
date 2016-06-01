@@ -148,5 +148,4 @@ def toggle_kinect_enable():
     ToggleKinectEnable()
     print("kinectEnable = {}".format(GetKinectEnable()))
 
-
 print('Registered Instance Configuration API methods')
