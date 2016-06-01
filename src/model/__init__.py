@@ -3,3 +3,11 @@
 #
 # The flag can be toggled by emitting toggle_kinect_enable.
 kinectEnable = True
+
+def ToggleKinectEnable():
+    global kinectEnable
+    kinectEnable = not kinectEnable
+
+def GetKinectEnable():
+    global kinectEnable
+    return kinectEnable

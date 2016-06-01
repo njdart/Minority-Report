@@ -1,5 +1,5 @@
 from flask.ext.socketio import emit
-from src.model import kinectEnable
+from src.model import (ToggleKinectEnable, GetKinectEnable)
 from src.model.InstanceConfiguration import InstanceConfiguration
 from src.server import socketio
 from time import sleep
@@ -145,8 +145,8 @@ def get_latest_image_id_by_instance_configuration(instanceConfigId):
 
 @socketio.on('toggle_kinect_enable')
 def toggle_kinect_enable():
-    kinectEnable = not kinectEnable
-    print("kinectEnable = {}".format(kinectEnable))
+    ToggleKinectEnable()
+    print("kinectEnable = {}".format(GetKinectEnable()))
 
 
 print('Registered Instance Configuration API methods')

@@ -1,6 +1,6 @@
 from flask import request
 from flask.json import jsonify
-from src.model import kinectEnable
+from src.model import (GetKinectEnable, ToggleKinectEnable)
 from src.model.Image import Image
 from src.model.InstanceConfiguration import InstanceConfiguration
 from src.model.Session import Session
@@ -18,13 +18,13 @@ def boardObscured():
     print(request.data)
 
     if request.get_json()["boardObscured"]:
-        print("board not obscured")
+        print("board obscured")
         return jsonify({"message": "nothing to do"}), 200
 
-    print("board obscured")
+    print("board not obscured")
 
     # ignore message if global flag is set
-    if not kinectEnable:
+    if not GetKinectEnable():
         print("ignoring (kinectEnable = False)")
         return jsonify({"message": "echo that. ignoring due to kinectEnable flag."}), 200
 
