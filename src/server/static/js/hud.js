@@ -179,7 +179,7 @@ function redrawCanvas() {
                     hudContext.strokeStyle = "#FFFF00";
                     hudContext.strokeWidth = 20;
                     hudContext.strokeRect(postit.displayPos.x - OFFSET, postit.displayPos.y - OFFSET, evt.currentTarget.width, evt.currentTarget.height)
-                    hudContext.drawImage(evt.currentTarget - OFFSET, postit.displayPos.x, postit.displayPos.y - OFFSET);
+                    hudContext.drawImage(evt.currentTarget, postit.displayPos.x - OFFSET, postit.displayPos.y - OFFSET);
                 }
                 postitImage.src = "/api/postit/" + postit.id;
             }
