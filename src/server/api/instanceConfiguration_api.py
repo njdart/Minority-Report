@@ -1,7 +1,8 @@
 from flask.ext.socketio import emit
+from src.model import kinectEnable
+from src.model.InstanceConfiguration import InstanceConfiguration
 from src.server import socketio
 from time import sleep
-from src.model.InstanceConfiguration import InstanceConfiguration
 
 
 @socketio.on('create_instance_configuration')
@@ -131,8 +132,7 @@ def calibrate_instance_configuration(instanceConfigId):
     ic = InstanceConfiguration.get(id=instanceConfigId).calibrate().update()
     print('Calibrated')
     emit('calibrate_instance_configuration', ic.as_object())
-    socketio.emit('blank_canvas_black', instanceConfigId, broadcast=True)
-
+    emit('blank_canvas_black', instanceConfigId, broadcast=True)
 
 @socketio.on('purge_instance_configurations')
 def purge_instance_configurations():
@@ -142,6 +142,11 @@ def purge_instance_configurations():
 def get_latest_image_id_by_instance_configuration(instanceConfigId):
     ic = InstanceConfiguration.get(instanceConfigId)
     emit('get_latest_image_id_by_instance_configuration', ic.get_latest_image_id())
+
+@socketio.on('toggle_kinect_enable')
+def toggle_kinect_enable():
+    kinectEnable = not kinectEnable
+    print("kinectEnable = {}".format(kinectEnable))
 
 
 print('Registered Instance Configuration API methods')

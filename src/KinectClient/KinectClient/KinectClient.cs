@@ -438,20 +438,6 @@ namespace MinorityReport
 
                     bool obscured = false;
 
-                    string kekname = string.Format("KEK-{0}.txt", DateTime.Now.ToString("hh-mm-ss-ffffff"));
-                    FileStream debugOut = new FileStream(kekname, FileMode.CreateNew);
-
-                    string matrix = "";
-                    for (int j = 0; j < 3; ++j)
-                    {
-                        for (int i = 0; i < 3; ++i)
-                        {
-                            matrix += string.Format("{0}, ", this.perspectiveMatrix[i, j]);
-                        }
-                        matrix += "\n\n";
-                    }
-                    debugOut.Write(Encoding.UTF8.GetBytes(matrix), 0, matrix.Length);
-
                     // Iterate over every pixel, top to bottom, left to right
                     for (int y = 0; y < frame.FrameDescription.Height && !obscured; ++y)
                     {
@@ -479,14 +465,8 @@ namespace MinorityReport
 
                                 Vector<float> vout = this.TransformToCanvasSpace(v);
 
-                                string line = string.Format("({0}, {1}) -> ({2}, {3})\n",
-                                    x, y,
-                                    vout[0], vout[1]);
-                                debugOut.Write(Encoding.UTF8.GetBytes(line), 0, line.Length);
-
                                 if (this.IsVectorObstructingCanvas(vout))
                                 {
-                                    debugOut.Write(Encoding.UTF8.GetBytes("Obscured.\n"), 0, "Obscured.\n".Length);
                                     obscured = true;
                                     break;
                                 }
@@ -494,7 +474,6 @@ namespace MinorityReport
                         }
                     }
 
-                    debugOut.Close();
                     if (obscured != this.boardObscured)
                     {
                         if (this.BoardObscuredChanged != null) this.BoardObscuredChanged.Invoke(this, obscured);

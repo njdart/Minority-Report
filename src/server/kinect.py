@@ -1,13 +1,13 @@
-from src.server import app
 from flask import request
 from flask.json import jsonify
-from src.model.InstanceConfiguration import InstanceConfiguration
-from src.server.api.image_api import generate_canvas
+from src.model import kinectEnable
 from src.model.Image import Image
-import uuid
+from src.model.InstanceConfiguration import InstanceConfiguration
 from src.model.Session import Session
 from src.server import (app, socketio)
+from src.server.api.image_api import generate_canvas
 import time
+import uuid
 
 @app.route('/boardObscured', methods=['GET', 'POST'])
 def boardObscured():
@@ -22,6 +22,11 @@ def boardObscured():
         return jsonify({"message": "nothing to do"}), 200
 
     print("board obscured")
+
+    # ignore message if global flag is set
+    if not kinectEnable:
+        print("ignoring (kinectEnable = False)")
+        return jsonify({"message": "echo that. ignoring due to kinectEnable flag."}), 200
 
     # IP address 127.0.0.1 is localhost
     localhosts = ["127.0.0.1", "localhost", "::1"]

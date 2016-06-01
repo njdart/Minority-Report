@@ -4,9 +4,9 @@ var latestCanvas;
 var userId;
 var sessionId;
 
-var postitIdToCoords;
+var POSTIT_SIZE = 125;
 
-var POSTIT_SIZE = 100;
+var OFFSET = POSTIT_SIZE/2;
 
 $(function() {
     //var hudCanvas = $('.hudCanvas');
@@ -25,17 +25,24 @@ $(function() {
             $(window).on("resize", resizeCanvas);
             var socket = io();
             splash.hide();
+            
+            socket.on("body_detected", function(){
+                $("#body-detect-indicator").show();
+            });
+
+            socket.on("body_not_detected", function(){
+                $("#body-detect-indicator").hide();
+            });
 
             socket.on('connect', function() {
                 socket.on('get_latest_canvas_by_session', function(canvas) {
                     console.log("HUD initial canvas received");
                     if(canvas == null){
-                        console.log("(Received canvas is empty, not calling mapPostitsToCanvasCoords(), resizeCanvas() and redrawCanvas())");
+                        console.log("(Received canvas is empty, not calling resizeCanvas() and redrawCanvas())");
                     }
                     else {
                         console.log(canvas);
                         latestCanvas = canvas;
-                        mapPostitsToCanvasCoords();
                         resizeCanvas();
                     }
                 });
@@ -43,10 +50,10 @@ $(function() {
                 socket.emit('get_latest_canvas_by_session', sessionId);
             });
 
-            /*socket.on("create_canvas", function(canvas){
+            socket.on("create_canvas", function(canvas){
                 console.log("create_canvas message received");
                 if(canvas == null){
-                    console.log("(Received canvas is empty, not calling mapPostitsToCanvasCoords(), resizeCanvas() and redrawCanvas())");
+                    console.log("(Received canvas is empty, not calling resizeCanvas() and redrawCanvas())");
                 }
                 else {
                     //console.log(canvas);
@@ -57,7 +64,7 @@ $(function() {
                     console.log("Requesting latest canvas");
                     socket.emit('get_latest_canvas_by_session', sessionId);
                 }
-            });*/
+            });
 
             socket.on("blank_canvas_black", function (instanceConfigurationId) {
                 if(instanceConfigurationId == localStorage["instanceConfigurationId"])
@@ -65,6 +72,10 @@ $(function() {
                     console.log("received blank_canvas_black message, blacking out canvas");
                     setCanvasBlack();
                     clearCanvas();
+                }
+                else
+                {
+                    console.log("received blank_canvas_message, not for this client ("+ localStorage.getItem("instanceConfigurationId") + ") - target: " + instanceConfigurationId);
                 }
             });
 
@@ -74,6 +85,10 @@ $(function() {
                     console.log("received blank_canvas_white message, whiting out canvas");
                     setCanvasWhite();
                     clearCanvas();
+                }
+                else
+                {
+                    console.log("received blank_canvas_message, not for this client ("+ localStorage.getItem("instanceConfigurationId") + ") - target: " + instanceConfigurationId);
                 }
             });
         }
@@ -107,40 +122,43 @@ function drawCanvasBin()
     hudContext.drawImage(drawing, 0,0);
 }
 
-function mapPostitsToCanvasCoords()
-{
-    console.log("mapPostitsToCanvasCoords(): mapping " + latestCanvas.postits.length + " postit ids to coords");
-    postitIdToCoords = {};
-    $.each(latestCanvas.postits, function(index, postit)
-    {
-       postitIdToCoords[postit.id] = postit.displayPos;
-       postitIdToCoords[postit.id].x = postitIdToCoords[postit.id].x - POSTIT_SIZE/2;
-       postitIdToCoords[postit.id].y = postitIdToCoords[postit.id].y - POSTIT_SIZE/2;
-    });
-}
-
 function redrawCanvas() {
     hudContext.strokeWidth = 10;
     hudContext.lineWidth = 10;
     console.log("redrawCanvas(): redrawing canvas");
     drawCanvasBin();
 
+    if(latestCanvas.postits == undefined || latestCanvas.postits == null)
+    {
+        console.log("redrawCanvas(): No postits on canvas");
+    }
+    else
+    {
+        console.log("redrawCanvas(): mapping " + latestCanvas.postits.length + " postit ids to coords");
+        postitIdToCoords = {};
+        $.each(latestCanvas.postits, function(index, postit)
+        {
+           postitIdToCoords[postit.id] = postit.displayPos;
+        });
+    }
+
     if(latestCanvas.connections == undefined || latestCanvas.connections == null)
     {
         console.log("redrawCanvas(): No connections on canvas");
     }
+    else
     {
-         console.log("redrawCanvas(): drawing " + latestCanvas.connections.length + " connections");
-         $.each(latestCanvas.connections, function(index, connection)
-         {
-             console.log("   connection from " + connection.start + " to " + connection.finish);
-             hudContext.strokeStyle = "#0000FF";
-             hudContext.beginPath();
-             hudContext.moveTo(postitIdToCoords[connection.start].x + POSTIT_SIZE/2, postitIdToCoords[connection.start].y + POSTIT_SIZE/2);
-             hudContext.lineTo(postitIdToCoords[connection.finish].x + POSTIT_SIZE/2, postitIdToCoords[connection.finish].y + POSTIT_SIZE/2);
-             hudContext.closePath();
-             hudContext.stroke();
-         });
+        console.log("redrawCanvas(): drawing " + latestCanvas.connections.length + " connections");
+        $.each(latestCanvas.connections, function(index, connection)
+        {
+            console.log("   connection from " + connection.start + " to " + connection.finish);
+            hudContext.strokeStyle = "#0000FF";
+            hudContext.beginPath();
+            hudContext.moveTo(postitIdToCoords[connection.start].x + POSTIT_SIZE/2 - OFFSET, postitIdToCoords[connection.start].y + POSTIT_SIZE/2 - OFFSET);
+            hudContext.lineTo(postitIdToCoords[connection.finish].x + POSTIT_SIZE/2 - OFFSET, postitIdToCoords[connection.finish].y + POSTIT_SIZE/2 - OFFSET);
+            hudContext.closePath();
+            hudContext.stroke();
+        });
     }
 
     if(latestCanvas.postits == undefined || latestCanvas.postits == null)
@@ -156,20 +174,21 @@ function redrawCanvas() {
             if (postit.physicalFor == userId) {
                 //postit is physical for this user
                 hudContext.strokeStyle = "#00FF00";
-                hudContext.fillRect(postit.displayPos.x, postit.displayPos.y, POSTIT_SIZE, POSTIT_SIZE);
-                hudContext.strokeRect(postit.displayPos.x, postit.displayPos.y, POSTIT_SIZE, POSTIT_SIZE);
+                hudContext.fillRect(postit.displayPos.x - OFFSET, postit.displayPos.y - OFFSET, POSTIT_SIZE, POSTIT_SIZE);
+                hudContext.strokeRect(postit.displayPos.x - OFFSET, postit.displayPos.y - OFFSET, POSTIT_SIZE, POSTIT_SIZE);
             }
             else
             {
+
                 postitImage = new Image();
                 postitImage.src = "";
                 postitImage.onload = function(evt){
                     console.log("       drawing virtual " + evt.currentTarget.height + "x" + evt.currentTarget.width + " postit at (" + postit.displayPos.x + "," + postit.displayPos.y + ")");
                     hudContext.strokeStyle = "#FFFF00";
                     hudContext.strokeWidth = 20;
-                    hudContext.strokeRect(postit.displayPos.x, postit.displayPos.y, evt.currentTarget.width, evt.currentTarget.height);
-                    hudContext.drawImage(evt.currentTarget, postit.displayPos.x, postit.displayPos.y);
-                };
+                    hudContext.strokeRect(postit.displayPos.x - OFFSET, postit.displayPos.y - OFFSET, evt.currentTarget.width, evt.currentTarget.height)
+                    hudContext.drawImage(evt.currentTarget, postit.displayPos.x - OFFSET, postit.displayPos.y - OFFSET);
+                }
                 postitImage.src = "/api/postit/" + postit.id;
             }
 
@@ -181,6 +200,8 @@ var drawImageOnCanvas = function(image, x, y) {
     console.log("drawImageOnCanvas(): drawing image with size " + image.height + "x" + image.width + " to canvas at (" + x + "," + y + ")");
     hudContext.drawImage(image, x, y);
 }
+
+%
 
 function setCanvasBlack() {
     console.log("setCanvasBlack(): setting canvas background black");
