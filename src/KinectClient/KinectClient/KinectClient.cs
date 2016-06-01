@@ -1,27 +1,42 @@
-﻿using System;
+﻿using MathNet.Numerics.LinearAlgebra;
+using Microsoft.Kinect;
+using Newtonsoft.Json;
 using System.Collections.Generic;
-using System.Linq;
+using System.IO;
+using System.Net.Http;
+using System.Net;
 using System.Text;
 using System.Threading.Tasks;
-using Microsoft.Kinect;
 using System.Timers;
-using Newtonsoft.Json;
-using System.IO;
-using System.Windows;
-using System.Drawing.Imaging;
-using System.Runtime.InteropServices;
-using System.Windows.Media;
 using System.Windows.Media.Imaging;
-using System.Net;
-using MathNet.Numerics.LinearAlgebra;
+using System.Windows.Media;
+using System.Windows;
+using System;
 
+// Yes, this is ugly. Blame Microsoft for creating a class named PointF in two libraries that behave completely
+// differently. Seriously, why?
 using Draw = System.Drawing;
-using System.Net.Http;
 
 namespace MinorityReport
 {
     public class KinectClient
     {
+        private class Configuration
+        {
+            public IList<IList<float>> matrix;
+            public string host;
+            public int port;
+
+            public Configuration()
+            {
+                this.matrix = new IList<float>[3];
+                for (int i = 0; i < 3; ++i)
+                {
+                    this.matrix[i] = new float[3];
+                }
+            }
+        }
+
         private KinectSensor sensor = null;
         private BodyIndexFrameReader bodyIndexReader = null;
         private ColorFrameReader colorReader = null;
@@ -31,8 +46,8 @@ namespace MinorityReport
 
         private byte[] latestColorPNG = null;
         private Draw.PointF latestPNGDimensions;
-
         private Matrix<float> perspectiveMatrix = null;
+        private string matrixFile = "matrix.json";
 
         private string instanceID;
 
@@ -43,7 +58,6 @@ namespace MinorityReport
         private bool sensorTimerElapsed = false;
 
         public string Server { get; set; } = null;
-
         public int Port { get; set; } = 8088;
 
         public event EventHandler<bool> BoardObscuredChanged;
@@ -66,11 +80,15 @@ namespace MinorityReport
             this.samplingBodyData = true;
 
             this.BoardObscuredChanged += this.KinectClient_BoardObscuredChanged;
-        }
 
-        private void BoardNonObscuredTimer_Elapsed(object sender, ElapsedEventArgs e)
-        {
-            throw new NotImplementedException();
+            if (this.ConfigurationFromFile())
+            {
+                Console.Write("Calibrated perspective matrix retrieved from file saved in previous session.\n");
+            }
+            else
+            {
+                Console.Write("Kinect application is not calibrated.\n");
+            }
         }
 
         private void KinectClient_BoardObscuredChanged(object sender, bool obscured)
@@ -262,16 +280,17 @@ namespace MinorityReport
                                     Console.Write("[{0}, {1}]\n", this.canvasCoords[i].X, this.canvasCoords[i].Y);
                                 }
 
-                                // Calculate perspective matrix
+                                // Calculate perspective matrix, which maps between color space and canvas space.
                                 this.canvasCoords = ImageWarping.OrderPoints(this.canvasCoords);
-                                Draw.PointF[] imageCorners = new Draw.PointF[4] {
+                                Draw.PointF[] outputBounds = new Draw.PointF[4] {
                                     new Draw.PointF(0, 0),
-                                    new Draw.PointF(0, this.latestPNGDimensions.Y - 1),
-                                    new Draw.PointF(this.latestPNGDimensions.X - 1, 0),
-                                    new Draw.PointF(this.latestPNGDimensions.X - 1, this.latestPNGDimensions.Y - 1)
+                                    new Draw.PointF(0, 1079),
+                                    new Draw.PointF(1919, 0),
+                                    new Draw.PointF(1919, 1079)
                                 };
-                                imageCorners = ImageWarping.OrderPoints(imageCorners);
-                                this.perspectiveMatrix = ImageWarping.GetPerspectiveTransform(this.canvasCoords, imageCorners);
+                                outputBounds = ImageWarping.OrderPoints(outputBounds);
+                                this.perspectiveMatrix = ImageWarping.GetPerspectiveTransform(this.canvasCoords, outputBounds);
+                                this.ConfigurationToFile();
                             }
                         }
                     }
@@ -309,42 +328,93 @@ namespace MinorityReport
             }
         }
 
+        private bool ConfigurationFromFile()
+        {
+            FileStream f;
+
+            try
+            {
+                f = new FileStream(this.matrixFile, FileMode.Open);
+            }
+            catch (FileNotFoundException)
+            {
+                return false;
+            }
+
+            byte[] data = new byte[f.Length];
+            f.Read(data, 0, (int)f.Length);
+            Configuration config = JsonConvert.DeserializeObject<Configuration>(Encoding.UTF8.GetString(data));
+            if (config == null)
+            {
+                return false;
+            }
+
+            this.perspectiveMatrix = CreateMatrix.Dense<float>(3, 3);
+            for (int j = 0; j < 3; ++j)
+            {
+                for (int i = 0; i < 3; ++i)
+                {
+                    this.perspectiveMatrix[i, j] = config.matrix[i][j];
+                }
+            }
+            this.Server = config.host;
+            this.Port = config.port;
+            f.Close();
+
+            return true;
+        }
+
+        private void ConfigurationToFile()
+        {
+            FileStream f;
+            f = new FileStream(this.matrixFile, FileMode.Create);
+            Configuration config = new Configuration();
+            for (int j = 0; j < 3; ++j)
+            {
+                for (int i = 0; i < 3; ++i)
+                {
+                    config.matrix[i][j] = this.perspectiveMatrix[i, j];
+                }
+            }
+            config.host = this.Server;
+            config.port = this.Port;
+            byte[] data = Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(config));
+            f.Write(data, 0, data.Length);
+            f.Close();
+        }
+
         private Vector<float> TransformToCanvasSpace(Vector<float> vec)
         {
             if (this.perspectiveMatrix != null)
             {
+                // The perspective matrix maps between color frame space and canvas space. Points within the canvas area
+                // are mapped to coordinates between (0, 0) and (1920, 1080).
                 Vector<float> output = this.perspectiveMatrix.Multiply(vec);
-                // Divide by third, homogeneous, coordinate
+
+                // This is a 2D perspective transformation done in a "virtual" 3D space, so there is a 3rd coordinate
+                // involved. To convert the vector into the 2D canvas space, the 2D coordinates are divided by the
+                // third coordinate (named the "homogeneous" coordinate).
                 output.Divide(output[2]);
                 return output;
             }
-            else
-            {
-                return null;
-            }
+            return null;
         }
 
         private bool IsVectorObstructingCanvas(Vector<float> transformedVec)
         {
-            // this function expects transformedVec to have 3 components; the 2D components have already been divided
-            // through by the 3rd ("homogeneous") component.
-
-            // this is ridiculously simple and i'm just lazy
+            // This method expects transformedVec to contain 2D coordinates in canvas space.
             if (transformedVec[0] > 0 && transformedVec[0] < 1920 &&
                 transformedVec[1] > 0 && transformedVec[1] < 1080)
             {
                 return true;
             }
-            else
-            {
-                return false;
-            }
+            return false;
         }
 
         private void SensorAvailableTimer_Elapsed(object sender, ElapsedEventArgs e)
         {
             // If this timer has elapsed, the Kinect sensor has been unavailable for too long...
-            Console.Write("Kinect has been unavailable for {0} seconds.", ((Timer)sender).Interval / 1000);
+            Console.Write("Kinect has been unavailable for {0} seconds.\n", ((Timer)sender).Interval / 1000);
             this.sensorTimerElapsed = true;
         }
 
@@ -366,7 +436,6 @@ namespace MinorityReport
         private bool WriteStringResponse(HttpListenerContext context, string str)
         {
             byte[] data = Encoding.UTF8.GetBytes(str);
-            bool retval;
             try
             {
                 context.Response.ContentLength64 = data.Length;
@@ -374,10 +443,9 @@ namespace MinorityReport
             }
             catch (HttpListenerException)
             {
-                retval = false;
+                return false;
             }
-            retval = true;
-            return retval;
+            return true;
         }
 
         private void BodyIndexReader_FrameArrived(object sender, BodyIndexFrameArrivedEventArgs e)
@@ -404,30 +472,32 @@ namespace MinorityReport
                     {
                         for (int x = 0; x < frame.FrameDescription.Width && !obscured; ++x)
                         {
-                            // Get the value at the pixel
                             int bufIdx = y * frame.FrameDescription.Width + x;
                             int bodyIdx = frameBuf[bufIdx];
                             if (bodyIdx <= 5 && bodyIdx >= 0)
                             {
-                                // is this within the canvas?
-                                // float ratioX = 686 / 512;
-                                // float ratioY = 567 / 424;
+                                // Pixel is part of an identified body
                                 float ratioX = 2.86f;
                                 float ratioY = 2.86f;
                                 float offsetX = 253;
                                 float offsetY = -35;
 
+                                // This translates the pixel's coordinates from body index frame space to color frame
+                                // space (the two frames have different resolutions and fields of view).
                                 float xf = x * ratioX + offsetX;
                                 float yf = y * ratioY + offsetY;
+
+                                // Transform from color space to canvas space.
                                 Vector<float> v = CreateVector.Dense<float>(3);
                                 v[0] = xf;
                                 v[1] = yf;
                                 v[2] = 1;
-
                                 Vector<float> vout = this.TransformToCanvasSpace(v);
 
                                 if (this.IsVectorObstructingCanvas(vout))
                                 {
+                                    // The coordinate (in canvas space) lies within the bounds of the canvas; between
+                                    // (0, 0) and (1920, 1080). Therefore, a body is obscuring the board.
                                     obscured = true;
                                     break;
                                 }
@@ -437,25 +507,12 @@ namespace MinorityReport
 
                     if (obscured != this.boardObscured)
                     {
+                        // If the state has changed, raise the event.
                         if (this.BoardObscuredChanged != null) this.BoardObscuredChanged.Invoke(this, obscured);
                     }
                     this.boardObscured = obscured;
                 }
             }
-        }
-
-        private Vector<float> PointFToVector(Draw.PointF point)
-        {
-            Vector<float> v = CreateVector.Dense<float>(3);
-            v[0] = point.X;
-            v[1] = point.Y;
-            v[2] = 1;
-            return v;
-        }
-
-        private void SendBoundingBoxes(string data)
-        {
-            return;
         }
 
         private void ColorReader_FrameArrived(object sender, ColorFrameArrivedEventArgs e)
@@ -467,8 +524,6 @@ namespace MinorityReport
                     Console.Write("Null color frame acquired.\n");
                     return;
                 }
-
-                // Console.Write("color frame\n");
 
                 if (this.samplingColorFrames)
                 {
@@ -510,43 +565,6 @@ namespace MinorityReport
                     this.samplingColorFrames = false;
                 }
             }
-        }
-
-        private string SerializeBoundingBoxes(IList<BodyBoundingBox> boundingBoxes, bool obscuredCanvas)
-        {
-            // Setup serialization into a string
-            TextWriter stringWriter = new StringWriter();
-            JsonWriter jsonWriter = new JsonTextWriter(stringWriter);
-            JsonSerializer jsonSerializer = JsonSerializer.Create();
-
-            // Make it neat
-            jsonWriter.Formatting = Formatting.Indented;
-            jsonSerializer.Formatting = Formatting.Indented;
-
-            jsonWriter.WriteStartObject();
-
-            jsonWriter.WritePropertyName("canvasObscured");
-            jsonWriter.WriteValue(obscuredCanvas);
-
-            jsonWriter.WritePropertyName("bodies");
-            jsonWriter.WriteStartArray();
-
-            // Ignore null entries.
-            foreach (BodyBoundingBox boundingBox in boundingBoxes.Where(x => x != null))
-            {
-                // Conveniently, BodyBoundingBox fits the spec when serialized...
-                jsonSerializer.Serialize(jsonWriter, boundingBox);
-            }
-
-            jsonWriter.WriteEndArray();
-            jsonWriter.WriteEndObject();
-
-            if (boundingBoxes.Where(x => x != null).Count() > 1)
-            {
-                Console.Write(stringWriter.ToString() + "\n\n");
-            }
-
-            return stringWriter.ToString();
         }
     }
 }
