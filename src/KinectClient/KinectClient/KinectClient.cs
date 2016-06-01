@@ -230,6 +230,11 @@ namespace MinorityReport
                                     // Store the server details (assume port 8088).
                                     this.Server = context.Request.RemoteEndPoint.Address.ToString();
                                     this.Port = 8088;
+                                    if (this.Server == "::1")
+                                    {
+                                        // lel hack lel
+                                        this.Server = "127.0.0.1";
+                                    }
                                     Console.Write("Data POSTed from {0}.\n", this.Server);
 
                                     // echo ID

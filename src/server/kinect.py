@@ -7,6 +7,7 @@ from src.model.Image import Image
 import uuid
 from src.model.Session import Session
 from src.server import (app, socketio)
+import time
 
 @app.route('/boardObscured', methods=['GET', 'POST'])
 def boardObscured():
@@ -22,17 +23,28 @@ def boardObscured():
 
     print("board obscured")
 
-    # take picture if not obscured
-    config = InstanceConfiguration.get_config_by_kinect(request.remote_addr)
+    # IP address 127.0.0.1 is localhost
+    localhosts = ["127.0.0.1", "localhost", "::1"]
+    kinectHost = request.remote_addr
+    if kinectHost in localhosts:
+        kinectHost = "localhost"
+
+    # get instance config
+    config = InstanceConfiguration.get_config_by_kinect(kinectHost)
     if config is None:
         print("kinect's IP matches no instance configurations")
         return jsonify({"message": "your IP does not belong to any instance configurations."}), 400
 
+    # blank canvas
+    socketio.emit("blank_canvas_black", broadcast=True)
+    time.sleep(0.25)
+
+    # take picture
     id = config.get_camera_image()
     if id is None:
         return jsonify({"message": "failed to take photo."}), 500
 
-
+    # generate canvas from picture
     image = Image.get(id=id)
     current_canvas = Session.get(InstanceConfiguration.get(id=image.instanceConfigurationId).sessionId).get_latest_canvas()
     next_canvas_id = uuid.uuid4()
