@@ -42,6 +42,8 @@ namespace MinorityReport
         private Timer sensorAvailableTimer;
         private bool sensorTimerElapsed = false;
 
+        private Timer boardNonObscuredTimer;
+
         public string Server { get; set; } = null;
 
         public int Port { get; set; } = 8088;
@@ -55,8 +57,12 @@ namespace MinorityReport
         {
             // If this timer elapses, an exception is thrown in Run().
             this.sensorAvailableTimer = new Timer(5000);
-            this.sensorAvailableTimer.Elapsed += SensorAvailableTimer_Elapsed;
+            this.sensorAvailableTimer.Elapsed += this.SensorAvailableTimer_Elapsed;
             this.sensorAvailableTimer.Start();
+
+            // If this timer elapses, the server is signalled that the board is non-obscured.
+            this.boardNonObscuredTimer = new Timer(500);
+            this.boardNonObscuredTimer.Elapsed += this.BoardNonObscuredTimer_Elapsed;
 
             this.sensor = KinectSensor.GetDefault();
             this.sensor.IsAvailableChanged += Sensor_IsAvailableChanged;
@@ -69,6 +75,11 @@ namespace MinorityReport
             this.samplingBodyData = true;
 
             this.BoardObscuredChanged += this.KinectClient_BoardObscuredChanged;
+        }
+
+        private void BoardNonObscuredTimer_Elapsed(object sender, ElapsedEventArgs e)
+        {
+            throw new NotImplementedException();
         }
 
         private void KinectClient_BoardObscuredChanged(object sender, bool obscured)

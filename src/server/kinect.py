@@ -36,7 +36,7 @@ def boardObscured():
         return jsonify({"message": "your IP does not belong to any instance configurations."}), 400
 
     # blank canvas
-    socketio.emit("blank_canvas_black", broadcast=True)
+    socketio.emit("blank_canvas_black", config.id, broadcast=True)
     time.sleep(0.25)
 
     # take picture
