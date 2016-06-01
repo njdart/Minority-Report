@@ -4,7 +4,7 @@ var latestCanvas;
 var userId;
 var sessionId;
 
-var POSTIT_SIZE = 100;
+var POSTIT_SIZE = 125;
 
 var OFFSET = POSTIT_SIZE/2;
 
@@ -25,6 +25,14 @@ $(function() {
             $(window).on("resize", resizeCanvas);
             var socket = io();
             splash.hide();
+            
+            socket.on("body_detected", function(){
+                $("#body-detect-indicator").show();
+            });
+
+            socket.on("body_not_detected", function(){
+                $("#body-detect-indicator").hide();
+            });
 
             socket.on('connect', function() {
                 socket.on('get_latest_canvas_by_session', function(canvas) {
@@ -192,6 +200,8 @@ var drawImageOnCanvas = function(image, x, y) {
     console.log("drawImageOnCanvas(): drawing image with size " + image.height + "x" + image.width + " to canvas at (" + x + "," + y + ")");
     hudContext.drawImage(image, x, y);
 }
+
+%
 
 function setCanvasBlack() {
     console.log("setCanvasBlack(): setting canvas background black");
