@@ -132,6 +132,8 @@ function redrawCanvas() {
         $.each(latestCanvas.postits, function(index, postit)
         {
            postitIdToCoords[postit.id] = postit.displayPos;
+           postitIdToCoords[postit.id].x = postitIdToCoords[postit.id].x - POSTIT_SIZE/2;
+           postitIdToCoords[postit.id].y = postitIdToCoords[postit.id].y - POSTIT_SIZE/2;
         });
     }
 
@@ -167,9 +169,9 @@ function redrawCanvas() {
             if (postit.physicalFor == userId) {
                 //postit is physical for this user
                 hudContext.strokeStyle = "#00FF00";
-                //hudContext.fillRect(postit.displayPos.x, postit.displayPos.y, POSTIT_SIZE, POSTIT_SIZE);
-                //hudContext.strokeRect(postit.displayPos.x, postit.displayPos.y, POSTIT_SIZE, POSTIT_SIZE);
-                drawPostitAroundCoords(postit.displayPos.x, postit.displayPos.y, hudContext);
+                hudContext.fillRect(postit.displayPos.x, postit.displayPos.y, POSTIT_SIZE, POSTIT_SIZE);
+                hudContext.strokeRect(postit.displayPos.x, postit.displayPos.y, POSTIT_SIZE, POSTIT_SIZE);
+                //drawPostitAroundCoords(postit.displayPos.x, postit.displayPos.y, hudContext);
             }
             else
             {
@@ -179,10 +181,10 @@ function redrawCanvas() {
                     console.log("       drawing virtual " + evt.currentTarget.height + "x" + evt.currentTarget.width + " postit at (" + postit.displayPos.x + "," + postit.displayPos.y + ")");
                     hudContext.strokeStyle = "#FFFF00";
                     hudContext.strokeWidth = 20;
-                    //hudContext.strokeRect(postit.displayPos.x, postit.displayPos.y, evt.currentTarget.width, evt.currentTarget.height);
-                    drawPostitAroundCoords(postit.displayPos.x, postit.displayPos.y, hudContext);
-                    //hudContext.drawImage(evt.currentTarget, postit.displayPos.x, postit.displayPos.y);
-                    drawImageAroundCoords(evt.currentTarget, postit.displayPos.x, postit.displayPos.y, hudContext);
+                    hudContext.strokeRect(postit.displayPos.x, postit.displayPos.y, evt.currentTarget.width, evt.currentTarget.height);
+                    //drawPostitAroundCoords(postit.displayPos.x, postit.displayPos.y, hudContext);
+                    hudContext.drawImage(evt.currentTarget, postit.displayPos.x, postit.displayPos.y);
+                    //drawImageAroundCoords(evt.currentTarget, postit.displayPos.x, postit.displayPos.y, hudContext);
                 }
                 postitImage.src = "/api/postit/" + postit.id;
             }
