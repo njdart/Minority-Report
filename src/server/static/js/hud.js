@@ -115,6 +115,8 @@ function redrawCanvas() {
         $.each(latestCanvas.postits, function(index, postit)
         {
            postitIdToCoords[postit.id] = postit.displayPos;
+           postitIdToCoords[postit.id].x = postitIdToCoords[postit.id].x - POSTIT_SIZE/2;
+           postitIdToCoords[postit.id].y = postitIdToCoords[postit.id].y - POSTIT_SIZE/2;
         });
     }
 
