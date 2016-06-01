@@ -140,7 +140,7 @@ class Image(SqliteObject):
                      next_canvas_id,
                      current_canvas=None,
                      save=True,
-                     min_postit_area=5000,
+                     min_postit_area=6000,
                      max_postit_area=40000,
                      len_tolerence=0.2,
                      min_colour_thresh=64,
@@ -192,7 +192,7 @@ class Image(SqliteObject):
             box = numpy.int0(box)
             # Check the area of the postits to see if they fit within the expected range
             if (cv2.contourArea(box) > min_postit_area) and (cv2.contourArea(box) < max_postit_area):
-                # print(cv2.contourArea(box))
+                print(cv2.contourArea(box))
                 length = numpy.math.hypot(box[0, 0] - box[1, 0], box[0, 1] - box[1, 1])
                 height = numpy.math.hypot(box[2, 0] - box[1, 0], box[2, 1] - box[1, 1])
                 # Check to see how similar the lengths are as a measure of squareness
@@ -306,14 +306,15 @@ class Image(SqliteObject):
                             print("oops")
                             cv2.imshow("debug", odes)
                             cv2.waitKey(0)
-
-                print(good)
-                if max(good) > 20:
-                    match_idx = numpy.argmax(good)
-                    old_to_new_postit = (old_postit.id, found_postits[match_idx].id)
-                    old_to_new_postits.append(old_to_new_postit)
-                else:
-                    missing_postits.append(old_postit)
+                if odes is not None:
+                    print(good)
+                    print(len(odes)*0.05)
+                    if max(good) > len(odes)*0.05:
+                        match_idx = numpy.argmax(good)
+                        old_to_new_postit = (old_postit.id, found_postits[match_idx].id)
+                        old_to_new_postits.append(old_to_new_postit)
+                    else:
+                        missing_postits.append(old_postit)
             for missing_postit in missing_postits:
                 postit = Postit(physicalFor=None,
                                 canvas=next_canvas_id,
