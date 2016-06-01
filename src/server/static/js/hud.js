@@ -66,6 +66,10 @@ $(function() {
                     setCanvasBlack();
                     clearCanvas();
                 }
+                else
+                {
+                    console.log("received blank_canvas_message, not for this client ("+ localStorage.getItem("instanceConfigurationId") + ") - target: " + instanceConfigurationId);
+                }
             });
 
             socket.on("blank_canvas_white", function (instanceConfigurationId) {
@@ -74,6 +78,10 @@ $(function() {
                     console.log("received blank_canvas_white message, whiting out canvas");
                     setCanvasWhite();
                     clearCanvas();
+                }
+                else
+                {
+                    console.log("received blank_canvas_message, not for this client ("+ localStorage.getItem("instanceConfigurationId") + ") - target: " + instanceConfigurationId);
                 }
             });
         }
