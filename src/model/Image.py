@@ -142,7 +142,7 @@ class Image(SqliteObject):
                      save=True,
                      min_postit_area=6000,
                      max_postit_area=40000,
-                     len_tolerence=0.2,
+                     len_tolerence=0.15,
                      min_colour_thresh=64,
                      max_colour_thresh=200,
                      save_postits=True):
