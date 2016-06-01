@@ -58,16 +58,30 @@ $(function() {
                 }
             });
 
-            socket.on("blank_canvas_black", function () {
-                console.log("received blank_canvas_black message, blacking out canvas");
-                setCanvasBlack();
-                clearCanvas();
+            socket.on("blank_canvas_black", function (instanceConfigurationId) {
+                if(instanceConfigurationId == localStorage["instanceConfigurationId"])
+                {
+                    console.log("received blank_canvas_black message, blacking out canvas");
+                    setCanvasBlack();
+                    clearCanvas();
+                }
+                else
+                {
+                    console.log("received blank_canvas_message, not for this client ("+ localStorage.getItem("instanceConfigurationId") + ") - target: " + instanceConfigurationId);
+                }
             });
 
-            socket.on("blank_canvas_white", function () {
-                console.log("received blank_canvas_white message, whiting out canvas");
-                setCanvasWhite();
-                clearCanvas();
+            socket.on("blank_canvas_white", function (instanceConfigurationId) {
+                if(instanceConfigurationId == localStorage["instanceConfigurationId"])
+                {
+                    console.log("received blank_canvas_white message, whiting out canvas");
+                    setCanvasWhite();
+                    clearCanvas();
+                }
+                else
+                {
+                    console.log("received blank_canvas_message, not for this client ("+ localStorage.getItem("instanceConfigurationId") + ") - target: " + instanceConfigurationId);
+                }
             });
         }
     } else {
