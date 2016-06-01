@@ -126,17 +126,22 @@ class InstanceConfiguration(SqliteObject):
             self.calibSuccess = False
 
         def getcanvascoords(img, name):
-            # Do a load of Josh magic to get the canvas coordinates.
+            # Binarize imgage, find the largest white area and then get the coordinates.
             calib_image_array = img.get_image_array()
             bin_image = cv2.cvtColor(src.model.processing.binarize(calib_image_array), cv2.COLOR_RGB2GRAY)
-            cv2.imwrite("debug-" + name + ".png",cv2.resize(bin_image, None, fx=0.25, fy=0.25, interpolation=cv2.INTER_AREA))
+            cv2.imwrite("debug/canvas-" + name + ".png",cv2.resize(bin_image, None, fx=0.25, fy=0.25, interpolation=cv2.INTER_AREA))
             (__, board_contours, __) = cv2.findContours(bin_image, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
             areas = [cv2.contourArea(c) for c in board_contours]
             max_index = numpy.argmax(areas)
+            # Find and use only biggest contour
             canvas_contour = board_contours[max_index]
             # self.simpleBounds = cv2.boundingRect(canvas_contour)
             bounds = cv2.boundingRect(canvas_contour)
             fcanvas_contours = canvas_contour.flatten()
+            # To calculate the four corners each point is scored on how well it fits a corner.
+            # The range of X and Y values is scaled to a 0 to 1 scale.
+            # The points x and y score are then added together giving a score between 0 and 2.
+            # The point that has the highest score for a corner is most likely to be that corner.
             canvx = numpy.zeros([int(len(fcanvas_contours) / 2), 1])
             canvy = numpy.zeros([int(len(fcanvas_contours) / 2), 1])
             l1 = numpy.zeros(int(len(fcanvas_contours) / 2))

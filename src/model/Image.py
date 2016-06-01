@@ -178,14 +178,11 @@ class Image(SqliteObject):
         # All pixels below brightness threshold set to black
         # to remove any lines that have some saturation from reflections
         hsv_image[numpy.where((hsv_image < [100, 100, 100]).all(axis=2))] = [0, 0, 0]
-        cv2.imwrite("debug-postit-"+str(next_canvas_id)+".png", cv2.resize(hsv_image, None, fx=0.5, fy=0.5, interpolation=cv2.INTER_AREA))
+        cv2.imwrite("debug/postit-"+str(next_canvas_id)+".png", cv2.resize(hsv_image, None, fx=0.5, fy=0.5, interpolation=cv2.INTER_AREA))
         # Convert image to grayscale and then canny filter and get contour
         gray_img = cv2.cvtColor(hsv_image, cv2.COLOR_BGR2GRAY)
         edge_gray = cv2.Canny(gray_img, 1, 30)
-        # cv2.imshow("debug", cv2.resize(edge_gray, None, fx=0.5, fy=0.5, interpolation=cv2.INTER_AREA))
-        # cv2.waitKey(0)
         (_, contours, _) = cv2.findContours(edge_gray.copy(), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
-
         postitPts = []
         postitImages = []
         postitPos = []
@@ -209,7 +206,10 @@ class Image(SqliteObject):
                     l2 = numpy.zeros(int(len(flat_contour) / 2))
                     l3 = numpy.zeros(int(len(flat_contour) / 2))
                     l4 = numpy.zeros(int(len(flat_contour) / 2))
-
+                     # To calculate the four corners each point is scored on how well it fits a corner.
+                    # The range of X and Y values is scaled to a 0 to 1 scale.
+                    # The points x and y score are then added together giving a score between 0 and 2.
+                    # The point that has the highest score for a corner is most likely to be that corner.
                     for i in range(0, len(flat_contour), 2):
                         canvx[int(i / 2)] = flat_contour[i]
                         canvy[int(i / 2)] = flat_contour[i + 1]
@@ -238,7 +238,6 @@ class Image(SqliteObject):
                                   (canvx[max4][0], canvy[max4][0])]
                     # Crop and transform image based on points
                     postitimg = src.model.processing.four_point_transform(canvas_image, numpy.array(postit_pts))
-                    cv2.imwrite("debug1.png", postitimg)
                     postitPts.append(src.model.processing.order_points(numpy.array(postit_pts)))
                     postitImages.append(postitimg)
                     postitPos.append(rectangle)
@@ -358,7 +357,7 @@ class Image(SqliteObject):
         found_connections = []
         canvas_image = self.get_image_projection()
         edged = src.model.processing.edge(canvas_image)
-        cv2.imwrite("debug-lines-"+str(next_canvas_id)+".png", cv2.resize(edged, None, fx=0.5, fy=0.5, interpolation=cv2.INTER_AREA))
+        cv2.imwrite("debug/lines-"+str(next_canvas_id)+".png", cv2.resize(edged, None, fx=0.5, fy=0.5, interpolation=cv2.INTER_AREA))
         (_, cnts, _) = cv2.findContours(edged.copy(), cv2.RETR_TREE, cv2.CHAIN_APPROX_NONE)
         for c in cnts:
             debug_img = canvas_image.copy()
