@@ -6,6 +6,8 @@ var sessionId;
 
 var POSTIT_SIZE = 100;
 
+var OFFSET = POSTIT_SIZE/2;
+
 $(function() {
     //var hudCanvas = $('.hudCanvas');
     var splash = $('.localStorageUnset');
@@ -115,8 +117,6 @@ function redrawCanvas() {
         $.each(latestCanvas.postits, function(index, postit)
         {
            postitIdToCoords[postit.id] = postit.displayPos;
-           postitIdToCoords[postit.id].x = postitIdToCoords[postit.id].x - POSTIT_SIZE/2;
-           postitIdToCoords[postit.id].y = postitIdToCoords[postit.id].y - POSTIT_SIZE/2;
         });
     }
 
@@ -132,8 +132,8 @@ function redrawCanvas() {
             console.log("   connection from " + connection.start + " to " + connection.finish);
             hudContext.strokeStyle = "#0000FF";
             hudContext.beginPath();
-            hudContext.moveTo(postitIdToCoords[connection.start].x + POSTIT_SIZE/2, postitIdToCoords[connection.start].y + POSTIT_SIZE/2);
-            hudContext.lineTo(postitIdToCoords[connection.finish].x + POSTIT_SIZE/2, postitIdToCoords[connection.finish].y + POSTIT_SIZE/2);
+            hudContext.moveTo(postitIdToCoords[connection.start].x + POSTIT_SIZE/2 - OFFSET, postitIdToCoords[connection.start].y + POSTIT_SIZE/2 - OFFSET);
+            hudContext.lineTo(postitIdToCoords[connection.finish].x + POSTIT_SIZE/2 - OFFSET, postitIdToCoords[connection.finish].y + POSTIT_SIZE/2 - OFFSET);
             hudContext.closePath();
             hudContext.stroke();
         });
@@ -152,8 +152,8 @@ function redrawCanvas() {
             if (postit.physicalFor == userId) {
                 //postit is physical for this user
                 hudContext.strokeStyle = "#00FF00";
-                hudContext.fillRect(postit.displayPos.x, postit.displayPos.y, POSTIT_SIZE, POSTIT_SIZE);
-                hudContext.strokeRect(postit.displayPos.x, postit.displayPos.y, POSTIT_SIZE, POSTIT_SIZE);
+                hudContext.fillRect(postit.displayPos.x - OFFSET, postit.displayPos.y - OFFSET, POSTIT_SIZE, POSTIT_SIZE);
+                hudContext.strokeRect(postit.displayPos.x - OFFSET, postit.displayPos.y - OFFSET, POSTIT_SIZE, POSTIT_SIZE);
             }
             else
             {
@@ -164,8 +164,8 @@ function redrawCanvas() {
                     console.log("       drawing virtual " + evt.currentTarget.height + "x" + evt.currentTarget.width + " postit at (" + postit.displayPos.x + "," + postit.displayPos.y + ")");
                     hudContext.strokeStyle = "#FFFF00";
                     hudContext.strokeWidth = 20;
-                    hudContext.strokeRect(postit.displayPos.x, postit.displayPos.y, evt.currentTarget.width, evt.currentTarget.height)
-                    hudContext.drawImage(evt.currentTarget, postit.displayPos.x, postit.displayPos.y);
+                    hudContext.strokeRect(postit.displayPos.x - OFFSET, postit.displayPos.y - OFFSET, evt.currentTarget.width, evt.currentTarget.height)
+                    hudContext.drawImage(evt.currentTarget - OFFSET, postit.displayPos.x, postit.displayPos.y - OFFSET);
                 }
                 postitImage.src = "/api/postit/" + postit.id;
             }
