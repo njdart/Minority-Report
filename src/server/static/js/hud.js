@@ -107,6 +107,15 @@ function redrawCanvas() {
         ctx.fillRect(x, y, POSTIT_SIZE, POSTIT_SIZE);
         ctx.strokeRect(x, y, POSTIT_SIZE, POSTIT_SIZE);
     }
+
+    function drawImageAroundCoords(img, x, y, ctx)
+    {
+        var startx = x - POSTIT_SIZE/2;
+        var starty = y - POSTIT_SIZE/2;
+        ctx.moveTo(startx, starty);
+        ctx.drawImage(img, x, y);
+    }
+
     hudContext.strokeWidth = 10;
     hudContext.lineWidth = 10;
     console.log("redrawCanvas(): redrawing canvas");
@@ -172,7 +181,8 @@ function redrawCanvas() {
                     hudContext.strokeWidth = 20;
                     //hudContext.strokeRect(postit.displayPos.x, postit.displayPos.y, evt.currentTarget.width, evt.currentTarget.height);
                     drawPostitAroundCoords(postit.displayPos.x, postit.displayPos.y, hudContext);
-                    hudContext.drawImage(evt.currentTarget, postit.displayPos.x, postit.displayPos.y);
+                    //hudContext.drawImage(evt.currentTarget, postit.displayPos.x, postit.displayPos.y);
+                    drawImageAroundCoords(evt.currentTarget, postit.displayPos.x, postit.displayPos.y, hudContext);
                 }
                 postitImage.src = "/api/postit/" + postit.id;
             }
