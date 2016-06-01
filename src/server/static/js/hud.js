@@ -4,7 +4,7 @@ var latestCanvas;
 var userId;
 var sessionId;
 
-var POSTIT_SIZE = 100;
+var POSTIT_SIZE = 125;
 
 var OFFSET = POSTIT_SIZE/2;
 
