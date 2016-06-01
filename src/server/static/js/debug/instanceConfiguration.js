@@ -247,6 +247,10 @@ $(function() {
         socket.emit('calibrate_instance_configuration', id);
     });
 
+    $(document).on('click', '.toggle-kinect-enable', function() {
+        socket.emit('toggle_kinect_enable');
+    });
+
     socket.on('calibrate_instance_configuration', function(instanceConfiguration) {
         calibrationOverlay.css('visibility', 'hidden')
         updateInstanceConfigRow(instanceConfiguration);
