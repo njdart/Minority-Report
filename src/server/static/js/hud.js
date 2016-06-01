@@ -104,8 +104,8 @@ function redrawCanvas() {
         var startx = x - POSTIT_SIZE/2;
         var starty = y - POSTIT_SIZE/2;
         ctx.moveTo(startx, starty);
-        ctx.fillRect(x, y, POSTIT_SIZE, POSTIT_SIZE);
-        ctx.strokeRect(x, y, POSTIT_SIZE, POSTIT_SIZE);
+        ctx.fillRect(startx, starty, POSTIT_SIZE, POSTIT_SIZE);
+        ctx.strokeRect(startx, starty, POSTIT_SIZE, POSTIT_SIZE);
     }
     hudContext.strokeWidth = 10;
     hudContext.lineWidth = 10;

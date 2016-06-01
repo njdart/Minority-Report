@@ -231,7 +231,8 @@ class InstanceConfiguration(SqliteObject):
 
         if data is None:
             return None
-        return data[0]
+
+        return InstanceConfiguration.get(id=data[0])
 
     def get_camera_image(self):
         cameraUri = "http://{}:{}".format(self.cameraHost, self.cameraPort)
