@@ -43,21 +43,22 @@ $(function() {
                 socket.emit('get_latest_canvas_by_session', sessionId);
             });
 
-            /*socket.on("create_canvas", function(canvas){
+            socket.on("create_canvas", function(canvas){
                 console.log("create_canvas message received");
                 if(canvas == null){
                     console.log("(Received canvas is empty, not calling mapPostitsToCanvasCoords(), resizeCanvas() and redrawCanvas())");
                 }
                 else {
-                    //console.log(canvas);
-                    //latestCanvas = canvas;
-                    //resizeCanvas();
+                    console.log(canvas);
+                    latestCanvas = canvas;
+                    mapPostitsToCanvasCoords();
+                    resizeCanvas();
 
                     //create_canvas isn't working properly, so we just use get_latest_canvas_by_session
                     console.log("Requesting latest canvas");
                     socket.emit('get_latest_canvas_by_session', sessionId);
                 }
-            });*/
+            });
 
             socket.on("blank_canvas_black", function (instanceConfigurationId) {
                 if(instanceConfigurationId == localStorage["instanceConfigurationId"])
