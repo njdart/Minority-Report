@@ -419,22 +419,22 @@ $(function() {
 
         $("#kinectImageSave").click(function() {
             values = {
-                "topLeft":
+                "kinectTopLeft":
                 {
                     "x": Math.floor(kinectStage.getChildByName("topLeft").x / CANVAS_IMAGE_SCALE_FACTOR),
                     "y": Math.floor(kinectStage.getChildByName("topLeft").y / CANVAS_IMAGE_SCALE_FACTOR),
                 },
-                "topRight":
+                "kinectTopRight":
                 {
                     "x": Math.floor(kinectStage.getChildByName("topRight").x / CANVAS_IMAGE_SCALE_FACTOR),
                     "y": Math.floor(kinectStage.getChildByName("topRight").y / CANVAS_IMAGE_SCALE_FACTOR),
                 },
-                "bottomLeft":
+                "kinectBottomLeft":
                 {
                     "x": Math.floor(kinectStage.getChildByName("botLeft").x / CANVAS_IMAGE_SCALE_FACTOR),
                     "y": Math.floor(kinectStage.getChildByName("botLeft").y / CANVAS_IMAGE_SCALE_FACTOR),
                 },
-                "bottomRight":
+                "kinectBottomRight":
                 {
                     "x": Math.floor(kinectStage.getChildByName("botRight").x / CANVAS_IMAGE_SCALE_FACTOR),
                     "y": Math.floor(kinectStage.getChildByName("botRight").y / CANVAS_IMAGE_SCALE_FACTOR),
