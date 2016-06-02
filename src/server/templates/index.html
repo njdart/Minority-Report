@@ -146,6 +146,59 @@
             </div>
 
 
+
+
+
+
+
+
+            <!-- raw kinect image -->
+            <div class="jumbotron">
+                <div class="row">
+                    <div>
+                        <img id="currentKinectRaw" class="img-responsive" src="">
+
+                        <a id="editKinectCanvasBtn" href="#" data-toggle="modal" data-target="#kinectImageModal" class="btn btn-default btn-block">Redefine Kinect Canvas Points</a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- raw kinect modal -->
+            <div id="kinectImageModal" class="modal fade">
+                <div class="modal-dialog modal-lg">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                                <span aria-hidden="true">&times;</span>
+                            </button>
+                            <h4 class="modal-title">Canvas Location</h4>
+                        </div>
+
+
+                        <div class="modal-body">
+                            <div>
+                              <canvas id="rawPointKinectRedefineCanvas"></canvas>
+                            </div>
+                        </div>
+
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-default closeb" data-dismiss="modal">Close</button>
+                            <button type="button" class="btn btn-primary" data-dismiss="modal" id="kinectImageSave">Save changes</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+
+
+
+
+
+
+
+
+
+
             <!-- raw canvas -->
             <div class="jumbotron">
                 <div class="row">

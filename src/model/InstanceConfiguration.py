@@ -227,7 +227,7 @@ class InstanceConfiguration(SqliteObject):
             (canvx, canvy, bounds, max1, max2, max3, max4) = getcanvascoords(kinect_calib_image, "kinect")
             print("Calibrated from Kinect image")
             # and send it off
-            payload = {
+            """payload = {
                 "points": [
                     [canvx[max1][0], canvy[max1][0]],
                     [canvx[max2][0], canvy[max2][0]],
@@ -235,7 +235,18 @@ class InstanceConfiguration(SqliteObject):
                     [canvx[max4][0], canvy[max4][0]]
                 ],
                 "instanceID": str(self.kinectID)
+            }"""
+
+            payload = {
+                "points": [
+                    [self.kinectTopLeftX, self.kinectTopLeftY],
+                    [self.kinectTopRightX, self.kinectTopRightY],
+                    [self.kinectBottomLeftX, self.kinectBottomLeftY],
+                    [self.kinectBottomRightX, self.kinectBottomRightY]
+                ],
+                "instanceID": str(self.kinectID)
             }
+
             try:
                 response = requests.post("http://{}:{}/calibrate".format(self.kinectHost, self.kinectPort), data=json.dumps(payload))
                 print("Sent calibration data to Kinect server application")
