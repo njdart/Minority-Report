@@ -258,14 +258,14 @@ $(function() {
                 evt.currentTarget.x = evt.stageX;
                 evt.currentTarget.y = evt.stageY;
                 stage.update();
-                console.log("bottomLeftDrag", this.id);
+                //console.log("bottomLeftDrag", this.id);
             });
 
             botRightDragger.on("pressmove", function (evt) {
                 evt.currentTarget.x = evt.stageX;
                 evt.currentTarget.y = evt.stageY;
                 stage.update();
-                console.log("bottomRightDragger", this.id);
+                //console.log("bottomRightDragger", this.id);
             });
         }
 
