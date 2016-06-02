@@ -185,10 +185,12 @@ $(function() {
                 botLeft = new createjs.Shape(),
                 botRight = new createjs.Shape();
 
-            topLeft.graphics.beginFill("red").drawCircle(0, 0, 5);
-            topRight.graphics.beginFill("red").drawCircle(0, 0, 5);
-            botLeft.graphics.beginFill("red").drawCircle(0, 0, 5);
-            botRight.graphics.beginFill("red").drawCircle(0, 0, 5);
+            //topLeft.graphics.beginFill("red").drawCircle(0, 0, 5);
+            var lSize = 7;
+            topLeft.graphics.beginStroke("red").lt(0,lSize).lt(0,0).lt(lSize,0);
+            topRight.graphics.beginStroke("red").lt(-lSize,0).lt(0,0).lt(0,lSize);
+            botLeft.graphics.beginStroke("red").lt(0,-lSize).lt(0,0).lt(lSize,0);
+            botRight.graphics.beginStroke("red").lt(0,-lSize).lt(0,0).lt(-lSize,0);
 
             var topLeftDragger = new createjs.Container(),
                 topRightDragger = new createjs.Container(),
