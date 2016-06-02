@@ -114,7 +114,7 @@ class Postit(SqliteObject):
 
     def get_image_binarized(self):
         image = self.get_image_keystoned()
-        postitImage = src.model.processing.binarize(image)
+        postitImage = src.model.processing.binarize(image, lightest=False)
         if self.colour == "ORANGE":
             postitImage[numpy.where((postitImage > [0, 0, 0]).all(axis=2))] = [26, 160, 255]
         elif self.colour == "YELLOW":
@@ -148,6 +148,7 @@ class Postit(SqliteObject):
                              scoreType=cv2.ORB_HARRIS_SCORE,
                              patchSize=31)
         binary_postit_image = self.get_image_binarized()
+        #binary_postit_image = binary_postit_image[280:340, 330:390]
         __, descriptors = orb.detectAndCompute(binary_postit_image, None)
         return descriptors
 

@@ -191,7 +191,7 @@ class Image(SqliteObject):
         for c in contours:
             box = cv2.boxPoints(cv2.minAreaRect(c))
             box = numpy.int0(box)
-          
+
             # Check the area of the postits to see if they fit within the expected range
             if (cv2.contourArea(box) > min_postit_area) and (cv2.contourArea(box) < max_postit_area):
                 print(cv2.contourArea(box))
@@ -199,6 +199,7 @@ class Image(SqliteObject):
                 height = numpy.math.hypot(box[2, 0] - box[1, 0], box[2, 1] - box[1, 1])
                 # Check to see how similar the lengths are as a measure of squareness
                 if length * (2 - len_tolerence) < length + height < length * (2 + len_tolerence):
+                    print("len : "+str(length))
                     rectangle = cv2.boundingRect(c)
                     flat_contour = c.flatten()
                     # Create arrays for finding the corners of the postits
@@ -388,6 +389,7 @@ class Image(SqliteObject):
                                 connectionList.append(ipostit.get_id())
 
                 if len(connectionList) > 1:
+                    print(connectionList)
                     for i in range(0, len(connectionList) - 1):
                         postit_id_start = 0
                         postit_id_end = 0

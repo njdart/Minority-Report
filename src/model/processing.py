@@ -144,7 +144,7 @@ def guess_colour(r, g, b):
 
     return None
 
-def binarize(image):
+def binarize(image, lightest=True):
     Z = image.reshape((-1,3))
     # convert to np.float32
     Z = numpy.float32(Z)
@@ -165,8 +165,15 @@ def binarize(image):
     bmin = res2[..., 0].min()
     gmin = res2[..., 1].min()
     rmin = res2[..., 2].min()
-    image[numpy.where((res2 > [0, 0, 0]).all(axis=2))] = [0, 0, 0]
-    image[numpy.where((res2 > [bmin, gmin, rmin]).all(axis=2))] = [255, 255, 255]
+    bmax = res2[..., 0].max()
+    gmax = res2[..., 1].max()
+    rmax = res2[..., 2].max()
+    if lightest:
+        image[numpy.where((res2 < [bmax, gmax, rmax]).all(axis=2))] = [0, 0, 0]
+        image[numpy.where((res2 == [bmax, gmax, rmax ]).all(axis=2))] = [255, 255, 255]
+    else:
+        image[numpy.where((res2 > [0, 0, 0]).all(axis=2))] = [0, 0, 0]
+        image[numpy.where((res2 > [bmin, gmin, rmin]).all(axis=2))] = [255, 255, 255]
     return image
 
 
