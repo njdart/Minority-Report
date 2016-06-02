@@ -308,6 +308,7 @@ class Image(SqliteObject):
                             cv2.waitKey(0)
                 if odes is not None:
                     print(good)
+                    print(len(odes))
                     print(len(odes)*0.05)
                     if max(good) > len(odes)*0.05:
                         match_idx = numpy.argmax(good)

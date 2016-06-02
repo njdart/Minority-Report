@@ -25,7 +25,7 @@ def boardObscured():
     print("board not obscured")
     socketio.emit("body_not_detected", broadcast=True)
     # ignore message if global flag is set
-    if not kinectEnable:
+    if not GetKinectEnable():
         print("ignoring (kinectEnable = False)")
         return jsonify({"message": "echo that. ignoring due to kinectEnable flag."}), 200
 
