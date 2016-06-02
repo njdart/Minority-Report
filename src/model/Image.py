@@ -7,7 +7,6 @@ import src.model.processing
 import datetime
 from src.model.SqliteObject import SqliteObject
 
-
 class Image(SqliteObject):
 
     properties = ["id", "timestamp", "instanceConfigurationId"]
@@ -178,10 +177,12 @@ class Image(SqliteObject):
         # All pixels below brightness threshold set to black
         # to remove any lines that have some saturation from reflections
         hsv_image[numpy.where((hsv_image < [100, 100, 100]).all(axis=2))] = [0, 0, 0]
-        cv2.imwrite("debug/postit-"+str(next_canvas_id)+".png", cv2.resize(hsv_image, None, fx=0.5, fy=0.5, interpolation=cv2.INTER_AREA))
+        cv2.imwrite("debug/postit-"+str(next_canvas_id)+".png", hsv_image)
         # Convert image to grayscale and then canny filter and get contour
         gray_img = cv2.cvtColor(hsv_image, cv2.COLOR_BGR2GRAY)
-        edge_gray = cv2.Canny(gray_img, 1, 30)
+        gray_img = cv2.dilate(gray_img, numpy.ones((7, 7)))
+        edge_gray = cv2.Canny(gray_img, 150, 200)
+        cv2.imwrite("debug/postitEdge-"+str(next_canvas_id)+".png", edge_gray)
         (_, contours, _) = cv2.findContours(edge_gray.copy(), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
         postitPts = []
         postitImages = []
@@ -190,6 +191,7 @@ class Image(SqliteObject):
         for c in contours:
             box = cv2.boxPoints(cv2.minAreaRect(c))
             box = numpy.int0(box)
+          
             # Check the area of the postits to see if they fit within the expected range
             if (cv2.contourArea(box) > min_postit_area) and (cv2.contourArea(box) < max_postit_area):
                 print(cv2.contourArea(box))
@@ -359,7 +361,8 @@ class Image(SqliteObject):
         found_connections = []
         canvas_image = self.get_image_projection()
         edged = src.model.processing.edge(canvas_image)
-        cv2.imwrite("debug/lines-"+str(next_canvas_id)+".png", cv2.resize(edged, None, fx=0.5, fy=0.5, interpolation=cv2.INTER_AREA))
+        cv2.imwrite("debug/lines-"+str(next_canvas_id)+".png",
+                    cv2.resize(edged, None, fx=0.5, fy=0.5, interpolation=cv2.INTER_AREA))
         (_, cnts, _) = cv2.findContours(edged.copy(), cv2.RETR_TREE, cv2.CHAIN_APPROX_NONE)
         for c in cnts:
             debug_img = canvas_image.copy()
@@ -422,8 +425,10 @@ class Image(SqliteObject):
                 unique = True
                 if new_connections:
                     for new_connection in new_connections:
-                        if (str(next_connection["postitIdStart"]) == str(new_connection.start) and str(next_connection["postitIdEnd"]) == str(new_connection.finish)
-                            or (str(next_connection["postitIdEnd"]) == str(new_connection.start) and str(next_connection["postitIdStart"]) == str(new_connection.finish))):
+                        if (str(next_connection["postitIdStart"]) == str(new_connection.start)
+                            and str(next_connection["postitIdEnd"]) == str(new_connection.finish)
+                            or (str(next_connection["postitIdEnd"]) == str(new_connection.start)
+                                and str(next_connection["postitIdStart"]) == str(new_connection.finish))):
                             unique = False
 
                 if unique:
