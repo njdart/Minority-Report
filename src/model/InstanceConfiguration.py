@@ -225,23 +225,25 @@ class InstanceConfiguration(SqliteObject):
         if kinect_calib_image != None:
             # Josh magic on the Kinect image...
             (canvx, canvy, bounds, max1, max2, max3, max4) = getcanvascoords(kinect_calib_image, "kinect")
+
+            self.kinectTopLeftX = canvx[max1][0]
+            self.kinectTopLeftY = canvy[max1][0]
+            self.kinectTopRightX = canvx[max2][0]
+            self.kinectTopRightY = canvy[max2][0]
+            self.kinectBottomLeftX = canvx[max3][0]
+            self.kinectBottomLeftY = canvy[max3][0]
+            self.kinectBottomRightX = canvx[max4][0]
+            self.kinectBottomRightY = canvy[max4][0]
+
             print("Calibrated from Kinect image")
+
             # and send it off
-            """payload = {
-                "points": [
-                    [canvx[max1][0], canvy[max1][0]],
-                    [canvx[max2][0], canvy[max2][0]],
-                    [canvx[max3][0], canvy[max3][0]],
-                    [canvx[max4][0], canvy[max4][0]]
-                ],
-                "instanceID": str(self.kinectID)
-            }"""
 
             payload = {
                 "points": [
-                    [self.kinectTopLeftX, self.kinectTopLeftY],
-                    [self.kinectTopRightX, self.kinectTopRightY],
-                    [self.kinectBottomLeftX, self.kinectBottomLeftY],
+                    [self.kinectTopLeftX,     self.kinectTopLeftY],
+                    [self.kinectTopRightX,    self.kinectTopRightY],
+                    [self.kinectBottomLeftX,  self.kinectBottomLeftY],
                     [self.kinectBottomRightX, self.kinectBottomRightY]
                 ],
                 "instanceID": str(self.kinectID)
