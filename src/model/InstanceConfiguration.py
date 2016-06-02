@@ -21,6 +21,14 @@ class InstanceConfiguration(SqliteObject):
         "bottomRightY",
         "bottomLeftX",
         "bottomLeftY",
+        "kinectTopLeftX",
+        "kinectTopLeftY",
+        "kinectTopRightX",
+        "kinectTopRightY",
+        "kinectBottomRightX",
+        "kinectBottomRightY",
+        "kinectBottomLeftX",
+        "kinectBottomLeftY",
         "cameraHost",
         "kinectHost",
         "cameraPort",
@@ -44,6 +52,14 @@ class InstanceConfiguration(SqliteObject):
                  bottomRightY=None,
                  bottomLeftX=None,
                  bottomLeftY=None,
+                 kinectTopLeftX=None,
+                 kinectTopLeftY=None,
+                 kinectTopRightX=None,
+                 kinectTopRightY=None,
+                 kinectBottomRightX=None,
+                 kinectBottomRightY=None,
+                 kinectBottomLeftX=None,
+                 kinectBottomLeftY=None,
                  id=None,
                  kinectID=None):
         super(InstanceConfiguration, self).__init__(id=id)
@@ -62,6 +78,14 @@ class InstanceConfiguration(SqliteObject):
         self.bottomRightY = bottomRightY
         self.bottomLeftX = bottomLeftX
         self.bottomLeftY = bottomLeftY
+        self.kinectTopLeftX = kinectTopLeftX
+        self.kinectTopLeftY = kinectTopLeftY
+        self.kinectTopRightX = kinectTopRightX
+        self.kinectTopRightY = kinectTopRightY
+        self.kinectBottomRightX = kinectBottomRightX
+        self.kinectBottomRightY = kinectBottomRightY
+        self.kinectBottomLeftX = kinectBottomLeftX
+        self.kinectBottomLeftY = kinectBottomLeftY
         self.calibSuccess = True
 
         self.kinectID = kinectID if kinectID is not None else uuid.uuid4()
@@ -94,6 +118,22 @@ class InstanceConfiguration(SqliteObject):
             "bottomLeft": {
                 "x": self.bottomLeftX,
                 "y": self.bottomLeftY
+            },
+            "kinectTopLeft": {
+                "x": self.kinectTopLeftX,
+                "y": self.kinectTopLeftY
+            },
+            "kinectTopRight": {
+                "x": self.kinectTopRightX,
+                "y": self.kinectTopRightY
+            },
+            "kinectBottomRight": {
+                "x": self.kinectBottomRightX,
+                "y": self.kinectBottomRightY
+            },
+            "kinectBottomLeft": {
+                "x": self.kinectBottomLeftX,
+                "y": self.kinectBottomLeftY
             },
             "calibSuccess": self.calibSuccess
         }

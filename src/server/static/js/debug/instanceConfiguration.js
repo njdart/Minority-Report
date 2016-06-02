@@ -41,6 +41,20 @@ $(function() {
                         '')));
 
         leftColumn.append($('<div class="form-group"></div>')
+            .append($('<label>KinectTopLeft as (x,y)</label>'))
+            .append($('<input type="text" class="form-control instanceConfigsTable-kinectTopLeft" placeholder="(x, y)">')
+                .val((instanceConfiguration.kinectTopLeft.x != null) ?
+                        '(' + instanceConfiguration.kinectTopLeft.x + ',' + instanceConfiguration.kinectTopLeft.y + ')' :
+                        '')));
+
+        leftColumn.append($('<div class="form-group"></div>')
+            .append($('<label>KinectBottomLeft as (x,y)</label>'))
+            .append($('<input type="text" class="form-control instanceConfigsTable-kinectBottomLeft" placeholder="(x, y)">')
+                .val((instanceConfiguration.kinectBottomLeft.x != null) ?
+                        '(' + instanceConfiguration.kinectBottomLeft.x + ',' + instanceConfiguration.kinectBottomLeft.y + ')' :
+                        '')));
+
+        leftColumn.append($('<div class="form-group"></div>')
             .append($('<label>Camera Host</label>'))
             .append($('<input type="text" class="form-control instanceConfigsTable-cameraHost">')
                 .val(instanceConfiguration.camera.host)));
@@ -64,6 +78,20 @@ $(function() {
             .append($('<input type="text" class="form-control instanceConfigsTable-bottomRight" placeholder="(x, y)">')
                 .val((instanceConfiguration.bottomRight.x != null) ?
                         '(' + instanceConfiguration.bottomRight.x + ',' + instanceConfiguration.bottomRight.y + ')' :
+                        '')));
+
+        rightColumn.append($('<div class="form-group"></div>')
+            .append($('<label>KinectTopRight as (x,y)</label>'))
+            .append($('<input type="text" class="form-control instanceConfigsTable-kinectTopRight" placeholder="(x, y)">')
+                .val((instanceConfiguration.kinectTopRight.x != null) ?
+                        '(' + instanceConfiguration.kinectTopRight.x + ',' + instanceConfiguration.topRight.y + ')' :
+                        '')));
+
+        rightColumn.append($('<div class="form-group"></div>')
+            .append($('<label>KinectBottomRight as (x,y)</label>'))
+            .append($('<input type="text" class="form-control instanceConfigsTable-kinectBottomRight" placeholder="(x, y)">')
+                .val((instanceConfiguration.kinectBottomRight.x != null) ?
+                        '(' + instanceConfiguration.kinectBottomRight.x + ',' + instanceConfiguration.kinectBottomRight.y + ')' :
                         '')));
 
         rightColumn.append($('<div class="form-group"></div>')
@@ -103,6 +131,11 @@ $(function() {
         var bottomRight = coordUnpackRegexp.exec(row.find('.instanceConfigsTable-add_bottomRight').val());
         var bottomLeft = coordUnpackRegexp.exec(row.find('.instanceConfigsTable-add_bottomLeft').val());
 
+        var kinectTopLeft = coordUnpackRegexp.exec(row.find('.instanceConfigsTable-add_kinectTopLeft').val());
+        var kinectTopRight = coordUnpackRegexp.exec(row.find('.instanceConfigsTable-add_kinectTopRight').val());
+        var kinectBottomRight = coordUnpackRegexp.exec(row.find('.instanceConfigsTable-add_kinectBottomRight').val());
+        var kinectBottomLeft = coordUnpackRegexp.exec(row.find('.instanceConfigsTable-add_kinectBottomLeft').val());
+
         var data = {
             sessionId: row.find('.instanceConfigsTable-add_sessionId').val(),
             userId: row.find('.instanceConfigsTable-add_userId').val(),
@@ -121,6 +154,22 @@ $(function() {
             bottomRight: {
                 x: (bottomRight) ? bottomRight[1] : null,
                 y: (bottomRight) ? bottomRight[2] : null
+            },
+            kinectTopLeft: {
+                x: (kinectTopLeft) ? kinectTopLeft[1] : null,
+                y: (kinectTopLeft) ? kinectTopLeft[2] : null
+            },
+            kinectTopRight: {
+                x: (kinectTopRight) ? kinectTopRight[1] : (kinectBottomRight) ? kinectBottomRight[1] : null,
+                y: (kinectTopRight) ? kinectTopRight[2] : (kinectTopLeft) ? kinectTopLeft[2] : null
+            },
+            kinectBottomLeft: {
+                x: (kinectBottomLeft) ? kinectBottomLeft[1] : (kinectTopLeft) ? kinectTopLeft[1] : null,
+                y: (kinectBottomLeft) ? kinectBottomLeft[2] : (kinectBottomRight) ? kinectBottomRight[2] : null
+            },
+            kinectBottomRight: {
+                x: (kinectBottomRight) ? kinectBottomRight[1] : null,
+                y: (kinectBottomRight) ? kinectBottomRight[2] : null
             },
             camera: {
                 host: row.find('.instanceConfigsTable-add_cameraHost').val() || 'localhost',
@@ -169,6 +218,10 @@ $(function() {
         row.find('.instanceConfigsTable-topRight').val('(' + instanceConfig.topRight.x + ',' + instanceConfig.topRight.y + ')');
         row.find('.instanceConfigsTable-bottomRight').val('(' + instanceConfig.bottomRight.x + ',' + instanceConfig.bottomRight.y + ')');
         row.find('.instanceConfigsTable-bottomLeft').val('(' + instanceConfig.bottomLeft.x + ',' + instanceConfig.bottomLeft.y + ')');
+        row.find('.instanceConfigsTable-add_kinectTopLeft'    ).val('(' + instanceConfig.kinectTopLeft.x + ',' + instanceConfig.kinectTopLeft.y + ')');
+        row.find('.instanceConfigsTable-add_kinectTopRight'   ).val('(' + instanceConfig.kinectTopRight.x + ',' + instanceConfig.kinectTopRight.y + ')');
+        row.find('.instanceConfigsTable-add_kinectBottomRight').val('(' + instanceConfig.kinectBottomRight.x + ',' + instanceConfig.kinectBottomRight.y + ')');
+        row.find('.instanceConfigsTable-add_kinectBottomLeft' ).val('(' + instanceConfig.kinectBottomLeft.x + ',' + instanceConfig.kinectBottomLeft.y + ')');
         row.find('.instanceConfigsTable-kinectHost').val(instanceConfig.kinect.host);
         row.find('.instanceConfigsTable-kinectPort').val(instanceConfig.kinect.port);
         row.find('.instanceConfigsTable-cameraHost').val(instanceConfig.camera.host);
@@ -190,6 +243,11 @@ $(function() {
         var topRight = coordUnpackRegexp.exec(row.find('.instanceConfigsTable-topRight').val());
         var bottomRight = coordUnpackRegexp.exec(row.find('.instanceConfigsTable-bottomRight').val());
         var bottomLeft = coordUnpackRegexp.exec(row.find('.instanceConfigsTable-bottomLeft').val());
+
+        var kinectTopLeft = coordUnpackRegexp.exec(row.find('.instanceConfigsTable-add_kinectTopLeft').val());
+        var kinectTopRight = coordUnpackRegexp.exec(row.find('.instanceConfigsTable-add_kinectTopRight').val());
+        var kinectBottomRight = coordUnpackRegexp.exec(row.find('.instanceConfigsTable-add_kinectBottomRight').val());
+        var kinectBottomLeft = coordUnpackRegexp.exec(row.find('.instanceConfigsTable-add_kinectBottomLeft').val());
 
         var data = {
             sessionId: row.find('.instanceConfigsTable-sessionId').val(),

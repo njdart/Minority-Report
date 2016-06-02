@@ -72,7 +72,16 @@ def create_instance_configuration(details):
                                    bottomRightX=details["bottomRight"]["x"] if "bottomRight" in details else None,
                                    bottomRightY=details["bottomRight"]["y"] if "bottomRight" in details else None,
                                    bottomLeftX=details["bottomLeft"]["x"] if "bottomLeft" in details else None,
-                                   bottomLeftY=details["bottomLeft"]["y"] if "bottomLeft" in details else None)
+                                   bottomLeftY=details["bottomLeft"]["y"] if "bottomLeft" in details else None,
+                                   kinectTopLeftX=details["kinectTopLeft"]["x"] if "kinectTopLeft" in details else None,
+                                   kinectTopLeftY=details["kinectTopLeft"]["y"] if "kinectTopLeft" in details else None,
+                                   kinectTopRightX=details["kinectTopRight"]["x"] if "kinectTopRight" in details else None,
+                                   kinectTopRightY=details["kinectTopRight"]["y"] if "kinectTopRight" in details else None,
+                                   kinectBottomRightX=details["kinectBottomRight"]["x"] if "kinectBottomRight" in details else None,
+                                   kinectBottomRightY=details["kinectBottomRight"]["y"] if "kinectBottomRight" in details else None,
+                                   kinectBottomLeftX=details["kinectBottomLeft"]["x"] if "kinectBottomLeft" in details else None,
+                                   kinectBottomLeftY=details["kinectBottomLeft"]["y"] if "kinectBottomLeft" in details else None,
+                                   )
     emit('create_instance_configuration', config.create().as_object())
 
 
@@ -106,12 +115,21 @@ def update_instanceConfig(id, details):
     config.bottomRightY = details["bottomRight"]["y"] if "bottomRight" in details else None
     config.bottomLeftX = details["bottomLeft"]["x"] if "bottomLeft" in details else None
     config.bottomLeftY = details["bottomLeft"]["y"] if "bottomLeft" in details else None
+    config.kinectTopLeftX = details["kinectTopLeft"]["x"] if "kinectTopLeft" in details else None
+    config.kinectTopLeftY = details["kinectTopLeft"]["y"] if "kinectTopLeft" in details else None
+    config.kinectTopRightX = details["kinectTopRight"]["x"] if "kinectTopRight" in details else None
+    config.kinectTopRightY = details["kinectTopRight"]["y"] if "kinectTopRight" in details else None
+    config.kinectBottomRightX = details["kinectBottomRight"]["x"] if "kinectBottomRight" in details else None
+    config.kinectBottomRightY = details["kinectBottomRight"]["y"] if "kinectBottomRight" in details else None
+    config.kinectBottomLeftX = details["kinectBottomLeft"]["x"] if "kinectBottomLeft" in details else None
+    config.kinectBottomLeftY = details["kinectBottomLeft"]["y"] if "kinectBottomLeft" in details else None
 
     emit('update_instanceConfig', config.update().as_object())
 
 @socketio.on('update_instanceConfig_coords')
 def update_instanceConfig_coords(id, data):
     config = InstanceConfiguration.get(id=id)
+    config.topLeftX = data["topLeft"]["x"]
     config.topLeftY = data["topLeft"]["y"]
     config.topRightX = data["topRight"]["x"]
     config.topRightY = data["topRight"]["y"]
@@ -119,6 +137,19 @@ def update_instanceConfig_coords(id, data):
     config.bottomRightY = data["bottomRight"]["y"]
     config.bottomLeftX = data["bottomLeft"]["x"]
     config.bottomLeftY = data["bottomLeft"]["y"]
+    config.update()
+
+@socketio.on('update_instanceConfig_kinectCoords')
+def update_instanceConfig_coords(id, data):
+    config = InstanceConfiguration.get(id=id)
+    config.kinectTopLeftX = data["kinectTopLeft"]["x"]
+    config.kinectTopLeftY = data["kinectTopLeft"]["y"]
+    config.kinectTopRightX = data["kinectTopRight"]["x"]
+    config.kinectTopRightY = data["kinectTopRight"]["y"]
+    config.kinectBottomRightX = data["kinectBottomRight"]["x"]
+    config.kinectBottomRightY = data["kinectBottomRight"]["y"]
+    config.kinectBottomLeftX = data["kinectBottomLeft"]["x"]
+    config.kinectBottomLeftY = data["kinectBottomLeft"]["y"]
     config.update()
 
 @socketio.on('calibrate_instance_configuration')

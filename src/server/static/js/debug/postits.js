@@ -53,6 +53,77 @@ $(function() {
             .text(postit.id))
     };
 
+    var addPostitCanvasGroupsToTable = function(postits) {
+        var canvasIds = {};
+        postits.forEach(function (current) {
+            if (canvasIds[current.canvas] == undefined)
+            {
+                canvasIds[current.canvas] = [];
+            }
+            canvasIds[current.canvas].push(current);
+        });
+
+        console.log(canvasIds);
+
+        //canvasIds.forEach(function (key, currentCanvasIdSet) {
+        for (var canvasId in canvasIds){
+            if(canvasIds.hasOwnProperty(canvasId)) {
+                console.log("current set: " + canvasId);
+                currentCanvasIdSet = canvasIds[canvasId];
+                var row = $('<tr></tr>');
+                currentCanvasIdSet.forEach(function (postit) {
+                    console.log(postit);
+                    // Canvas ID
+                    row.append($('<td class="postitsTable-postitId"></td>')
+                        .append($('<a></a>')
+                            .text(postit.id)
+                            .attr('target', '_blank')
+                            .attr('href', '/api/postit/' + postit.id)));
+
+                    // Canvas
+                    row.append($('<td></td>')
+                        .append($('<input type="text" class="form-control postitsTable-canvasId">')
+                            .val(postit.canvas)));
+
+                    // Corners
+                    row.append($('<td></td>')
+                        .append($('<div class="form-group"></div>')
+                            .append($('<label>TopLeft as (x,y)</label>'))
+                            .append($('<input type="text" class="form-control postitsTable-topLeft" placeholder="(x,y)">')
+                                .val('(' + postit.topLeft.x + ',' + postit.topLeft.y + ')')))
+                        .append($('<div class="form-group"></div>')
+                            .append($('<label>TopRight as (x,y)</label>'))
+                            .append($('<input type="text" class="form-control postitsTable-topRight" placeholder="(x,y)">')
+                                .val('(' + postit.topRight.x + ',' + postit.topRight.y + ')')))
+                        .append($('<div class="form-group"></div>')
+                            .append($('<label>BottomRight as (x,y)</label>'))
+                            .append($('<input type="text" class="form-control postitsTable-bottomRight" placeholder="(x,y)">')
+                                .val('(' + postit.bottomRight.x + ',' + postit.bottomRight.y + ')')))
+                        .append($('<div class="form-group"></div>')
+                            .append($('<label>BottomLeft as (x,y)</label>'))
+                            .append($('<input type="text" class="form-control postitsTable-bottomLeft" placeholder="(x,y)">')
+                                .val('(' + postit.bottomLeft.x + ',' + postit.bottomLeft.y + ')'))));
+
+                    // Colour
+                    row.append($('<td></td>')
+                        .append($('<input type="text" class="form-control postitsTable-colour" placeholder="orange">')));
+
+                    // Save + Remove Button
+                    row.append($('<td></td>')
+                        .append($('<button type="submit" class="btn btn-primary postitsTable-save">Save</button>'))
+                        .append($('<button type="submit" class="btn btn-danger postitsTable-remove">Remove</button>')));
+
+                    table.append(row);
+                    canvasesLists.append($('<option class="postitsList-postit"></option>')
+                        .attr('value', postit.id)
+                        .text(postit.id))
+
+                });
+            }
+
+        }
+    };
+
     // CREATE
     $('.postitsTable-add').click(function() {
         var row = $(this).parent().parent();
@@ -105,6 +176,7 @@ $(function() {
         $('.postitsList-postit').remove();
 
         postits.forEach(addPostitToTable);
+        //addPostitCanvasGroupsToTable(postits);
     });
 
     // UPDATE
