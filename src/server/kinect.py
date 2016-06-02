@@ -1,13 +1,13 @@
-from src.server import app
 from flask import request
 from flask.json import jsonify
-from src.model.InstanceConfiguration import InstanceConfiguration
-from src.server.api.image_api import generate_canvas
+from src.model import (GetKinectEnable, ToggleKinectEnable)
 from src.model.Image import Image
-import uuid
+from src.model.InstanceConfiguration import InstanceConfiguration
 from src.model.Session import Session
 from src.server import (app, socketio)
+from src.server.api.image_api import generate_canvas
 import time
+import uuid
 
 @app.route('/boardObscured', methods=['GET', 'POST'])
 def boardObscured():
@@ -18,10 +18,16 @@ def boardObscured():
     print(request.data)
 
     if request.get_json()["boardObscured"]:
-        print("board not obscured")
+        print("board obscured")
+        socketio.emit("body_detected", broadcast=True)
         return jsonify({"message": "nothing to do"}), 200
 
-    print("board obscured")
+    print("board not obscured")
+    socketio.emit("body_not_detected", broadcast=True)
+    # ignore message if global flag is set
+    if not GetKinectEnable():
+        print("ignoring (kinectEnable = False)")
+        return jsonify({"message": "echo that. ignoring due to kinectEnable flag."}), 200
 
     # IP address 127.0.0.1 is localhost
     localhosts = ["127.0.0.1", "localhost", "::1"]
@@ -36,8 +42,8 @@ def boardObscured():
         return jsonify({"message": "your IP does not belong to any instance configurations."}), 400
 
     # blank canvas
-    socketio.emit("blank_canvas_black", broadcast=True)
-    time.sleep(0.25)
+    socketio.emit("blank_canvas_black", config.id, broadcast=True)
+    time.sleep(0.5)
 
     # take picture
     id = config.get_camera_image()

@@ -11,16 +11,8 @@ namespace MinorityReport
     {
         static void Main()
         {
-            try
-            {
-                KinectClient client = new KinectClient("srv", 0);
-                client.Run();
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show(ex.Message, "KinectClient");
-                Environment.Exit(1);
-            }
+            KinectClient client = new KinectClient("srv", 0);
+            client.Run();
         }
     }
 }

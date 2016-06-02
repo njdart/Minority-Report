@@ -4,7 +4,7 @@ var latestCanvas;
 var userId;
 var sessionId;
 
-var POSTIT_SIZE = 125;
+var POSTIT_SIZE = 115;
 
 var OFFSET = POSTIT_SIZE/2;
 
@@ -200,8 +200,6 @@ var drawImageOnCanvas = function(image, x, y) {
     console.log("drawImageOnCanvas(): drawing image with size " + image.height + "x" + image.width + " to canvas at (" + x + "," + y + ")");
     hudContext.drawImage(image, x, y);
 }
-
-%
 
 function setCanvasBlack() {
     console.log("setCanvasBlack(): setting canvas background black");
