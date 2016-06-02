@@ -179,4 +179,9 @@ def toggle_kinect_enable():
     ToggleKinectEnable()
     print("kinectEnable = {}".format(GetKinectEnable()))
 
+@socketio.on('get_kinect_image_url')
+def get_kinect_image_url(icId):
+    ic = InstanceConfiguration.get(id=icId)
+    emit('get_kinect_image_url', "http://"+ic.kinectHost+"/"+ic.kinectPort+"/calibrate")
+
 print('Registered Instance Configuration API methods')

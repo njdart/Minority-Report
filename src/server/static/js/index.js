@@ -1,8 +1,12 @@
 var pointCanvas;
 var pointCanvasContext;
 var stage;
+var kinectStage;
+
+var kinectUri;
 
 var CANVAS_IMAGE_SCALE_FACTOR = 0.05;
+var CANVAS_KINECT_IMAGE_SCALE_FACTOR = 0.1;
 $(function() {
     $('#loginModal').modal({
         keyboard: false,
@@ -11,6 +15,7 @@ $(function() {
     });
 
     stage = new createjs.Stage("rawPointRedefineCanvas");
+    kinectStage = new createjs.Stage("rawPointKinectRedefineCanvas");
 
     $('#loginModal').on('hidden.bs.modal', function (e) {
         socket.emit('get_latest_image_id_by_instance_configuration',  localStorage["instanceConfigurationId"]);
@@ -31,12 +36,17 @@ $(function() {
         postits = []
 
     var RAW_IMAGE_PREFIX = "/api/image/";
-    var latestRawId = ""
+    var KINECT_RAW_IMAGE_PREFIX = "http://10.0.0.2:8081/calibrate";
+    var latestRawId = "";
+
+
     canvasImage = "http://i.huffpost.com/gen/1975176/images/o-SLEEPY-CAT-WATERMELON-facebook.jpg";
 
     socket.on("get_latest_image_id_by_instance_configuration", function (imageId) {
         latestRawId = imageId;
         updateRawImage();
+
+        //updateKinectRawImage(); //done on emit('get_kinect_image_url") return
         //other image updates here?
     });
 
@@ -51,39 +61,6 @@ $(function() {
 
         var img = new Image;
 
-        var fitImageOn = function(canvas, imageObj) {
-            var imageAspectRatio = imageObj.width / imageObj.height;
-            var canvasAspectRatio = canvas.width / canvas.height;
-            var renderableHeight, renderableWidth, xStart, yStart;
-
-            // If image's aspect ratio is less than canvas's we fit on height
-            // and place the image centrally along width
-            if(imageAspectRatio < canvasAspectRatio) {
-                renderableHeight = canvas.height;
-                renderableWidth = imageObj.width * (renderableHeight / imageObj.height);
-                xStart = (canvas.width - renderableWidth) / 2;
-                yStart = 0;
-            }
-
-            // If image's aspect ratio is greater than canvas's we fit on width
-            // and place the image centrally along height
-            else if(imageAspectRatio > canvasAspectRatio) {
-                renderableWidth = canvas.width
-                renderableHeight = imageObj.height * (renderableWidth / imageObj.width);
-                xStart = 0;
-                yStart = (canvas.height - renderableHeight) / 2;
-            }
-
-            // Happy path - keep aspect ratio
-            else {
-                renderableHeight = canvas.height;
-                renderableWidth = canvas.width;
-                xStart = 0;
-                yStart = 0;
-            }
-            pointCanvasContext.drawImage(imageObj, xStart, yStart, renderableWidth, renderableHeight);
-        };
-
         img.onload = loadImgToStage;
 
         function loadImgToStage(event) {
@@ -96,6 +73,31 @@ $(function() {
         }
 
         img.src = RAW_IMAGE_PREFIX + latestRawId;
+    }
+
+    socket.on('get_kinect_image_url', function (url) {
+        console.log("received kinect url: " + url);
+        kinectUri = url;
+        updateKinectRawImage()
+    });
+    socket.emit('get_kinect_image_url');
+
+    function updateKinectRawImage()
+    {
+        $("#currentKinectRaw").attr("src", kinectUri);
+        var img = new Image();
+        img.onload = loadImgToKinectStage;
+
+        function loadImgToKinectStage(event) {
+            var image = event.target;
+            var bitmap = new createjs.Bitmap(image);
+            bitmap.cache(0,0,image.width,image.height, CANVAS_KINECT_IMAGE_SCALE_FACTOR);
+            var scaledBitmap = new createjs.Bitmap(bitmap.cacheCanvas);
+            kinectStage.addChild(scaledBitmap);
+            kinectStage.update();
+        }
+
+        img.src = KINECT_RAW_IMAGE_PREFIX;
     }
 
     socket.on('get_users', function(users) {
@@ -308,6 +310,143 @@ $(function() {
             console.log("sending new coords to server");
             console.log(values);
             socket.emit("update_instanceConfig_coords", localStorage.getItem("instanceConfigurationId"), values);
+        });
+    });
+
+    var setupKinectPointCanvas = true;
+    $("#editKinectCanvasBtn").on("click", function() {
+
+        console.log('#editKinectCanvasBtn Click');
+        if(setupKinectPointCanvas)
+        {
+            setupKinectPointCanvas = false;
+            //remove draggable from image
+            $("img").on("dragstart", function (event) {
+                event.preventDefault();
+            });
+
+            // draggable canvas objects
+            kinectStage.mouseMoveOutside = true;
+
+            var topLeft = new createjs.Shape(),
+                topRight = new createjs.Shape(),
+                botLeft = new createjs.Shape(),
+                botRight = new createjs.Shape();
+
+            var lSize = 7;
+            topLeft.graphics.beginStroke("red").lt(0,lSize).lt(0,0).lt(lSize,0);
+            topRight.graphics.beginStroke("red").lt(-lSize,0).lt(0,0).lt(0,lSize);
+            botLeft.graphics.beginStroke("red").lt(0,-lSize).lt(0,0).lt(lSize,0);
+            botRight.graphics.beginStroke("red").lt(0,-lSize).lt(0,0).lt(-lSize,0);
+
+            var topLeftDragger = new createjs.Container(),
+                topRightDragger = new createjs.Container(),
+                botLeftDragger = new createjs.Container(),
+                botRightDragger = new createjs.Container();
+
+            var addChildren = function () {
+                topLeftDragger.name = "topLeft";
+                topRightDragger.name = "topRight";
+                botLeftDragger.name = "botLeft";
+                botRightDragger.name = "botRight";
+                topLeftDragger.addChild(topLeft);
+                topRightDragger.addChild(topRight);
+                botLeftDragger.addChild(botLeft);
+                botRightDragger.addChild(botRight);
+                kinectStage.addChild(topLeftDragger);
+                kinectStage.addChild(topRightDragger);
+                kinectStage.addChild(botLeftDragger);
+                kinectStage.addChild(botRightDragger);
+            };
+
+            var createLines = function () {
+                var c = $("#rawPointKinectRedefineCanvas")[0];
+                var ctx = c.getContext("2d");
+                ctx.beginPath();
+                ctx.moveTo(x1, y1);
+                ctx.lineTo(x2, y1);
+                ctx.lineTo(x2, y2);
+                ctx.lineTo(x1, y2);
+                ctx.lineTo(x1, y1);
+            };
+
+            var setCornerPositions = function () {
+                addChildren();
+                topLeftDragger.x = x1;
+                topLeftDragger.y = y1;
+                topRightDragger.x = x2;
+                topRightDragger.y = y1;
+                botLeftDragger.x = x1;
+                botLeftDragger.y = y2;
+                botRightDragger.x = x2;
+                botRightDragger.y = y2;
+            };
+
+            var x1 = 20,
+                x2 = 40,
+                y1 = 20,
+                y2 = 40;
+
+            setCornerPositions();
+
+            topLeftDragger.on("pressmove", function (evt) {
+                evt.currentTarget.x = evt.stageX;
+                evt.currentTarget.y = evt.stageY;
+                kinectStage.update();
+                createLines(20, 20, 40, 60);
+            });
+
+            topRightDragger.on("pressmove", function (evt) {
+                evt.currentTarget.x = evt.stageX;
+                evt.currentTarget.y = evt.stageY;
+                kinectStage.update();
+            });
+
+            botLeftDragger.on("pressmove", function (evt) {
+                evt.currentTarget.x = evt.stageX;
+                evt.currentTarget.y = evt.stageY;
+                kinectStage.update();
+            });
+
+            botRightDragger.on("pressmove", function (evt) {
+                evt.currentTarget.x = evt.stageX;
+                evt.currentTarget.y = evt.stageY;
+                kinectStage.update();
+            });
+        }
+
+        kinectStage.update();
+
+        $(".closeb").click(function() {
+            $(".selection-box").remove();
+        });
+
+        $("#kinectImageSave").click(function() {
+            values = {
+                "kinectTopLeft":
+                {
+                    "x": Math.floor(kinectStage.getChildByName("topLeft").x / CANVAS_KINECT_IMAGE_SCALE_FACTOR),
+                    "y": Math.floor(kinectStage.getChildByName("topLeft").y / CANVAS_KINECT_IMAGE_SCALE_FACTOR),
+                },
+                "kinectTopRight":
+                {
+                    "x": Math.floor(kinectStage.getChildByName("topRight").x / CANVAS_KINECT_IMAGE_SCALE_FACTOR),
+                    "y": Math.floor(kinectStage.getChildByName("topRight").y / CANVAS_KINECT_IMAGE_SCALE_FACTOR),
+                },
+                "kinectBottomLeft":
+                {
+                    "x": Math.floor(kinectStage.getChildByName("botLeft").x / CANVAS_KINECT_IMAGE_SCALE_FACTOR),
+                    "y": Math.floor(kinectStage.getChildByName("botLeft").y / CANVAS_KINECT_IMAGE_SCALE_FACTOR),
+                },
+                "kinectBottomRight":
+                {
+                    "x": Math.floor(kinectStage.getChildByName("botRight").x / CANVAS_KINECT_IMAGE_SCALE_FACTOR),
+                    "y": Math.floor(kinectStage.getChildByName("botRight").y / CANVAS_KINECT_IMAGE_SCALE_FACTOR),
+                }
+            }
+            console.log("sending new coords to server");
+            console.log(values);
+            socket.emit("update_instanceConfig_kinectCoords", localStorage.getItem("instanceConfigurationId"), values);
         });
     });
 
