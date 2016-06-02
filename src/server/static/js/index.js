@@ -3,9 +3,10 @@ var pointCanvasContext;
 var stage;
 var kinectStage;
 
-var kinectImage;
+var kinectUri;
 
 var CANVAS_IMAGE_SCALE_FACTOR = 0.05;
+var CANVAS_KINECT_IMAGE_SCALE_FACTOR = 0.1;
 $(function() {
     $('#loginModal').modal({
         keyboard: false,
@@ -45,7 +46,7 @@ $(function() {
         latestRawId = imageId;
         updateRawImage();
 
-        updateKinectRawImage();
+        //updateKinectRawImage(); //done on emit('get_kinect_image_url") return
         //other image updates here?
     });
 
@@ -74,20 +75,23 @@ $(function() {
         img.src = RAW_IMAGE_PREFIX + latestRawId;
     }
 
-    //socket.on('get_kinect_image_url', function (url) {
-    //    $("#currentKinectRaw").attr("src", KINECT_RAW_IMAGE_PREFIX);
-    //});
+    socket.on('get_kinect_image_url', function (url) {
+        console.log("received kinect url: " + url);
+        kinectUri = url;
+        updateKinectRawImage()
+    });
+    socket.emit('get_kinect_image_url');
 
     function updateKinectRawImage()
     {
-        $("#currentKinectRaw").attr("src", KINECT_RAW_IMAGE_PREFIX);
+        $("#currentKinectRaw").attr("src", kinectUri);
         var img = new Image();
         img.onload = loadImgToKinectStage;
 
         function loadImgToKinectStage(event) {
             var image = event.target;
             var bitmap = new createjs.Bitmap(image);
-            bitmap.cache(0,0,image.width,image.height, CANVAS_IMAGE_SCALE_FACTOR);
+            bitmap.cache(0,0,image.width,image.height, CANVAS_KINECT_IMAGE_SCALE_FACTOR);
             var scaledBitmap = new createjs.Bitmap(bitmap.cacheCanvas);
             kinectStage.addChild(scaledBitmap);
             kinectStage.update();
@@ -421,23 +425,23 @@ $(function() {
             values = {
                 "kinectTopLeft":
                 {
-                    "x": Math.floor(kinectStage.getChildByName("topLeft").x / CANVAS_IMAGE_SCALE_FACTOR),
-                    "y": Math.floor(kinectStage.getChildByName("topLeft").y / CANVAS_IMAGE_SCALE_FACTOR),
+                    "x": Math.floor(kinectStage.getChildByName("topLeft").x / CANVAS_KINECT_IMAGE_SCALE_FACTOR),
+                    "y": Math.floor(kinectStage.getChildByName("topLeft").y / CANVAS_KINECT_IMAGE_SCALE_FACTOR),
                 },
                 "kinectTopRight":
                 {
-                    "x": Math.floor(kinectStage.getChildByName("topRight").x / CANVAS_IMAGE_SCALE_FACTOR),
-                    "y": Math.floor(kinectStage.getChildByName("topRight").y / CANVAS_IMAGE_SCALE_FACTOR),
+                    "x": Math.floor(kinectStage.getChildByName("topRight").x / CANVAS_KINECT_IMAGE_SCALE_FACTOR),
+                    "y": Math.floor(kinectStage.getChildByName("topRight").y / CANVAS_KINECT_IMAGE_SCALE_FACTOR),
                 },
                 "kinectBottomLeft":
                 {
-                    "x": Math.floor(kinectStage.getChildByName("botLeft").x / CANVAS_IMAGE_SCALE_FACTOR),
-                    "y": Math.floor(kinectStage.getChildByName("botLeft").y / CANVAS_IMAGE_SCALE_FACTOR),
+                    "x": Math.floor(kinectStage.getChildByName("botLeft").x / CANVAS_KINECT_IMAGE_SCALE_FACTOR),
+                    "y": Math.floor(kinectStage.getChildByName("botLeft").y / CANVAS_KINECT_IMAGE_SCALE_FACTOR),
                 },
                 "kinectBottomRight":
                 {
-                    "x": Math.floor(kinectStage.getChildByName("botRight").x / CANVAS_IMAGE_SCALE_FACTOR),
-                    "y": Math.floor(kinectStage.getChildByName("botRight").y / CANVAS_IMAGE_SCALE_FACTOR),
+                    "x": Math.floor(kinectStage.getChildByName("botRight").x / CANVAS_KINECT_IMAGE_SCALE_FACTOR),
+                    "y": Math.floor(kinectStage.getChildByName("botRight").y / CANVAS_KINECT_IMAGE_SCALE_FACTOR),
                 }
             }
             console.log("sending new coords to server");
