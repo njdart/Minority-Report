@@ -16,6 +16,7 @@ using System;
 // Yes, this is ugly. Blame Microsoft for creating a class named PointF in two libraries that behave completely
 // differently. Seriously, why?
 using Draw = System.Drawing;
+using System.Runtime.InteropServices;
 
 namespace MinorityReport
 {
@@ -40,22 +41,27 @@ namespace MinorityReport
         private KinectSensor sensor = null;
         private BodyIndexFrameReader bodyIndexReader = null;
         private ColorFrameReader colorReader = null;
+        private MultiSourceFrameReader multiFrameReader = null;
 
         private bool samplingColorFrames = false;
         private bool samplingBodyData = false;
 
+        private ushort[] calibrationDepthData;
+
         private byte[] latestColorPNG = null;
         private Draw.PointF latestPNGDimensions;
-        private Matrix<float> perspectiveMatrix = null;
-        private string matrixFile = "matrix.json";
+        private string configFile = "config.json";
 
         private string instanceID;
 
         private Draw.PointF[] canvasCoords;
+        private Vector<float> canvasNormal;
+        private Matrix<float> perspectiveMatrix = null;
         private bool boardObscured = false;
 
         private Timer sensorAvailableTimer;
         private bool sensorTimerElapsed = false;
+        private bool testMapping = true;
 
         public string Server { get; set; } = null;
         public int Port { get; set; } = 8088;
@@ -64,6 +70,15 @@ namespace MinorityReport
 
         public KinectClient(string server, int port)
         {
+            if (this.ConfigurationFromFile())
+            {
+                Console.Write("Calibrated perspective matrix retrieved from file saved in previous session.\n");
+            }
+            else
+            {
+                Console.Write("Kinect application is not calibrated.\n");
+            }
+
             // If this timer elapses, an exception is thrown in Run().
             this.sensorAvailableTimer = new Timer(5000);
             this.sensorAvailableTimer.Elapsed += this.SensorAvailableTimer_Elapsed;
@@ -73,21 +88,171 @@ namespace MinorityReport
             this.sensor.IsAvailableChanged += Sensor_IsAvailableChanged;
             this.sensor.Open();
 
-            this.bodyIndexReader = this.sensor.BodyIndexFrameSource.OpenReader();
-            this.colorReader = this.sensor.ColorFrameSource.OpenReader();
-            this.bodyIndexReader.FrameArrived += this.BodyIndexReader_FrameArrived;
-            this.colorReader.FrameArrived += this.ColorReader_FrameArrived;
+            // this.bodyIndexReader = this.sensor.BodyIndexFrameSource.OpenReader();
+            // this.colorReader = this.sensor.ColorFrameSource.OpenReader();
+            this.multiFrameReader = this.sensor.OpenMultiSourceFrameReader(FrameSourceTypes.BodyIndex |
+                                                                           FrameSourceTypes.Color     |
+                                                                           FrameSourceTypes.Depth);
+
+            // this.bodyIndexReader.FrameArrived += this.BodyIndexReader_FrameArrived;
+            // this.colorReader.FrameArrived += this.ColorReader_FrameArrived;
+            this.multiFrameReader.MultiSourceFrameArrived += this.MultiFrameReader_MultiSourceFrameArrived;
             this.samplingBodyData = true;
 
             this.BoardObscuredChanged += this.KinectClient_BoardObscuredChanged;
+        }
 
-            if (this.ConfigurationFromFile())
+        private void MultiFrameReader_MultiSourceFrameArrived(object sender, MultiSourceFrameArrivedEventArgs e)
+        {
+            BodyIndexFrame bodyIndexFrame = null;
+            ColorFrame colorFrame = null;
+            DepthFrame depthFrame = null;
+
+            try
             {
-                Console.Write("Calibrated perspective matrix retrieved from file saved in previous session.\n");
+                MultiSourceFrameReference multiFrameRef = e.FrameReference;
+                MultiSourceFrame multiFrame = multiFrameRef.AcquireFrame();
+
+                BodyIndexFrameReference bodyIndexFrameRef = multiFrame.BodyIndexFrameReference;
+                ColorFrameReference colorFrameRef = multiFrame.ColorFrameReference;
+                DepthFrameReference depthFrameRef = multiFrame.DepthFrameReference;
+
+                bodyIndexFrame = bodyIndexFrameRef.AcquireFrame();
+                colorFrame = colorFrameRef.AcquireFrame();
+                depthFrame = depthFrameRef.AcquireFrame();
+
+                if (bodyIndexFrame == null || colorFrame == null || depthFrame == null)
+                {
+                    return;
+                }
+
+                ushort[] depthData = new ushort[depthFrame.FrameDescription.LengthInPixels];
+                depthFrame.CopyFrameDataToArray(depthData);
+
+                if (this.samplingColorFrames)
+                {
+                    this.SaveColorImage(colorFrame);
+                    this.calibrationDepthData = depthData;
+                    this.samplingColorFrames = false;
+                }
+
+                // The block below is for debug purposes - it runs only once, upon the first received MultiSourceFrame.
+                if (this.testMapping)
+                {
+                    // Save color image to PNG file
+                    this.SaveColorImage(colorFrame);
+                    FileStream colorImgFile = new FileStream("color_img_debug.png", FileMode.Create);
+                    colorImgFile.Write(this.latestColorPNG, 0, this.latestColorPNG.Length);
+                    colorImgFile.Close();
+
+                    // Map each depth point to a point in 'color space'
+                    CoordinateMapper mapper = this.sensor.CoordinateMapper;
+                    ColorSpacePoint[] mappedColorPoints = new ColorSpacePoint[depthData.Length];
+                    mapper.MapDepthFrameToColorSpace(depthData, mappedColorPoints);
+
+                    // Produce a BGRA image of the depth data at 1080p
+                    byte[] depthImg = new byte[1920 * 1080 * 4];
+                    for (int i = 0; i < depthData.Length; ++i)
+                    {
+                        int x = (int)Math.Floor(mappedColorPoints[i].X);
+                        int y = (int)Math.Floor(mappedColorPoints[i].Y);
+
+                        if (x >= 0 && x < 1920 && y >= 0 && y < 1080)
+                        {
+                            int idx = 4 * (x + y * 1920);
+                            depthImg[idx] = 255;
+                            depthImg[idx + 1] = 255;
+                            depthImg[idx + 2] = 255;
+                            depthImg[idx + 3] = 255;
+                        }
+                    }
+
+                    // Save the produced depth image to PNG file
+                    WriteableBitmap bmp = new WriteableBitmap(1920, 1080, 96, 96, PixelFormats.Bgra32, null);
+                    bmp.Lock();
+                    Marshal.Copy(depthImg, 0, bmp.BackBuffer, depthImg.Length);
+                    bmp.AddDirtyRect(new Int32Rect(0, 0, 1920, 1080));
+                    bmp.Unlock();
+                    PngBitmapEncoder pngEncode = new PngBitmapEncoder();
+                    pngEncode.Frames.Add(BitmapFrame.Create(bmp));
+                    FileStream depthImgFile = new FileStream("depth_img_debug.png", FileMode.Create);
+                    pngEncode.Save(depthImgFile);
+                    depthImgFile.Close();
+
+                    // Map depth points into color space, then each color space point into camera space
+                    CameraSpacePoint[] cameraSpacePoints = new CameraSpacePoint[1920 * 1080];
+                    this.sensor.CoordinateMapper.MapColorFrameToCameraSpace(depthData, cameraSpacePoints);
+
+                    // Set colour in 1080p image depending on Z value.
+                    byte[] cameraImg = new byte[cameraSpacePoints.Length];
+                    for (int i = 0; i < cameraSpacePoints.Length; ++i)
+                    {
+                        // Map from 0 to 4 metres.
+                        int z = (int)Math.Floor((cameraSpacePoints[i].Z - 2) * (256));
+                        if (z > 255) z = 255;
+                        else if (z < 0) z = 0;
+                        cameraImg[i] = (byte)z;
+                    }
+
+                    // Save produced camera image to PNG file
+                    bmp = new WriteableBitmap(1920, 1080, 96, 96, PixelFormats.Gray8, null);
+                    bmp.Lock();
+                    Marshal.Copy(cameraImg, 0, bmp.BackBuffer, cameraImg.Length);
+                    bmp.AddDirtyRect(new Int32Rect(0, 0, 1920, 1080));
+                    bmp.Unlock();
+                    pngEncode = new PngBitmapEncoder();
+                    pngEncode.Frames.Add(BitmapFrame.Create(bmp));
+                    FileStream cameraImgFile = new FileStream("camera_img_debug.png", FileMode.Create);
+                    pngEncode.Save(cameraImgFile);
+                    cameraImgFile.Close();
+
+                    this.testMapping = false;
+                }
+
+                if (this.samplingBodyData && this.perspectiveMatrix != null)
+                {
+                    byte[] bodyIndexData = new byte[depthData.Length];
+                    ColorSpacePoint[] mappedColorPoints = new ColorSpacePoint[depthData.Length];
+
+                    bodyIndexFrame.CopyFrameDataToArray(bodyIndexData);
+
+                    // Map each depth point to a point in 'color space'
+                    CoordinateMapper mapper = this.sensor.CoordinateMapper;
+                    mapper.MapDepthFrameToColorSpace(depthData, mappedColorPoints);
+
+                    // Map each color space point to a point in 'canvas space'
+                    for (int i = 0; i < mappedColorPoints.Length; ++i)
+                    {
+                        Vector<float> v = CreateVector.Dense<float>(3);
+                        v[0] = mappedColorPoints[i].X;
+                        v[1] = mappedColorPoints[i].Y;
+                        v[2] = 1;
+                        v = this.TransformToCanvasSpace(v);
+                        mappedColorPoints[i].X = v[0];
+                        mappedColorPoints[i].Y = v[1];
+                    }
+
+                    FileStream file = new FileStream("kek.txt", FileMode.Create);
+                    StreamWriter writer = new StreamWriter(file);
+                    writer.Write("points = [\n");
+                    foreach (ColorSpacePoint p in mappedColorPoints)
+                    {
+                        writer.Write("    ({0}, {1}),\n", p.X, p.Y);
+                    }
+                    writer.Write("]");
+                    writer.Close();
+                    file.Close();
+                }
             }
-            else
+            catch (Exception ex)
             {
-                Console.Write("Kinect application is not calibrated.\n");
+                Console.Write("Exception occurred in MultiFrameReader_MultiSourceFrameArrived: {0}", ex.ToString());
+            }
+            finally
+            {
+                if (bodyIndexFrame != null) bodyIndexFrame.Dispose();
+                if (colorFrame != null) colorFrame.Dispose();
+                if (depthFrame != null) depthFrame.Dispose();
             }
         }
 
@@ -291,40 +456,65 @@ namespace MinorityReport
                                 outputBounds = ImageWarping.OrderPoints(outputBounds);
                                 this.perspectiveMatrix = ImageWarping.GetPerspectiveTransform(this.canvasCoords, outputBounds);
                                 this.ConfigurationToFile();
+
+                                // Convert the depth image to camera space (X,Y,Z; Z extending from the front of the IR
+                                // sensor), at 1080p (so each pixel in color space can be assigned a 3D camera space
+                                // point).
+                                CoordinateMapper mapper = this.sensor.CoordinateMapper;
+                                CameraSpacePoint[] cameraPoints = new CameraSpacePoint[1920 * 1080];
+                                mapper.MapColorFrameToCameraSpace(this.calibrationDepthData, cameraPoints);
+
+                                // Get the camera space points at the canvas corners
+                                Vector<float>[] canvasPoints3D = new Vector<float>[3];
+                                for (int i = 0; i < 3; ++i)
+                                {
+                                    int x = (int)Math.Floor(this.canvasCoords[i].X);
+                                    int y = (int)Math.Floor(this.canvasCoords[i].Y);
+                                    Console.Write("({0}, {1}, {2})\n", cameraPoints[x + y * 1920].X, cameraPoints[x + y * 1920].Y, cameraPoints[x + y * 1920].Z);
+
+                                    canvasPoints3D[i] = CreateVector.Dense<float>(3);
+                                    canvasPoints3D[i][0] = cameraPoints[x + y * 1920].X;
+                                    canvasPoints3D[i][1] = cameraPoints[x + y * 1920].Y;
+                                    canvasPoints3D[i][2] = cameraPoints[x + y * 1920].Z;
+                                }
+                                Console.Write("(Skipping the final point.)\n");
+
+                                // Calculate the normal of the plane of the canvas.
+                                Vector<float> u = canvasPoints3D[0] - canvasPoints3D[1];
+                                Vector<float> v = canvasPoints3D[1] - canvasPoints3D[2];
+                                Vector<float> n = CreateVector.Dense<float>(3);
+                                n[0] = u[1] * v[2] - u[2] * v[1];
+                                n[1] = u[2] * v[0] - u[0] * v[2];
+                                n[2] = u[0] * v[1] - u[1] * v[0];
+                                Console.Write("Normal: ({0}, {1}, {2})\n", n[0], n[1], n[2]);
+                                this.canvasNormal = n;
                             }
                         }
+                        else if (context.Request.Url.LocalPath == "/quit")
+                        {
+                            string body = "Goodbye";
+                            this.WriteStringResponse(context, body);
+                            active = false;
+                        }
+                        else
+                        {
+                            context.Response.StatusCode = (int)HttpStatusCode.NotFound;
+                            string body = "<html><head><title>KinectClient: 404</title></head><body><h1>404 : Not Found</h1><p>You messed up lol</p></body></html>";
+                            this.WriteStringResponse(context, body);
+                        }
+                        context.Response.Close();
                     }
-                    else if (context.Request.Url.LocalPath == "/quit")
-                    {
-                        string body = "Goodbye";
-                        this.WriteStringResponse(context, body);
-                        active = false;
-                    }
-                    else
-                    {
-                        context.Response.StatusCode = (int)HttpStatusCode.NotFound;
-                        string body = "<html><head><title>KinectClient: 404</title></head><body><h1>404 : Not Found</h1><p>You messed up lol</p></body></html>";
-                        this.WriteStringResponse(context, body);
-                    }
-                    context.Response.Close();
                 }
             });
             listenerTask.Start();
 
-            try
+            while (active)
             {
-                while (active)
+                if (kinectFault)
                 {
-                    if (kinectFault)
-                    {
-                        active = false;
-                        throw new Exception("The Kinect sensor is unavailable.");
-                    }
+                    active = false;
+                    throw new Exception("The Kinect sensor is unavailable.");
                 }
-            }
-            finally
-            {
-                listener.Stop();
             }
         }
 
@@ -334,7 +524,7 @@ namespace MinorityReport
 
             try
             {
-                f = new FileStream(this.matrixFile, FileMode.Open);
+                f = new FileStream(this.configFile, FileMode.Open);
             }
             catch (FileNotFoundException)
             {
@@ -367,7 +557,7 @@ namespace MinorityReport
         private void ConfigurationToFile()
         {
             FileStream f;
-            f = new FileStream(this.matrixFile, FileMode.Create);
+            f = new FileStream(this.configFile, FileMode.Create);
             Configuration config = new Configuration();
             for (int j = 0; j < 3; ++j)
             {
@@ -482,8 +672,8 @@ namespace MinorityReport
                                 float offsetX = 253;
                                 float offsetY = -35;
 
-                                // This translates the pixel's coordinates from body index frame space to color frame
-                                // space (the two frames have different resolutions and fields of view).
+                                // This transforms the pixel's coordinates from body index frame space (same as depth
+                                // frame space) to color frame space.
                                 float xf = x * ratioX + offsetX;
                                 float yf = y * ratioY + offsetY;
 
@@ -515,55 +705,47 @@ namespace MinorityReport
             }
         }
 
-        private void ColorReader_FrameArrived(object sender, ColorFrameArrivedEventArgs e)
+        private void SaveColorImage(ColorFrame colorFrame)
         {
-            using (ColorFrame frame = e.FrameReference.AcquireFrame())
+            if (colorFrame == null)
             {
-                if (frame == null)
-                {
-                    Console.Write("Null color frame acquired.\n");
-                    return;
-                }
+                return;
+            }
 
-                if (this.samplingColorFrames)
-                {
-                    // Get pixel data
-                    byte[] pixels = new byte[frame.FrameDescription.Width * frame.FrameDescription.Height * 4];
-                    frame.CopyConvertedFrameDataToArray(pixels, ColorImageFormat.Bgra);
+            // Get pixel data
+            byte[] pixels = new byte[colorFrame.FrameDescription.Width * colorFrame.FrameDescription.Height * 4];
+            colorFrame.CopyConvertedFrameDataToArray(pixels, ColorImageFormat.Bgra);
 
-                    // Store dimensions
-                    this.latestPNGDimensions = new Draw.PointF(frame.FrameDescription.Width,
-                                                               frame.FrameDescription.Height);
+            // Store dimensions
+            this.latestPNGDimensions = new Draw.PointF(colorFrame.FrameDescription.Width,
+                                                       colorFrame.FrameDescription.Height);
 
-                    // Create a bitmap structure to hold data
-                    WriteableBitmap bmp = new WriteableBitmap(frame.FrameDescription.Width,
-                                                                   frame.FrameDescription.Height,
-                                                                   96.0, 96.0,
-                                                                   PixelFormats.Bgr32,
-                                                                   null);
+            // Create a bitmap structure to hold data
+            WriteableBitmap bmp = new WriteableBitmap(colorFrame.FrameDescription.Width,
+                                                           colorFrame.FrameDescription.Height,
+                                                           96.0, 96.0,
+                                                           PixelFormats.Bgr32,
+                                                           null);
 
-                    // Write data into a bitmap structure
-                    using (KinectBuffer buf = frame.LockRawImageBuffer())
-                    {
-                        bmp.Lock();
-                        frame.CopyConvertedFrameDataToIntPtr(bmp.BackBuffer,
-                                                             (uint)frame.FrameDescription.LengthInPixels * 4,
-                                                             ColorImageFormat.Bgra);
-                        bmp.AddDirtyRect(new Int32Rect(0, 0, bmp.PixelHeight, bmp.PixelHeight));
-                        bmp.Unlock();
-                    }
+            // Write data into a bitmap structure
+            using (KinectBuffer buf = colorFrame.LockRawImageBuffer())
+            {
+                bmp.Lock();
+                colorFrame.CopyConvertedFrameDataToIntPtr(bmp.BackBuffer,
+                                                     (uint)colorFrame.FrameDescription.LengthInPixels * 4,
+                                                     ColorImageFormat.Bgra);
+                bmp.AddDirtyRect(new Int32Rect(0, 0, bmp.PixelHeight, bmp.PixelHeight));
+                bmp.Unlock();
+            }
 
-                    // Encode the data into a BMP file format
-                    PngBitmapEncoder encoder = new PngBitmapEncoder();
-                    encoder.Frames.Add(BitmapFrame.Create(bmp));
+            // Encode the data into a PNG file format
+            PngBitmapEncoder encoder = new PngBitmapEncoder();
+            encoder.Frames.Add(BitmapFrame.Create(bmp));
 
-                    using (MemoryStream stream = new MemoryStream())
-                    {
-                        encoder.Save(stream);
-                        this.latestColorPNG = stream.ToArray();
-                    }
-                    this.samplingColorFrames = false;
-                }
+            using (MemoryStream stream = new MemoryStream())
+            {
+                encoder.Save(stream);
+                this.latestColorPNG = stream.ToArray();
             }
         }
     }
