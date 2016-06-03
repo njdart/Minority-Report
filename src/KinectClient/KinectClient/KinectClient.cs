@@ -27,6 +27,10 @@ namespace MinorityReport
             public IList<IList<float>> matrix;
             public string host;
             public int port;
+            public double plane_A;
+            public double plane_B;
+            public double plane_C;
+            public double plane_D;
 
             public Configuration()
             {
@@ -38,9 +42,8 @@ namespace MinorityReport
             }
         }
 
+        #region Private variables
         private KinectSensor sensor = null;
-        private BodyIndexFrameReader bodyIndexReader = null;
-        private ColorFrameReader colorReader = null;
         private MultiSourceFrameReader multiFrameReader = null;
 
         private bool samplingColorFrames = false;
@@ -49,23 +52,26 @@ namespace MinorityReport
         private ushort[] calibrationDepthData;
 
         private byte[] latestColorPNG = null;
-        private Draw.PointF latestPNGDimensions;
         private string configFile = "config.json";
 
         private string instanceID;
 
         private Draw.PointF[] canvasCoords;
-        private Vector<float> canvasNormal;
         private Matrix<float> perspectiveMatrix = null;
         private double plane_A;
         private double plane_B;
         private double plane_C;
         private double plane_D;
-        private bool boardObscured = false;
+
+        private IList<ColorSpacePoint> canvasPoints;
+        private IList<ColorSpacePoint> mappedCanvasPoints;
 
         private Timer sensorAvailableTimer;
         private bool sensorTimerElapsed = false;
         private bool testMapping = true;
+        private bool calibrationComplete = false;
+        private bool boardObstructed = false;
+        #endregion
 
         public string Server { get; set; } = null;
         public int Port { get; set; } = 8088;
@@ -104,233 +110,6 @@ namespace MinorityReport
             this.samplingBodyData = true;
 
             this.BoardObscuredChanged += this.KinectClient_BoardObscuredChanged;
-        }
-
-        private void MultiFrameReader_MultiSourceFrameArrived(object sender, MultiSourceFrameArrivedEventArgs e)
-        {
-            BodyIndexFrame bodyIndexFrame = null;
-            ColorFrame colorFrame = null;
-            DepthFrame depthFrame = null;
-
-            try
-            {
-                MultiSourceFrameReference multiFrameRef = e.FrameReference;
-                MultiSourceFrame multiFrame = multiFrameRef.AcquireFrame();
-
-                BodyIndexFrameReference bodyIndexFrameRef = multiFrame.BodyIndexFrameReference;
-                ColorFrameReference colorFrameRef = multiFrame.ColorFrameReference;
-                DepthFrameReference depthFrameRef = multiFrame.DepthFrameReference;
-
-                bodyIndexFrame = bodyIndexFrameRef.AcquireFrame();
-                colorFrame = colorFrameRef.AcquireFrame();
-                depthFrame = depthFrameRef.AcquireFrame();
-
-                if (bodyIndexFrame == null || colorFrame == null || depthFrame == null)
-                {
-                    return;
-                }
-
-                ushort[] depthData = new ushort[depthFrame.FrameDescription.LengthInPixels];
-                depthFrame.CopyFrameDataToArray(depthData);
-
-                if (this.samplingColorFrames)
-                {
-                    this.SaveColorImage(colorFrame);
-                    this.calibrationDepthData = depthData;
-                    this.samplingColorFrames = false;
-                }
-
-                // The block below is for debug purposes - it runs only once, upon the first received MultiSourceFrame.
-                if (this.testMapping)
-                {
-                    // Save color image to PNG file
-                    this.SaveColorImage(colorFrame);
-                    FileStream colorImgFile = new FileStream("color_img_debug.png", FileMode.Create);
-                    colorImgFile.Write(this.latestColorPNG, 0, this.latestColorPNG.Length);
-                    colorImgFile.Close();
-
-                    // Map each depth point to a point in 'color space'
-                    CoordinateMapper mapper = this.sensor.CoordinateMapper;
-                    ColorSpacePoint[] mappedColorPoints = new ColorSpacePoint[depthData.Length];
-                    mapper.MapDepthFrameToColorSpace(depthData, mappedColorPoints);
-
-                    // Produce a BGRA image of the depth data at 1080p
-                    byte[] depthImg = new byte[1920 * 1080 * 4];
-                    for (int i = 0; i < depthData.Length; ++i)
-                    {
-                        int x = (int)Math.Floor(mappedColorPoints[i].X);
-                        int y = (int)Math.Floor(mappedColorPoints[i].Y);
-
-                        if (x >= 0 && x < 1920 && y >= 0 && y < 1080)
-                        {
-                            int idx = 4 * (x + y * 1920);
-                            depthImg[idx] = 255;
-                            depthImg[idx + 1] = 255;
-                            depthImg[idx + 2] = 255;
-                            depthImg[idx + 3] = 255;
-                        }
-                    }
-
-                    // Save the produced depth image to PNG file
-                    WriteableBitmap bmp = new WriteableBitmap(1920, 1080, 96, 96, PixelFormats.Bgra32, null);
-                    bmp.Lock();
-                    Marshal.Copy(depthImg, 0, bmp.BackBuffer, depthImg.Length);
-                    bmp.AddDirtyRect(new Int32Rect(0, 0, 1920, 1080));
-                    bmp.Unlock();
-                    PngBitmapEncoder pngEncode = new PngBitmapEncoder();
-                    pngEncode.Frames.Add(BitmapFrame.Create(bmp));
-                    FileStream depthImgFile = new FileStream("depth_img_debug.png", FileMode.Create);
-                    pngEncode.Save(depthImgFile);
-                    depthImgFile.Close();
-
-                    // Map depth points into color space, then each color space point into camera space
-                    CameraSpacePoint[] cameraSpacePoints = new CameraSpacePoint[1920 * 1080];
-                    this.sensor.CoordinateMapper.MapColorFrameToCameraSpace(depthData, cameraSpacePoints);
-
-                    // Set colour in 1080p image depending on Z value.
-                    byte[] cameraImg = new byte[cameraSpacePoints.Length];
-                    for (int i = 0; i < cameraSpacePoints.Length; ++i)
-                    {
-                        // Map from 0 to 4 metres.
-                        int z = (int)Math.Floor((cameraSpacePoints[i].Z - 2) * (256));
-                        if (z > 255) z = 255;
-                        else if (z < 0) z = 0;
-                        cameraImg[i] = (byte)z;
-                    }
-
-                    // Save produced camera image to PNG file
-                    bmp = new WriteableBitmap(1920, 1080, 96, 96, PixelFormats.Gray8, null);
-                    bmp.Lock();
-                    Marshal.Copy(cameraImg, 0, bmp.BackBuffer, cameraImg.Length);
-                    bmp.AddDirtyRect(new Int32Rect(0, 0, 1920, 1080));
-                    bmp.Unlock();
-                    pngEncode = new PngBitmapEncoder();
-                    pngEncode.Frames.Add(BitmapFrame.Create(bmp));
-                    FileStream cameraImgFile = new FileStream("camera_img_debug.png", FileMode.Create);
-                    pngEncode.Save(cameraImgFile);
-                    cameraImgFile.Close();
-
-                    this.testMapping = false;
-                }
-
-                if (this.samplingBodyData && this.perspectiveMatrix != null)
-                {
-                    // Get 3D point of every pixel in color frame
-                    CameraSpacePoint[] cameraPoints = new CameraSpacePoint[1920 * 1080];
-                    CoordinateMapper mapper = this.sensor.CoordinateMapper;
-                    mapper.MapColorFrameToCameraSpace(depthData, cameraPoints);
-
-                    //FileStream 
-
-                    // Iterate over color frame pixels to find those within canvas bounds.
-                    Vector<float> V = CreateVector.Dense<float>(3);
-                    for (int y = 0; y < 1080; ++y)
-                    {
-                        for (int x = 0; x < 1920; ++x)
-                        {
-                            V[0] = x;
-                            V[1] = y;
-                            V[2] = 1;
-                            V = this.TransformToCanvasSpace(V);
-                            if (this.IsVectorObstructingCanvas(V))
-                            {
-                                // Get the 3D point corresponding to the pixel.
-                                int idx = x + y * 1920;
-                                V[0] = cameraPoints[idx].X;
-                                V[1] = cameraPoints[idx].Y;
-                                V[2] = cameraPoints[idx].Z;
-
-                                // Get the direct distance between the plane of the canvas and the point.
-                                float dist = (float)Math.Abs(
-                                    this.plane_A * V[0] +
-                                    this.plane_B * V[1] +
-                                    this.plane_C * V[2] +
-                                    this.plane_D);
-                                dist /= (float)Math.Sqrt(
-                                    Math.Pow(this.plane_A, 2) +
-                                    Math.Pow(this.plane_B, 2) +
-                                    Math.Pow(this.plane_C, 2));
-                            }
-                        }
-                    }
-                    // byte[] bodyIndexData = new byte[depthData.Length];
-                    // ColorSpacePoint[] mappedColorPoints = new ColorSpacePoint[depthData.Length];
-
-                    // bodyIndexFrame.CopyFrameDataToArray(bodyIndexData);
-
-                    // // Map each depth point to a point in 'color space'
-                    // CoordinateMapper mapper = this.sensor.CoordinateMapper;
-                    // mapper.MapDepthFrameToColorSpace(depthData, mappedColorPoints);
-
-                    // // Map each color space point to a point in 'canvas space'
-                    // for (int i = 0; i < mappedColorPoints.Length; ++i)
-                    // {
-                    //     Vector<float> v = CreateVector.Dense<float>(3);
-                    //     v[0] = mappedColorPoints[i].X;
-                    //     v[1] = mappedColorPoints[i].Y;
-                    //     v[2] = 1;
-                    //     v = this.TransformToCanvasSpace(v);
-                    //     mappedColorPoints[i].X = v[0];
-                    //     mappedColorPoints[i].Y = v[1];
-                    // }
-
-                    // FileStream file = new FileStream("kek.txt", FileMode.Create);
-                    // StreamWriter writer = new StreamWriter(file);
-                    // writer.Write("points = [\n");
-                    // foreach (ColorSpacePoint p in mappedColorPoints)
-                    // {
-                    //     writer.Write("    ({0}, {1}),\n", p.X, p.Y);
-                    // }
-                    // writer.Write("]");
-                    // writer.Close();
-                    // file.Close();
-                }
-            }
-            catch (Exception ex)
-            {
-                Console.Write("Exception occurred in MultiFrameReader_MultiSourceFrameArrived: {0}", ex.ToString());
-            }
-            finally
-            {
-                if (bodyIndexFrame != null) bodyIndexFrame.Dispose();
-                if (colorFrame != null) colorFrame.Dispose();
-                if (depthFrame != null) depthFrame.Dispose();
-            }
-        }
-
-        private void KinectClient_BoardObscuredChanged(object sender, bool obscured)
-        {
-            Console.Write("Board " + ((!obscured) ? "no longer " : "") + "obscured!\n");
-
-            //tell server
-            HttpClient client = new HttpClient();
-
-            string payload = String.Format("{{ \"boardObscured\" : {0}, \"kinectID\" : \"{1}\" }}", obscured ? "true" : "false", this.instanceID);
-            StringContent content = new StringContent(payload);
-
-            if (content.Headers.Contains("Content-Type")) content.Headers.Remove("Content-Type");
-            content.Headers.Add("Content-Type", "application/json");
-
-            string uri = String.Format("http://{0}:{1}/boardObscured", this.Server, this.Port);
-
-            Console.Write("Sending to {1} :\n{0}\n", payload, uri);
-            Task<HttpResponseMessage> req;
-            try
-            {
-                req = client.PostAsync(uri, content);
-                req.Wait();
-            }
-            catch (AggregateException e)
-            {
-                Console.Write("Error occurred sending data to the server:\n");
-                Console.Write(e.ToString());
-                return;
-            }
-
-            Task<byte[]> dataTask = req.Result.Content.ReadAsByteArrayAsync();
-            dataTask.Wait();
-            string data = Encoding.UTF8.GetString(dataTask.Result);
-            Console.Write("Response (status {1}): {0}.\n", data, req.Result.StatusCode);
         }
 
         public void Run()
@@ -497,7 +276,8 @@ namespace MinorityReport
                                 };
                                 outputBounds = ImageWarping.OrderPoints(outputBounds);
                                 this.perspectiveMatrix = ImageWarping.GetPerspectiveTransform(this.canvasCoords, outputBounds);
-                                this.ConfigurationToFile();
+
+                                this.ListCanvasPixels();
 
                                 // Convert the depth image to camera space (X,Y,Z; Z extending from the front of the IR
                                 // sensor), at 1080p (so each pixel in color space can be assigned a 3D camera space
@@ -529,7 +309,6 @@ namespace MinorityReport
                                 N[1] = U[2] * V[0] - U[0] * V[2];
                                 N[2] = U[0] * V[1] - U[1] * V[0];
                                 Console.Write("Normal: ({0}, {1}, {2})\n", N[0], N[1], N[2]);
-                                this.canvasNormal = N;
 
                                 // Calculate the parameters of the plane in the form: ax + by + cz + d = 0
                                 Vector<float> X = canvasPoints3D[0];
@@ -537,6 +316,9 @@ namespace MinorityReport
                                 this.plane_B = N[1];
                                 this.plane_C = N[2];
                                 this.plane_D = -(N[0] * X[0] + N[1] * X[1] + N[2] * X[2]);
+
+                                this.ConfigurationToFile();
+                                this.calibrationComplete = true;
                             }
                         }
                         else if (context.Request.Url.LocalPath == "/quit")
@@ -567,6 +349,240 @@ namespace MinorityReport
             }
         }
 
+        private void MultiFrameReader_MultiSourceFrameArrived(object sender, MultiSourceFrameArrivedEventArgs e)
+        {
+            BodyIndexFrame bodyIndexFrame = null;
+            ColorFrame colorFrame = null;
+            DepthFrame depthFrame = null;
+
+            try
+            {
+                MultiSourceFrameReference multiFrameRef = e.FrameReference;
+                MultiSourceFrame multiFrame = multiFrameRef.AcquireFrame();
+
+                BodyIndexFrameReference bodyIndexFrameRef = multiFrame.BodyIndexFrameReference;
+                ColorFrameReference colorFrameRef = multiFrame.ColorFrameReference;
+                DepthFrameReference depthFrameRef = multiFrame.DepthFrameReference;
+
+                bodyIndexFrame = bodyIndexFrameRef.AcquireFrame();
+                colorFrame = colorFrameRef.AcquireFrame();
+                depthFrame = depthFrameRef.AcquireFrame();
+
+                if (bodyIndexFrame == null || colorFrame == null || depthFrame == null)
+                {
+                    return;
+                }
+
+                ushort[] depthData = new ushort[depthFrame.FrameDescription.LengthInPixels];
+                depthFrame.CopyFrameDataToArray(depthData);
+
+                if (this.samplingColorFrames)
+                {
+                    this.SaveColorImage(colorFrame);
+                    this.calibrationDepthData = depthData;
+                    this.samplingColorFrames = false;
+                }
+
+                // The block below is for debug purposes - it runs only once, upon the first received MultiSourceFrame.
+                if (this.testMapping)
+                {
+                    // Save color image to PNG file
+                    this.SaveColorImage(colorFrame);
+                    FileStream colorImgFile = new FileStream("color_img_debug.png", FileMode.Create);
+                    colorImgFile.Write(this.latestColorPNG, 0, this.latestColorPNG.Length);
+                    colorImgFile.Close();
+
+                    // Map each depth point to a point in 'color space'
+                    CoordinateMapper mapper = this.sensor.CoordinateMapper;
+                    ColorSpacePoint[] mappedColorPoints = new ColorSpacePoint[depthData.Length];
+                    mapper.MapDepthFrameToColorSpace(depthData, mappedColorPoints);
+
+                    // Produce a BGRA image of the depth data at 1080p
+                    byte[] depthImg = new byte[1920 * 1080 * 4];
+                    for (int i = 0; i < depthData.Length; ++i)
+                    {
+                        int x = (int)Math.Floor(mappedColorPoints[i].X);
+                        int y = (int)Math.Floor(mappedColorPoints[i].Y);
+
+                        if (x >= 0 && x < 1920 && y >= 0 && y < 1080)
+                        {
+                            int idx = 4 * (x + y * 1920);
+                            depthImg[idx] = 255;
+                            depthImg[idx + 1] = 255;
+                            depthImg[idx + 2] = 255;
+                            depthImg[idx + 3] = 255;
+                        }
+                    }
+
+                    // Save the produced depth image to PNG file
+                    WriteableBitmap bmp = new WriteableBitmap(1920, 1080, 96, 96, PixelFormats.Bgra32, null);
+                    bmp.Lock();
+                    Marshal.Copy(depthImg, 0, bmp.BackBuffer, depthImg.Length);
+                    bmp.AddDirtyRect(new Int32Rect(0, 0, 1920, 1080));
+                    bmp.Unlock();
+                    PngBitmapEncoder pngEncode = new PngBitmapEncoder();
+                    pngEncode.Frames.Add(BitmapFrame.Create(bmp));
+                    FileStream depthImgFile = new FileStream("depth_img_debug.png", FileMode.Create);
+                    pngEncode.Save(depthImgFile);
+                    depthImgFile.Close();
+
+                    // Map depth points into color space, then each color space point into camera space
+                    CameraSpacePoint[] cameraSpacePoints = new CameraSpacePoint[1920 * 1080];
+                    this.sensor.CoordinateMapper.MapColorFrameToCameraSpace(depthData, cameraSpacePoints);
+
+                    // Set colour in 1080p image depending on Z value.
+                    byte[] cameraImg = new byte[cameraSpacePoints.Length];
+                    for (int i = 0; i < cameraSpacePoints.Length; ++i)
+                    {
+                        // Map from 0 to 4 metres.
+                        int z = (int)Math.Floor((cameraSpacePoints[i].Z - 2) * (256));
+                        if (z > 255) z = 255;
+                        else if (z < 0) z = 0;
+                        cameraImg[i] = (byte)z;
+                    }
+
+                    // Save produced camera image to PNG file
+                    bmp = new WriteableBitmap(1920, 1080, 96, 96, PixelFormats.Gray8, null);
+                    bmp.Lock();
+                    Marshal.Copy(cameraImg, 0, bmp.BackBuffer, cameraImg.Length);
+                    bmp.AddDirtyRect(new Int32Rect(0, 0, 1920, 1080));
+                    bmp.Unlock();
+                    pngEncode = new PngBitmapEncoder();
+                    pngEncode.Frames.Add(BitmapFrame.Create(bmp));
+                    FileStream cameraImgFile = new FileStream("camera_img_debug.png", FileMode.Create);
+                    pngEncode.Save(cameraImgFile);
+                    cameraImgFile.Close();
+
+                    this.testMapping = false;
+                }
+
+                if (this.samplingBodyData && this.perspectiveMatrix != null && this.calibrationComplete)
+                {
+                    // Get 3D point of every pixel in color frame
+                    CameraSpacePoint[] cameraPoints = new CameraSpacePoint[1920 * 1080];
+                    CoordinateMapper mapper = this.sensor.CoordinateMapper;
+                    mapper.MapColorFrameToCameraSpace(depthData, cameraPoints);
+
+                    // FileStream f = new FileStream("keke.txt", FileMode.Create);
+                    // StreamWriter s = new StreamWriter(f);
+
+                    Vector<float> V = CreateVector.Dense<float>(3);
+                    bool obstructed = false;
+
+                    // Iterate over every pixel that is part of the canvas
+                    // Console.Write("there are {0} canvas points.\n", this.canvasPoints.Count);
+                    for (int i = 0; i < this.canvasPoints.Count; ++i)
+                    {
+                        // Get the 3D point corresponding to the pixel.
+                        int x = (int)Math.Floor(this.canvasPoints[i].X);
+                        int y = (int)Math.Floor(this.canvasPoints[i].Y);
+                        int idx = x + y * 1920;
+                        V[0] = cameraPoints[idx].X;
+                        V[1] = cameraPoints[idx].Y;
+                        V[2] = cameraPoints[idx].Z;
+
+                        // Get the direct distance between the plane of the canvas and the point.
+                        float dist = (float)Math.Abs(
+                            this.plane_A * V[0] +
+                            this.plane_B * V[1] +
+                            this.plane_C * V[2] +
+                            this.plane_D);
+                        dist /= (float)Math.Sqrt(
+                            Math.Pow(this.plane_A, 2) +
+                            Math.Pow(this.plane_B, 2) +
+                            Math.Pow(this.plane_C, 2));
+
+                        // s.Write("{0}\n", dist);
+
+                        if (dist > 0.02)
+                        {
+                            obstructed = true;
+                            break;
+                        }
+                    }
+                    if (this.BoardObscuredChanged != null && obstructed != this.boardObstructed)
+                    {
+                        this.BoardObscuredChanged.Invoke(this, obstructed);
+                        this.boardObstructed = obstructed;
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.Write("Exception occurred in MultiFrameReader_MultiSourceFrameArrived: {0}", ex.ToString());
+            }
+            finally
+            {
+                if (bodyIndexFrame != null) bodyIndexFrame.Dispose();
+                if (colorFrame != null) colorFrame.Dispose();
+                if (depthFrame != null) depthFrame.Dispose();
+            }
+        }
+
+        private void KinectClient_BoardObscuredChanged(object sender, bool obscured)
+        {
+            Console.Write("Board " + ((!obscured) ? "no longer " : "") + "obscured!\n");
+
+            //tell server
+            HttpClient client = new HttpClient();
+
+            string payload = String.Format("{{ \"boardObscured\" : {0}, \"kinectID\" : \"{1}\" }}", obscured ? "true" : "false", this.instanceID);
+            StringContent content = new StringContent(payload);
+
+            if (content.Headers.Contains("Content-Type")) content.Headers.Remove("Content-Type");
+            content.Headers.Add("Content-Type", "application/json");
+
+            string uri = String.Format("http://{0}:{1}/boardObscured", this.Server, this.Port);
+
+            Console.Write("Sending to {1} :\n{0}\n", payload, uri);
+            Task<HttpResponseMessage> req;
+            try
+            {
+                req = client.PostAsync(uri, content);
+                req.Wait();
+            }
+            catch (AggregateException e)
+            {
+                Console.Write("Error occurred sending data to the server:\n");
+                Console.Write(e.ToString());
+                return;
+            }
+
+            Task<byte[]> dataTask = req.Result.Content.ReadAsByteArrayAsync();
+            dataTask.Wait();
+            string data = Encoding.UTF8.GetString(dataTask.Result);
+            Console.Write("Response (status {1}): {0}.\n", data, req.Result.StatusCode);
+        }
+
+        private void ListCanvasPixels()
+        {
+            // Get list of color pixels which lie within the canvas
+            this.canvasPoints = new List<ColorSpacePoint>();
+            this.mappedCanvasPoints = new List<ColorSpacePoint>();
+            for (int x = 0; x < 1920; ++x)
+            {
+                for (int y = 0; y < 1080; ++y)
+                {
+                    Vector<float> v = CreateVector.Dense<float>(3);
+                    v[0] = x;
+                    v[1] = y;
+                    v[2] = 1;
+                    v = this.TransformToCanvasSpace(v);
+                    if (this.IsVectorObstructingCanvas(v))
+                    {
+                        ColorSpacePoint p1 = new ColorSpacePoint();
+                        ColorSpacePoint p2 = new ColorSpacePoint();
+                        p1.X = x;
+                        p1.Y = y;
+                        p2.X = v[0];
+                        p2.Y = v[1];
+                        this.canvasPoints.Add(p1);
+                        this.mappedCanvasPoints.Add(p2);
+                    }
+                }
+            }
+        }
+
         private bool ConfigurationFromFile()
         {
             FileStream f;
@@ -582,6 +598,7 @@ namespace MinorityReport
 
             byte[] data = new byte[f.Length];
             f.Read(data, 0, (int)f.Length);
+            f.Close();
             Configuration config = JsonConvert.DeserializeObject<Configuration>(Encoding.UTF8.GetString(data));
             if (config == null)
             {
@@ -598,8 +615,14 @@ namespace MinorityReport
             }
             this.Server = config.host;
             this.Port = config.port;
-            f.Close();
+            this.plane_A = config.plane_A;
+            this.plane_B = config.plane_B;
+            this.plane_C = config.plane_C;
+            this.plane_D = config.plane_D;
 
+            this.ListCanvasPixels();
+
+            this.calibrationComplete = true;
             return true;
         }
 
@@ -617,6 +640,10 @@ namespace MinorityReport
             }
             config.host = this.Server;
             config.port = this.Port;
+            config.plane_A = this.plane_A;
+            config.plane_B = this.plane_B;
+            config.plane_C = this.plane_C;
+            config.plane_D = this.plane_D;
             byte[] data = Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(config));
             f.Write(data, 0, data.Length);
             f.Close();
@@ -687,73 +714,6 @@ namespace MinorityReport
             return true;
         }
 
-        private void BodyIndexReader_FrameArrived(object sender, BodyIndexFrameArrivedEventArgs e)
-        {
-            // Do this logic in a separate thread (the logic is quite intensive)
-            using (BodyIndexFrame frame = e.FrameReference.AcquireFrame())
-            {
-                if (frame == null)
-                {
-                    Console.Write("Null body index frame acquired.\n");
-                    return;
-                }
-
-                if (this.samplingBodyData && this.perspectiveMatrix != null)
-                {
-                    // Copy frame into accessible buffer
-                    byte[] frameBuf = new byte[frame.FrameDescription.Width * frame.FrameDescription.Height];
-                    frame.CopyFrameDataToArray(frameBuf);
-
-                    bool obscured = false;
-
-                    // Iterate over every pixel, top to bottom, left to right
-                    for (int y = 0; y < frame.FrameDescription.Height && !obscured; ++y)
-                    {
-                        for (int x = 0; x < frame.FrameDescription.Width && !obscured; ++x)
-                        {
-                            int bufIdx = y * frame.FrameDescription.Width + x;
-                            int bodyIdx = frameBuf[bufIdx];
-                            if (bodyIdx <= 5 && bodyIdx >= 0)
-                            {
-                                // Pixel is part of an identified body
-                                float ratioX = 2.86f;
-                                float ratioY = 2.86f;
-                                float offsetX = 253;
-                                float offsetY = -35;
-
-                                // This transforms the pixel's coordinates from body index frame space (same as depth
-                                // frame space) to color frame space.
-                                float xf = x * ratioX + offsetX;
-                                float yf = y * ratioY + offsetY;
-
-                                // Transform from color space to canvas space.
-                                Vector<float> v = CreateVector.Dense<float>(3);
-                                v[0] = xf;
-                                v[1] = yf;
-                                v[2] = 1;
-                                Vector<float> vout = this.TransformToCanvasSpace(v);
-
-                                if (this.IsVectorObstructingCanvas(vout))
-                                {
-                                    // The coordinate (in canvas space) lies within the bounds of the canvas; between
-                                    // (0, 0) and (1920, 1080). Therefore, a body is obscuring the board.
-                                    obscured = true;
-                                    break;
-                                }
-                            }
-                        }
-                    }
-
-                    if (obscured != this.boardObscured)
-                    {
-                        // If the state has changed, raise the event.
-                        if (this.BoardObscuredChanged != null) this.BoardObscuredChanged.Invoke(this, obscured);
-                    }
-                    this.boardObscured = obscured;
-                }
-            }
-        }
-
         private void SaveColorImage(ColorFrame colorFrame)
         {
             if (colorFrame == null)
@@ -764,10 +724,6 @@ namespace MinorityReport
             // Get pixel data
             byte[] pixels = new byte[colorFrame.FrameDescription.Width * colorFrame.FrameDescription.Height * 4];
             colorFrame.CopyConvertedFrameDataToArray(pixels, ColorImageFormat.Bgra);
-
-            // Store dimensions
-            this.latestPNGDimensions = new Draw.PointF(colorFrame.FrameDescription.Width,
-                                                       colorFrame.FrameDescription.Height);
 
             // Create a bitmap structure to hold data
             WriteableBitmap bmp = new WriteableBitmap(colorFrame.FrameDescription.Width,
