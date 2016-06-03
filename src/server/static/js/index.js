@@ -19,6 +19,7 @@ $(function() {
 
     $('#loginModal').on('hidden.bs.modal', function (e) {
         socket.emit('get_latest_image_id_by_instance_configuration',  localStorage["instanceConfigurationId"]);
+        socket.emit('get_kinect_image_url', localStorage["instanceConfigurationId"]);
     })
 
     /*$('#imageModal').on('show.bs.modal', function (e) {
@@ -80,7 +81,6 @@ $(function() {
         kinectUri = url;
         updateKinectRawImage()
     });
-    socket.emit('get_kinect_image_url');
 
     function updateKinectRawImage()
     {
