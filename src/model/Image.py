@@ -170,13 +170,13 @@ class Image(SqliteObject):
         display_ratio = (1920.0/canvas_image.shape[1])
         # Finding postits is based on saturation levels, first the image must be converted to HSV format
         hsv_image = cv2.cvtColor(canvas_image.copy(), cv2.COLOR_BGR2HSV)
-        satthresh = 85  # CONST
+        satthresh = 100  # CONST
         # All pixels with a saturation below threshold are set to black
         hsv_image[numpy.where((hsv_image < [255, satthresh, 255]).all(axis=2))] = [0, 0, 0]
         hsv_image = cv2.cvtColor(hsv_image, cv2.COLOR_HSV2BGR)
         # All pixels below brightness threshold set to black
         # to remove any lines that have some saturation from reflections
-        hsv_image[numpy.where((hsv_image < [100, 100, 100]).all(axis=2))] = [0, 0, 0]
+        hsv_image[numpy.where((hsv_image < [90, 120, 160]).all(axis=2))] = [0, 0, 0]
         cv2.imwrite("debug/postit-"+str(next_canvas_id)+".png", hsv_image)
         # Convert image to grayscale and then canny filter and get contour
         gray_img = cv2.cvtColor(hsv_image, cv2.COLOR_BGR2GRAY)
@@ -312,8 +312,8 @@ class Image(SqliteObject):
                 if odes is not None:
                     print(good)
                     print(len(odes))
-                    print(len(odes)*0.05)
-                    if max(good) > len(odes)*0.05:
+                    print(len(odes)*0.1)
+                    if max(good) > 8: #len(odes)*0.1:
                         match_idx = numpy.argmax(good)
                         old_to_new_postit = (old_postit.id, found_postits[match_idx].id)
                         old_to_new_postits.append(old_to_new_postit)
