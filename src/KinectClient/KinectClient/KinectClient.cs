@@ -57,6 +57,10 @@ namespace MinorityReport
         private Draw.PointF[] canvasCoords;
         private Vector<float> canvasNormal;
         private Matrix<float> perspectiveMatrix = null;
+        private double plane_A;
+        private double plane_B;
+        private double plane_C;
+        private double plane_D;
         private bool boardObscured = false;
 
         private Timer sensorAvailableTimer;
@@ -211,37 +215,75 @@ namespace MinorityReport
 
                 if (this.samplingBodyData && this.perspectiveMatrix != null)
                 {
-                    byte[] bodyIndexData = new byte[depthData.Length];
-                    ColorSpacePoint[] mappedColorPoints = new ColorSpacePoint[depthData.Length];
-
-                    bodyIndexFrame.CopyFrameDataToArray(bodyIndexData);
-
-                    // Map each depth point to a point in 'color space'
+                    // Get 3D point of every pixel in color frame
+                    CameraSpacePoint[] cameraPoints = new CameraSpacePoint[1920 * 1080];
                     CoordinateMapper mapper = this.sensor.CoordinateMapper;
-                    mapper.MapDepthFrameToColorSpace(depthData, mappedColorPoints);
+                    mapper.MapColorFrameToCameraSpace(depthData, cameraPoints);
 
-                    // Map each color space point to a point in 'canvas space'
-                    for (int i = 0; i < mappedColorPoints.Length; ++i)
-                    {
-                        Vector<float> v = CreateVector.Dense<float>(3);
-                        v[0] = mappedColorPoints[i].X;
-                        v[1] = mappedColorPoints[i].Y;
-                        v[2] = 1;
-                        v = this.TransformToCanvasSpace(v);
-                        mappedColorPoints[i].X = v[0];
-                        mappedColorPoints[i].Y = v[1];
-                    }
+                    //FileStream 
 
-                    FileStream file = new FileStream("kek.txt", FileMode.Create);
-                    StreamWriter writer = new StreamWriter(file);
-                    writer.Write("points = [\n");
-                    foreach (ColorSpacePoint p in mappedColorPoints)
+                    // Iterate over color frame pixels to find those within canvas bounds.
+                    Vector<float> V = CreateVector.Dense<float>(3);
+                    for (int y = 0; y < 1080; ++y)
                     {
-                        writer.Write("    ({0}, {1}),\n", p.X, p.Y);
+                        for (int x = 0; x < 1920; ++x)
+                        {
+                            V[0] = x;
+                            V[1] = y;
+                            V[2] = 1;
+                            V = this.TransformToCanvasSpace(V);
+                            if (this.IsVectorObstructingCanvas(V))
+                            {
+                                // Get the 3D point corresponding to the pixel.
+                                int idx = x + y * 1920;
+                                V[0] = cameraPoints[idx].X;
+                                V[1] = cameraPoints[idx].Y;
+                                V[2] = cameraPoints[idx].Z;
+
+                                // Get the direct distance between the plane of the canvas and the point.
+                                float dist = (float)Math.Abs(
+                                    this.plane_A * V[0] +
+                                    this.plane_B * V[1] +
+                                    this.plane_C * V[2] +
+                                    this.plane_D);
+                                dist /= (float)Math.Sqrt(
+                                    Math.Pow(this.plane_A, 2) +
+                                    Math.Pow(this.plane_B, 2) +
+                                    Math.Pow(this.plane_C, 2));
+                            }
+                        }
                     }
-                    writer.Write("]");
-                    writer.Close();
-                    file.Close();
+                    // byte[] bodyIndexData = new byte[depthData.Length];
+                    // ColorSpacePoint[] mappedColorPoints = new ColorSpacePoint[depthData.Length];
+
+                    // bodyIndexFrame.CopyFrameDataToArray(bodyIndexData);
+
+                    // // Map each depth point to a point in 'color space'
+                    // CoordinateMapper mapper = this.sensor.CoordinateMapper;
+                    // mapper.MapDepthFrameToColorSpace(depthData, mappedColorPoints);
+
+                    // // Map each color space point to a point in 'canvas space'
+                    // for (int i = 0; i < mappedColorPoints.Length; ++i)
+                    // {
+                    //     Vector<float> v = CreateVector.Dense<float>(3);
+                    //     v[0] = mappedColorPoints[i].X;
+                    //     v[1] = mappedColorPoints[i].Y;
+                    //     v[2] = 1;
+                    //     v = this.TransformToCanvasSpace(v);
+                    //     mappedColorPoints[i].X = v[0];
+                    //     mappedColorPoints[i].Y = v[1];
+                    // }
+
+                    // FileStream file = new FileStream("kek.txt", FileMode.Create);
+                    // StreamWriter writer = new StreamWriter(file);
+                    // writer.Write("points = [\n");
+                    // foreach (ColorSpacePoint p in mappedColorPoints)
+                    // {
+                    //     writer.Write("    ({0}, {1}),\n", p.X, p.Y);
+                    // }
+                    // writer.Write("]");
+                    // writer.Close();
+                    // file.Close();
                 }
             }
             catch (Exception ex)
@@ -480,14 +522,21 @@ namespace MinorityReport
                                 Console.Write("(Skipping the final point.)\n");
 
                                 // Calculate the normal of the plane of the canvas.
-                                Vector<float> u = canvasPoints3D[0] - canvasPoints3D[1];
-                                Vector<float> v = canvasPoints3D[1] - canvasPoints3D[2];
-                                Vector<float> n = CreateVector.Dense<float>(3);
-                                n[0] = u[1] * v[2] - u[2] * v[1];
-                                n[1] = u[2] * v[0] - u[0] * v[2];
-                                n[2] = u[0] * v[1] - u[1] * v[0];
-                                Console.Write("Normal: ({0}, {1}, {2})\n", n[0], n[1], n[2]);
-                                this.canvasNormal = n;
+                                Vector<float> U = canvasPoints3D[0] - canvasPoints3D[1];
+                                Vector<float> V = canvasPoints3D[1] - canvasPoints3D[2];
+                                Vector<float> N = CreateVector.Dense<float>(3);
+                                N[0] = U[1] * V[2] - U[2] * V[1];
+                                N[1] = U[2] * V[0] - U[0] * V[2];
+                                N[2] = U[0] * V[1] - U[1] * V[0];
+                                Console.Write("Normal: ({0}, {1}, {2})\n", N[0], N[1], N[2]);
+                                this.canvasNormal = N;
+
+                                // Calculate the parameters of the plane in the form: ax + by + cz + d = 0
+                                Vector<float> X = canvasPoints3D[0];
+                                this.plane_A = N[0];
+                                this.plane_B = N[1];
+                                this.plane_C = N[2];
+                                this.plane_D = -(N[0] * X[0] + N[1] * X[1] + N[2] * X[2]);
                             }
                         }
                         else if (context.Request.Url.LocalPath == "/quit")
