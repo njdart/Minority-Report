@@ -12,20 +12,26 @@ $(function() {
     //var hudCanvas = $('.hudCanvas');
     var splash = $('.localStorageUnset');
 
+
+
     if (typeof(Storage) !== 'undefined') {
        userId = localStorage.getItem('userId');
        sessionId = localStorage.getItem('sessionId');
        console.log("userId: " + userId);
        console.log("sessionId: " + sessionId);
-
+       checkCanvasSize();
         if (!userId || !sessionId) {
             console.error('Either userId or sessionId was not set:', userId, sessionId);
         } else {
             hudContext = document.getElementById("hudCanvas").getContext("2d");
-            $(window).on("resize", resizeCanvas);
             var socket = io();
             splash.hide();
-            
+
+            $(window).on("resize", function(){
+               resizeCanvas();
+               checkCanvasSize();
+            });
+
             socket.on("body_detected", function(){
                 $("#body-detect-indicator").show();
             });
@@ -97,6 +103,25 @@ $(function() {
     }
 });
 
+function checkCanvasSize() {
+    if($(window).height() != 1080)
+    {
+        console.error("Window height " + $(window).height() + " is suboptimal");
+    }
+    else
+    {
+        console.log("Window height optimal");
+    }
+
+    if($(window).width() != 1920)
+    {
+        console.error("Window width " + $(window).width() + " is suboptimal");
+    }
+    else
+    {
+        console.log("Window width optimal");
+    }
+}
 
 function resizeCanvas() {
     console.log("resizeCanvas(): resizing canvas");
@@ -179,16 +204,25 @@ function redrawCanvas() {
             }
             else
             {
-
+                //virtual for all users
                 postitImage = new Image();
                 postitImage.src = "";
                 postitImage.onload = function(evt){
                     console.log("       drawing virtual " + evt.currentTarget.height + "x" + evt.currentTarget.width + " postit at (" + postit.displayPos.x + "," + postit.displayPos.y + ")");
-                    hudContext.strokeStyle = "#FFFF00";
+                    if (postit.physicalFor == null)
+                    {
+                        //virtual for noone
+                        hudContext.strokeStyle = "#00FF00";
+                    }
+                    else
+                    {
+                        //physical for someone else
+                        hudContext.strokeStyle = "#FF0000";
+                    }
                     hudContext.strokeWidth = 20;
-                    hudContext.strokeRect(postit.displayPos.x - OFFSET/evt.currentTarget.width, postit.displayPos.y - OFFSET/evt.currentTarget.height, evt.currentTarget.width, evt.currentTarget.height)
-                    hudContext.drawImage(evt.currentTarget, postit.displayPos.x - OFFSET/evt.currentTarget.width, postit.displayPos.y - OFFSET/evt.currentTarget.height);
-                }
+                    hudContext.strokeRect(postit.displayPos.x - evt.currentTarget.width/2, postit.displayPos.y - evt.currentTarget.height/2, evt.currentTarget.width, evt.currentTarget.height);
+                    hudContext.drawImage(evt.currentTarget, postit.displayPos.x - evt.currentTarget.width/2, postit.displayPos.y - evt.currentTarget.height/2);
+                };
                 postitImage.src = "/api/postit/" + postit.id;
             }
 

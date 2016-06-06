@@ -100,7 +100,7 @@ def guess_colour(r, g, b):
 
     colour_thresholds = {
         "ORANGE": {
-            "min_rg": 0,
+            "min_rg": 20,
             "max_rg": 90,
             "min_rb": 60,
             "max_rb": 160,
@@ -150,7 +150,10 @@ def binarize(image, lightest=True):
     Z = numpy.float32(Z)
     # define criteria, number of clusters(K) and apply kmeans()
     criteria = (cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, 10, 1.0)
-    K = 3
+    if lightest:
+        K = 3
+    else:
+        K = 2
     ret,label,center = cv2.kmeans(data=Z,
                                   K=K,
                                   bestLabels=None,

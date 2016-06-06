@@ -143,7 +143,7 @@ class Image(SqliteObject):
                      max_postit_area=40000,
                      len_tolerence=0.15,
                      min_colour_thresh=64,
-                     max_colour_thresh=200,
+                     max_colour_thresh=220,
                      save_postits=True):
         """
         :param next_canvas_id:
@@ -226,10 +226,10 @@ class Image(SqliteObject):
                         lx = ((canvx[idx] - xmin) / (xmax - xmin))
                         ly = ((canvy[idx] - ymin) / (ymax - ymin))
                         # Score x and y relative to range
-                        l1[idx] = lx + ly
-                        l2[idx] = (1 - lx) + ly
-                        l3[idx] = lx + (1 - ly)
-                        l4[idx] = (1 - lx) + (1 - ly)
+                        l1[idx] = (1 - lx) + (1 - ly)
+                        l2[idx] = lx + (1 - ly)
+                        l3[idx] = lx + ly
+                        l4[idx] = (1 - lx) + ly
 
                     max1 = numpy.argmax(l1)
                     max2 = numpy.argmax(l2)
