@@ -3,7 +3,7 @@ $(function() {
     var instanceConfigurationsLists = $('.instanceConfigsList');
     var calibrationOverlay = $('.calibrationOverlay')
     // var coordUnpackRegexp = /^\(?\s*([0-9]{1,5})[,.:\- ]+([0-9]{1,5})\s*\)?$/g;
-    var coordUnpackRegexp = /^\s*\(?\s*([0-9e.\-+]+)\s*,\s*([0-9e.\-+]+)\s*\)?/g;
+    var coordUnpackRegexp = /^\s*\(?\s*([0-9e.\-+]+)\s*,\s*([0-9e.\-+]+)\s*\)?/;
     //coordUnpackRegexp.compile();
 
     var addInstanceConfigToTable = function(instanceConfiguration) {
