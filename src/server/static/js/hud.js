@@ -12,20 +12,26 @@ $(function() {
     //var hudCanvas = $('.hudCanvas');
     var splash = $('.localStorageUnset');
 
+
+
     if (typeof(Storage) !== 'undefined') {
        userId = localStorage.getItem('userId');
        sessionId = localStorage.getItem('sessionId');
        console.log("userId: " + userId);
        console.log("sessionId: " + sessionId);
-
+       checkCanvasSize();
         if (!userId || !sessionId) {
             console.error('Either userId or sessionId was not set:', userId, sessionId);
         } else {
             hudContext = document.getElementById("hudCanvas").getContext("2d");
-            $(window).on("resize", resizeCanvas);
             var socket = io();
             splash.hide();
-            
+
+            $(window).on("resize", function(){
+               resizeCanvas();
+               checkCanvasSize();
+            });
+
             socket.on("body_detected", function(){
                 $("#body-detect-indicator").show();
             });
@@ -97,6 +103,25 @@ $(function() {
     }
 });
 
+function checkCanvasSize() {
+    if($(window).height() != 1080)
+    {
+        console.error("Window height " + $(window).height() + " is suboptimal");
+    }
+    else
+    {
+        console.log("Window height optimal");
+    }
+
+    if($(window).width() != 1920)
+    {
+        console.error("Window width " + $(window).width() + " is suboptimal");
+    }
+    else
+    {
+        console.log("Window width optimal");
+    }
+}
 
 function resizeCanvas() {
     console.log("resizeCanvas(): resizing canvas");
