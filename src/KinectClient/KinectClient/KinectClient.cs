@@ -102,7 +102,8 @@ namespace MinorityReport
             // this.colorReader = this.sensor.ColorFrameSource.OpenReader();
             this.multiFrameReader = this.sensor.OpenMultiSourceFrameReader(FrameSourceTypes.BodyIndex |
                                                                            FrameSourceTypes.Color     |
-                                                                           FrameSourceTypes.Depth);
+                                                                           FrameSourceTypes.Depth     |
+                                                                           FrameSourceTypes.Body);
 
             // this.bodyIndexReader.FrameArrived += this.BodyIndexReader_FrameArrived;
             // this.colorReader.FrameArrived += this.ColorReader_FrameArrived;
@@ -354,6 +355,7 @@ namespace MinorityReport
             BodyIndexFrame bodyIndexFrame = null;
             ColorFrame colorFrame = null;
             DepthFrame depthFrame = null;
+            BodyFrame bodyFrame = null;
 
             try
             {
@@ -363,12 +365,14 @@ namespace MinorityReport
                 BodyIndexFrameReference bodyIndexFrameRef = multiFrame.BodyIndexFrameReference;
                 ColorFrameReference colorFrameRef = multiFrame.ColorFrameReference;
                 DepthFrameReference depthFrameRef = multiFrame.DepthFrameReference;
+                BodyFrameReference bodyFrameRef = multiFrame.BodyFrameReference;
 
                 bodyIndexFrame = bodyIndexFrameRef.AcquireFrame();
                 colorFrame = colorFrameRef.AcquireFrame();
                 depthFrame = depthFrameRef.AcquireFrame();
+                bodyFrame = bodyFrameRef.AcquireFrame();
 
-                if (bodyIndexFrame == null || colorFrame == null || depthFrame == null)
+                if (bodyIndexFrame == null || colorFrame == null || depthFrame == null || bodyFrame == null)
                 {
                     return;
                 }
@@ -458,52 +462,74 @@ namespace MinorityReport
 
                 if (this.samplingBodyData && this.perspectiveMatrix != null && this.calibrationComplete)
                 {
-                    // Get 3D point of every pixel in color frame
-                    CameraSpacePoint[] cameraPoints = new CameraSpacePoint[1920 * 1080];
-                    CoordinateMapper mapper = this.sensor.CoordinateMapper;
-                    mapper.MapColorFrameToCameraSpace(depthData, cameraPoints);
-
-                    // FileStream f = new FileStream("keke.txt", FileMode.Create);
-                    // StreamWriter s = new StreamWriter(f);
-
-                    Vector<float> V = CreateVector.Dense<float>(3);
-                    bool obstructed = false;
-
-                    // Iterate over every pixel that is part of the canvas
-                    // Console.Write("there are {0} canvas points.\n", this.canvasPoints.Count);
-                    for (int i = 0; i < this.canvasPoints.Count; ++i)
+                    // Detect board obstruction
                     {
-                        // Get the 3D point corresponding to the pixel.
-                        int x = (int)Math.Floor(this.canvasPoints[i].X);
-                        int y = (int)Math.Floor(this.canvasPoints[i].Y);
-                        int idx = x + y * 1920;
-                        V[0] = cameraPoints[idx].X;
-                        V[1] = cameraPoints[idx].Y;
-                        V[2] = cameraPoints[idx].Z;
+                        // Get 3D point of every pixel in color frame
+                        CameraSpacePoint[] cameraPoints = new CameraSpacePoint[1920 * 1080];
+                        CoordinateMapper mapper = this.sensor.CoordinateMapper;
+                        mapper.MapColorFrameToCameraSpace(depthData, cameraPoints);
 
-                        // Get the direct distance between the plane of the canvas and the point.
-                        float dist = (float)Math.Abs(
-                            this.plane_A * V[0] +
-                            this.plane_B * V[1] +
-                            this.plane_C * V[2] +
-                            this.plane_D);
-                        dist /= (float)Math.Sqrt(
-                            Math.Pow(this.plane_A, 2) +
-                            Math.Pow(this.plane_B, 2) +
-                            Math.Pow(this.plane_C, 2));
+                        // FileStream f = new FileStream("keke.txt", FileMode.Create);
+                        // StreamWriter s = new StreamWriter(f);
 
-                        // s.Write("{0}\n", dist);
+                        Vector<float> V = CreateVector.Dense<float>(3);
+                        bool obstructed = false;
 
-                        if (dist > 0.02)
+                        // Iterate over every pixel that is part of the canvas
+                        // Console.Write("there are {0} canvas points.\n", this.canvasPoints.Count);
+                        for (int i = 0; i < this.canvasPoints.Count; ++i)
                         {
-                            obstructed = true;
-                            break;
+                            // Get the 3D point corresponding to the pixel.
+                            int x = (int)Math.Floor(this.canvasPoints[i].X);
+                            int y = (int)Math.Floor(this.canvasPoints[i].Y);
+                            int idx = x + y * 1920;
+                            V[0] = cameraPoints[idx].X;
+                            V[1] = cameraPoints[idx].Y;
+                            V[2] = cameraPoints[idx].Z;
+
+                            // Get the direct distance between the plane of the canvas and the point.
+                            float dist = this.ShortestDistanceToCanvasPlane(V);
+
+                            // s.Write("{0}\n", dist);
+
+                            if (dist > 0.10)
+                            {
+                                obstructed = true;
+                                Console.Write("Pixel ({0}, {1}) is obscuring the board ({2}m from board).\n", x, y, dist);
+                                break;
+                            }
+                        }
+                        if (this.BoardObscuredChanged != null && obstructed != this.boardObstructed)
+                        {
+                            this.BoardObscuredChanged.Invoke(this, obstructed);
+                            this.boardObstructed = obstructed;
                         }
                     }
-                    if (this.BoardObscuredChanged != null && obstructed != this.boardObstructed)
+
+                    // Detect hands near whiteboard
+                    if (bodyFrame.BodyCount > 0)
                     {
-                        this.BoardObscuredChanged.Invoke(this, obstructed);
-                        this.boardObstructed = obstructed;
+                        IList<Body> bodies = new Body[bodyFrame.BodyCount];
+                        bodyFrame.GetAndRefreshBodyData(bodies);
+
+                        for (int i = 0; i < bodies.Count; ++i)
+                        {
+                            Body body = bodies[i];
+                            Joint handTipRight = body.Joints[JointType.HandTipRight];
+                            if (handTipRight.TrackingState != TrackingState.NotTracked)
+                            {
+                                CameraSpacePoint pos = handTipRight.Position;
+                                Vector<float> V = CreateVector.Dense<float>(3);
+                                V[0] = pos.X;
+                                V[1] = pos.Y;
+                                V[2] = pos.Z;
+                                float dist = this.ShortestDistanceToCanvasPlane(V);
+                                if (dist < 0.10)
+                                {
+                                    Console.Write("Body {0}'s HandTipRight is {1} centimetres from the whiteboard.\n", i, dist * 100);
+                                }
+                            }
+                        }
                     }
                 }
             }
@@ -516,6 +542,7 @@ namespace MinorityReport
                 if (bodyIndexFrame != null) bodyIndexFrame.Dispose();
                 if (colorFrame != null) colorFrame.Dispose();
                 if (depthFrame != null) depthFrame.Dispose();
+                if (bodyFrame != null) bodyFrame.Dispose();
             }
         }
 
@@ -552,6 +579,21 @@ namespace MinorityReport
             dataTask.Wait();
             string data = Encoding.UTF8.GetString(dataTask.Result);
             Console.Write("Response (status {1}): {0}.\n", data, req.Result.StatusCode);
+        }
+
+        private float ShortestDistanceToCanvasPlane(Vector<float> vec)
+        {
+            float dist = (float)Math.Abs(
+                this.plane_A * vec[0] +
+                this.plane_B * vec[1] +
+                this.plane_C * vec[2] +
+                this.plane_D);
+            dist /= (float)Math.Sqrt(
+                Math.Pow(this.plane_A, 2) +
+                Math.Pow(this.plane_B, 2) +
+                Math.Pow(this.plane_C, 2));
+
+            return dist;
         }
 
         private void ListCanvasPixels()
