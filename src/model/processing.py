@@ -90,6 +90,8 @@ def order_points(pts):
 
 
 def guess_colour(r, g, b):
+    # Use the average RGB values of a postit and then using the difference between them
+    # to establish which of the four supported colours it is.
     r = int(r)
     g = int(g)
     b = int(b)
@@ -145,6 +147,7 @@ def guess_colour(r, g, b):
     return None
 
 def binarize(image, lightest=True):
+
     Z = image.reshape((-1,3))
     # convert to np.float32
     Z = numpy.float32(Z)

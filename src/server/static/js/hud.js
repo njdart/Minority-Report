@@ -209,7 +209,7 @@ function redrawCanvas() {
                 postitImage.src = "";
                 postitImage.onload = function(evt){
                     console.log("       drawing virtual " + evt.currentTarget.height + "x" + evt.currentTarget.width + " postit at (" + postit.displayPos.x + "," + postit.displayPos.y + ")");
-                    if (postit.physicalFor == null)
+                    if (postit.physicalFor == null || postit.physicalFor == "None")
                     {
                         //virtual for noone
                         hudContext.strokeStyle = "#00FF00";
