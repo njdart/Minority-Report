@@ -204,16 +204,25 @@ function redrawCanvas() {
             }
             else
             {
-
+                //virtual for all users
                 postitImage = new Image();
                 postitImage.src = "";
                 postitImage.onload = function(evt){
                     console.log("       drawing virtual " + evt.currentTarget.height + "x" + evt.currentTarget.width + " postit at (" + postit.displayPos.x + "," + postit.displayPos.y + ")");
-                    hudContext.strokeStyle = "#FFFF00";
+                    if (postit.physicalFor == null)
+                    {
+                        //virtual for noone
+                        hudContext.strokeStyle = "#00FF00";
+                    }
+                    else
+                    {
+                        //physical for someone else
+                        hudContext.strokeStyle = "#FF0000";
+                    }
                     hudContext.strokeWidth = 20;
-                    hudContext.strokeRect(postit.displayPos.x - evt.currentTarget.width/2, postit.displayPos.y - evt.currentTarget.height/2, evt.currentTarget.width, evt.currentTarget.height)
+                    hudContext.strokeRect(postit.displayPos.x - evt.currentTarget.width/2, postit.displayPos.y - evt.currentTarget.height/2, evt.currentTarget.width, evt.currentTarget.height);
                     hudContext.drawImage(evt.currentTarget, postit.displayPos.x - evt.currentTarget.width/2, postit.displayPos.y - evt.currentTarget.height/2);
-                }
+                };
                 postitImage.src = "/api/postit/" + postit.id;
             }
 
