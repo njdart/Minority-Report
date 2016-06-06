@@ -147,7 +147,7 @@ def guess_colour(r, g, b):
     return None
 
 def binarize(image, lightest=True):
-
+    # Process converts an image to black and white using clustering to the lightest and darkest areas
     Z = image.reshape((-1,3))
     # convert to np.float32
     Z = numpy.float32(Z)

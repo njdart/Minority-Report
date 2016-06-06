@@ -164,7 +164,7 @@ class Image(SqliteObject):
         from src.model.Postit import Postit
 
         userId = InstanceConfiguration.get(self.instanceConfigurationId).userId
-        old_to_new_postits = []
+        old_to_new_postits = [] # List of old id and corresponding new id
         found_postits = []
         canvas_image = self.get_image_projection()
         display_ratio = (1920.0/canvas_image.shape[1])
@@ -191,7 +191,6 @@ class Image(SqliteObject):
         for c in contours:
             box = cv2.boxPoints(cv2.minAreaRect(c))
             box = numpy.int0(box)
-
             # Check the area of the postits to see if they fit within the expected range
             if (cv2.contourArea(box) > min_postit_area) and (cv2.contourArea(box) < max_postit_area):
                 print(cv2.contourArea(box))
@@ -205,11 +204,11 @@ class Image(SqliteObject):
                     # Create arrays for finding the corners of the postits
                     canvx = numpy.zeros([int(len(flat_contour) / 2), 1])
                     canvy = numpy.zeros([int(len(flat_contour) / 2), 1])
-                    l1 = numpy.zeros(int(len(flat_contour) / 2))
-                    l2 = numpy.zeros(int(len(flat_contour) / 2))
-                    l3 = numpy.zeros(int(len(flat_contour) / 2))
-                    l4 = numpy.zeros(int(len(flat_contour) / 2))
-                     # To calculate the four corners each point is scored on how well it fits a corner.
+                    topLeft = numpy.zeros(int(len(flat_contour) / 2))
+                    topRight = numpy.zeros(int(len(flat_contour) / 2))
+                    bottomRight = numpy.zeros(int(len(flat_contour) / 2))
+                    bottomLeft = numpy.zeros(int(len(flat_contour) / 2))
+                    # To calculate the four corners each point is scored on how well it fits a corner.
                     # The range of X and Y values is scaled to a 0 to 1 scale.
                     # The points x and y score are then added together giving a score between 0 and 2.
                     # The point that has the highest score for a corner is most likely to be that corner.
@@ -226,19 +225,19 @@ class Image(SqliteObject):
                         lx = ((canvx[idx] - xmin) / (xmax - xmin))
                         ly = ((canvy[idx] - ymin) / (ymax - ymin))
                         # Score x and y relative to range
-                        l1[idx] = (1 - lx) + (1 - ly)
-                        l2[idx] = lx + (1 - ly)
-                        l3[idx] = lx + ly
-                        l4[idx] = (1 - lx) + ly
+                        topLeft[idx] = (1 - lx) + (1 - ly)
+                        topRight[idx] = lx + (1 - ly)
+                        bottomRight[idx] = lx + ly
+                        bottomLeft[idx] = (1 - lx) + ly
 
-                    max1 = numpy.argmax(l1)
-                    max2 = numpy.argmax(l2)
-                    max3 = numpy.argmax(l3)
-                    max4 = numpy.argmax(l4)
-                    postit_pts = [(canvx[max1][0], canvy[max1][0]),
-                                  (canvx[max2][0], canvy[max2][0]),
-                                  (canvx[max3][0], canvy[max3][0]),
-                                  (canvx[max4][0], canvy[max4][0])]
+                    maxTopLeft = numpy.argmax(topLeft)
+                    maxTopRight = numpy.argmax(topRight)
+                    maxBottomRight = numpy.argmax(bottomRight)
+                    maxBottomLeft = numpy.argmax(bottomLeft)
+                    postit_pts = [(canvx[maxTopLeft][0], canvy[maxTopLeft][0]),
+                                  (canvx[maxTopRight][0], canvy[maxTopRight][0]),
+                                  (canvx[maxBottomRight][0], canvy[maxBottomRight][0]),
+                                  (canvx[maxBottomLeft][0], canvy[maxBottomLeft][0])]
                     # Crop and transform image based on points
                     postitimg = src.model.processing.four_point_transform(canvas_image, numpy.array(postit_pts))
                     postitPts.append(src.model.processing.order_points(numpy.array(postit_pts)))
@@ -287,11 +286,11 @@ class Image(SqliteObject):
         if current_canvas is not None:
             old_postits = current_canvas.get_postits()
             missing_postits = []
-            for o, old_postit in enumerate(old_postits):
+            for old_postit in old_postits:
                 odes = old_postit.get_descriptors()
                 good = numpy.zeros(len(found_postits), dtype=numpy.int)
                 IDs = []
-                for n, new_postit in enumerate(found_postits):
+                for new_index, new_postit in enumerate(found_postits):
                     ndes = new_postit.get_descriptors()
                     # Create BFMatcher object
                     bf = cv2.BFMatcher()
@@ -304,7 +303,7 @@ class Image(SqliteObject):
                             IDs.append(old_postit.get_id())
                             for a, b in matches:
                                 if a.distance < (0.75*b.distance):
-                                    good[n] += 1
+                                    good[new_index] += 1
                         else:
                             print("oops")
                             cv2.imshow("debug", odes)
@@ -356,7 +355,6 @@ class Image(SqliteObject):
         return (found_postits, old_to_new_postits)
 
     def find_connections(self, postits, old_to_new_postits, next_canvas_id, current_canvas, save=True):
-        from src.model.InstanceConfiguration import InstanceConfiguration
         from src.model.Connection import Connection
 
         found_connections = []
@@ -364,21 +362,21 @@ class Image(SqliteObject):
         edged = src.model.processing.edge(canvas_image)
         cv2.imwrite("debug/lines-"+str(next_canvas_id)+".png",
                     cv2.resize(edged, None, fx=0.5, fy=0.5, interpolation=cv2.INTER_AREA))
-        (_, cnts, _) = cv2.findContours(edged.copy(), cv2.RETR_TREE, cv2.CHAIN_APPROX_NONE)
-        for c in cnts:
+        (_, line_contours, _) = cv2.findContours(edged.copy(), cv2.RETR_TREE, cv2.CHAIN_APPROX_NONE)
+        for line_contour in line_contours:
             debug_img = canvas_image.copy()
-            if cv2.arcLength(c, True) > 100:
+            if cv2.arcLength(line_contour, True) > 100:
                 connectionList = []
 
-                for index in range(0, len(c), 10):
+                for index in range(0, len(line_contour), 10):
                     contained = False
                     for idx, ipostit in enumerate(postits):
                         ipostitpoints = ipostit.get_corner_points()
                         rectanglearea = src.model.processing.get_area(ipostitpoints)
-                        pointarea = src.model.processing.get_area((ipostitpoints[0], ipostitpoints[1], c[index][0]))\
-                                    + src.model.processing.get_area((ipostitpoints[1], ipostitpoints[2], c[index][0]))\
-                                    + src.model.processing.get_area((ipostitpoints[2], ipostitpoints[3], c[index][0]))\
-                                    + src.model.processing.get_area((ipostitpoints[3], ipostitpoints[0], c[index][0]))
+                        pointarea = src.model.processing.get_area((ipostitpoints[0], ipostitpoints[1], line_contour[index][0]))\
+                                    + src.model.processing.get_area((ipostitpoints[1], ipostitpoints[2], line_contour[index][0]))\
+                                    + src.model.processing.get_area((ipostitpoints[2], ipostitpoints[3], line_contour[index][0]))\
+                                    + src.model.processing.get_area((ipostitpoints[3], ipostitpoints[0], line_contour[index][0]))
                         if pointarea < rectanglearea*1.1:
                                 contained = True
                         if pointarea < rectanglearea*1.25 and not contained:
@@ -390,13 +388,13 @@ class Image(SqliteObject):
 
                 if len(connectionList) > 1:
                     print(connectionList)
-                    for i in range(0, len(connectionList) - 1):
+                    for connection_index in range(0, len(connectionList) - 1):
                         postit_id_start = 0
                         postit_id_end = 0
-                        if len(str(connectionList[i])) == 36:
-                            postit_id_start = connectionList[i]
-                        if len(str(connectionList[i + 1])) == 36:
-                            postit_id_end = connectionList[i + 1]
+                        if len(str(connectionList[connection_index])) == 36:
+                            postit_id_start = connectionList[connection_index]
+                        if len(str(connectionList[connection_index + 1])) == 36:
+                            postit_id_end = connectionList[connection_index + 1]
                         if postit_id_start and postit_id_end:
                             found_connection = {
                                 "postitIdStart": postit_id_start,
