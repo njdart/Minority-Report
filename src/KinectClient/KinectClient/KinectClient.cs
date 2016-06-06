@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Net.Http;
 using System.Net;
+using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading.Tasks;
 using System.Timers;
@@ -16,7 +17,6 @@ using System;
 // Yes, this is ugly. Blame Microsoft for creating a class named PointF in two libraries that behave completely
 // differently. Seriously, why?
 using Draw = System.Drawing;
-using System.Runtime.InteropServices;
 
 namespace MinorityReport
 {
@@ -71,6 +71,7 @@ namespace MinorityReport
         private bool testMapping = true;
         private bool calibrationComplete = false;
         private bool boardObstructed = false;
+        private bool serverCommsHappening = false;
         #endregion
 
         public string Server { get; set; } = null;
@@ -268,15 +269,15 @@ namespace MinorityReport
                                 }
 
                                 // Calculate perspective matrix, which maps between color space and canvas space.
-                                this.canvasCoords = ImageWarping.OrderPoints(this.canvasCoords);
+                                this.canvasCoords = ImageProcessing.OrderPoints(this.canvasCoords);
                                 Draw.PointF[] outputBounds = new Draw.PointF[4] {
                                     new Draw.PointF(0, 0),
                                     new Draw.PointF(0, 1079),
                                     new Draw.PointF(1919, 0),
                                     new Draw.PointF(1919, 1079)
                                 };
-                                outputBounds = ImageWarping.OrderPoints(outputBounds);
-                                this.perspectiveMatrix = ImageWarping.GetPerspectiveTransform(this.canvasCoords, outputBounds);
+                                outputBounds = ImageProcessing.OrderPoints(outputBounds);
+                                this.perspectiveMatrix = ImageProcessing.GetPerspectiveTransform(this.canvasCoords, outputBounds);
 
                                 this.ListCanvasPixels();
 
@@ -524,9 +525,30 @@ namespace MinorityReport
                                 V[1] = pos.Y;
                                 V[2] = pos.Z;
                                 float dist = this.ShortestDistanceToCanvasPlane(V);
-                                if (dist < 0.10)
+                                // if (dist < 0.10)
                                 {
                                     // Console.Write("Body {0}'s HandTipRight is {1} centimetres from the whiteboard.\n", i, dist * 100);
+                                    // Find the point on the canvas plane nearest to the hand position
+                                    double k = -(this.plane_A * pos.X +
+                                                 this.plane_B * pos.Y +
+                                                 this.plane_C * pos.Z +
+                                                 this.plane_D) /
+                                                (Math.Pow(this.plane_A, 2) +
+                                                 Math.Pow(this.plane_B, 2) +
+                                                 Math.Pow(this.plane_C, 2));
+                                    V = V + this.GetCanvasPlaneNormal() * (float)k;
+
+                                    CameraSpacePoint p;
+                                    p.X = V[0];
+                                    p.Y = V[1];
+                                    p.Z = V[2];
+                                    ColorSpacePoint c = this.sensor.CoordinateMapper.MapCameraPointToColorSpace(p);
+                                    Vector<float> v = CreateVector.Dense<float>(3);
+                                    v[0] = c.X;
+                                    v[1] = c.Y;
+                                    v[2] = 1;
+                                    v = this.TransformToCanvasSpace(v);
+                                    // Console.Write("Hand points at pixel ({0},\t{1})\n", v[0], v[1]);
                                 }
                             }
                         }
@@ -548,37 +570,61 @@ namespace MinorityReport
 
         private void KinectClient_BoardObscuredChanged(object sender, bool obscured)
         {
-            Console.Write("Board " + ((!obscured) ? "no longer " : "") + "obscured!\n");
-
-            //tell server
-            HttpClient client = new HttpClient();
-
-            string payload = String.Format("{{ \"boardObscured\" : {0}, \"kinectID\" : \"{1}\" }}", obscured ? "true" : "false", this.instanceID);
-            StringContent content = new StringContent(payload);
-
-            if (content.Headers.Contains("Content-Type")) content.Headers.Remove("Content-Type");
-            content.Headers.Add("Content-Type", "application/json");
-
-            string uri = String.Format("http://{0}:{1}/boardObscured", this.Server, this.Port);
-
-            Console.Write("Sending to {1} :\n{0}\n", payload, uri);
-            Task<HttpResponseMessage> req;
-            try
+            if (this.serverCommsHappening)
             {
-                req = client.PostAsync(uri, content);
-                req.Wait();
-            }
-            catch (AggregateException e)
-            {
-                Console.Write("Error occurred sending data to the server:\n");
-                Console.Write(e.ToString());
                 return;
             }
 
-            Task<byte[]> dataTask = req.Result.Content.ReadAsByteArrayAsync();
-            dataTask.Wait();
-            string data = Encoding.UTF8.GetString(dataTask.Result);
-            Console.Write("Response (status {1}): {0}.\n", data, req.Result.StatusCode);
+            Task.Run(() =>
+            {
+                this.serverCommsHappening = true;
+
+                Console.Write("Board " + ((!obscured) ? "no longer " : "") + "obscured!\n");
+
+                //tell server
+                HttpClient client = new HttpClient();
+
+                string payload = String.Format("{{ \"boardObscured\" : {0}, \"kinectID\" : \"{1}\" }}",
+                    obscured ? "true" : "false",
+                    this.instanceID);
+
+                StringContent content = new StringContent(payload);
+
+                if (content.Headers.Contains("Content-Type")) content.Headers.Remove("Content-Type");
+                content.Headers.Add("Content-Type", "application/json");
+
+                string uri = String.Format("http://{0}:{1}/boardObscured", this.Server, this.Port);
+
+                Console.Write("Sending to {1} :\n{0}\n", payload, uri);
+                Task<HttpResponseMessage> req;
+                try
+                {
+                    req = client.PostAsync(uri, content);
+                    req.Wait();
+                }
+                catch (AggregateException e)
+                {
+                    Console.Write("Error occurred sending data to the server:\n");
+                    Console.Write(e.ToString());
+                    return;
+                }
+
+                Task<byte[]> dataTask = req.Result.Content.ReadAsByteArrayAsync();
+                dataTask.Wait();
+                string data = Encoding.UTF8.GetString(dataTask.Result);
+                Console.Write("Response (status {1}): {0}.\n", data, req.Result.StatusCode);
+
+                this.serverCommsHappening = false;
+            });
+        }
+
+        private Vector<float> GetCanvasPlaneNormal()
+        {
+            Vector<float> n = CreateVector.Dense<float>(3);
+            n[0] = (float)this.plane_A;
+            n[1] = (float)this.plane_B;
+            n[2] = (float)this.plane_C;
+            return n;
         }
 
         private float ShortestDistanceToCanvasPlane(Vector<float> vec)
