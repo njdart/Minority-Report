@@ -495,7 +495,7 @@ namespace MinorityReport
                             if (dist > 0.10)
                             {
                                 obstructed = true;
-                                Console.Write("Pixel ({0}, {1}) is obscuring the board ({2}m from board).\n", x, y, dist);
+                                // Console.Write("Pixel ({0}, {1}) is obscuring the board ({2}m from board).\n", x, y, dist);
                                 break;
                             }
                         }
@@ -526,7 +526,7 @@ namespace MinorityReport
                                 float dist = this.ShortestDistanceToCanvasPlane(V);
                                 if (dist < 0.10)
                                 {
-                                    Console.Write("Body {0}'s HandTipRight is {1} centimetres from the whiteboard.\n", i, dist * 100);
+                                    // Console.Write("Body {0}'s HandTipRight is {1} centimetres from the whiteboard.\n", i, dist * 100);
                                 }
                             }
                         }
@@ -623,6 +623,28 @@ namespace MinorityReport
                     }
                 }
             }
+
+            // Produce 1080p image (grayscale) where white pixels are within the canvas bounds
+            WriteableBitmap bmp;
+            PngBitmapEncoder pngEncode;
+
+            byte[] canvasPixelsImg = new byte[1920 * 1080];
+            foreach (ColorSpacePoint p in this.canvasPoints)
+            {
+                int x = (int)Math.Floor(p.X);
+                int y = (int)Math.Floor(p.Y);
+                canvasPixelsImg[x + 1920 * y] = 255;
+            }
+            bmp = new WriteableBitmap(1920, 1080, 96, 96, PixelFormats.Gray8, null);
+            bmp.Lock();
+            Marshal.Copy(canvasPixelsImg, 0, bmp.BackBuffer, canvasPixelsImg.Length);
+            bmp.AddDirtyRect(new Int32Rect(0, 0, 1920, 1080));
+            bmp.Unlock();
+            pngEncode = new PngBitmapEncoder();
+            pngEncode.Frames.Add(BitmapFrame.Create(bmp));
+            FileStream canvasPixelsImgFile = new FileStream("canvas_pixels_img_debug.png", FileMode.Create);
+            pngEncode.Save(canvasPixelsImgFile);
+            canvasPixelsImgFile.Close();
         }
 
         private bool ConfigurationFromFile()
@@ -702,7 +724,7 @@ namespace MinorityReport
                 // This is a 2D perspective transformation done in a "virtual" 3D space, so there is a 3rd coordinate
                 // involved. To convert the vector into the 2D canvas space, the 2D coordinates are divided by the
                 // third coordinate (named the "homogeneous" coordinate).
-                output.Divide(output[2]);
+                output = output.Divide(output[2]);
                 return output;
             }
             return null;
