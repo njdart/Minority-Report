@@ -150,7 +150,10 @@ def binarize(image, lightest=True):
     Z = numpy.float32(Z)
     # define criteria, number of clusters(K) and apply kmeans()
     criteria = (cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, 10, 1.0)
-    K = 3
+    if lightest:
+        K = 3
+    else:
+        K = 2
     ret,label,center = cv2.kmeans(data=Z,
                                   K=K,
                                   bestLabels=None,
