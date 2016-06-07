@@ -52,6 +52,9 @@ def boardObscured():
 
     # generate canvas from picture
     image = Image.get(id=id)
+    if image is None:
+        return
+    socketio.emit('show_loading')
     current_canvas = Session.get(InstanceConfiguration.get(id=image.instanceConfigurationId).sessionId).get_latest_canvas()
     next_canvas_id = uuid.uuid4()
     postits, old_to_new_postits = image.find_postits(next_canvas_id=next_canvas_id,
