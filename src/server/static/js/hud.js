@@ -40,6 +40,8 @@ $(function() {
                 $("#body-detect-indicator").hide();
             });
 
+            socket.on("show_loading", showLoading);
+
             socket.on('connect', function() {
                 socket.on('get_latest_canvas_by_session', function(canvas) {
                     console.log("HUD initial canvas received");
@@ -151,6 +153,7 @@ function redrawCanvas() {
     hudContext.strokeWidth = 10;
     hudContext.lineWidth = 10;
     console.log("redrawCanvas(): redrawing canvas");
+    hideLoading();
     drawCanvasBin();
 
     if(latestCanvas.postits == undefined || latestCanvas.postits == null)
@@ -243,4 +246,14 @@ function setCanvasBlack() {
 function setCanvasWhite() {
     console.log("setCanvasWhite(): setting canvas background white");
     $(".hudCanvas").removeClass("blackCanvas");
+}
+
+function showLoading() {
+    console.log("showLoading(): setting loader show");
+    $(".loader").show();
+}
+
+function hideLoading() {
+    console.log("hideLoading(): setting loader hide");
+    $(".loader").hide();
 }
