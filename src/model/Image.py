@@ -291,6 +291,7 @@ class Image(SqliteObject):
                 good = numpy.zeros(len(found_postits), dtype=numpy.int)
                 IDs = []
                 for new_index, new_postit in enumerate(found_postits):
+                    print("here")
                     ndes = new_postit.get_descriptors()
                     # Create BFMatcher object
                     bf = cv2.BFMatcher()
@@ -312,12 +313,15 @@ class Image(SqliteObject):
                     print(good)
                     print(len(odes))
                     print(len(odes)*0.1)
-                    if max(good) > 8: #len(odes)*0.1:
-                        match_idx = numpy.argmax(good)
-                        old_to_new_postit = (old_postit.id, found_postits[match_idx].id)
-                        old_to_new_postits.append(old_to_new_postit)
+                    if not len(good) == 0:
+                        if max(good) > 8: #len(odes)*0.1:
+                            match_idx = numpy.argmax(good)
+                            old_to_new_postit = (old_postit.id, found_postits[match_idx].id)
+                            old_to_new_postits.append(old_to_new_postit)
+                        else:
+                            missing_postits.append(old_postit)
                     else:
-                        missing_postits.append(old_postit)
+                            missing_postits.append(old_postit)
             for missing_postit in missing_postits:
                 postit = Postit(physicalFor=None,
                                 canvas=next_canvas_id,
