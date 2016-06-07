@@ -568,7 +568,7 @@ namespace MinorityReport
                                 V[1] = pos.Y;
                                 V[2] = pos.Z;
                                 float dist = this.ShortestDistanceToCanvasPlane(V);
-                                if (dist < 0.10)
+                                if (dist < 1)
                                 {
                                     // Console.Write("Body {0}'s HandTipRight is {1} centimetres from the whiteboard.\n", i, dist * 100);
                                     // Find the point on the canvas plane nearest to the hand position
