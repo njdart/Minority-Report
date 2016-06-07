@@ -9,6 +9,20 @@ from src.server.api.image_api import generate_canvas
 import time
 import uuid
 
+@app.route("/magicalHandCircle", methods=["POST"])
+def magicalHandCircle():
+    data = request.get_json()
+    if data:
+        x = data["x"]
+        y = data["y"]
+        payload = {
+            "x": x,
+            "y": y
+        }
+        socketio.emit("draw_circle", payload, broadcast=True)
+    else:
+        print("invalid magical hand circle :(")
+
 @app.route('/boardObscured', methods=['GET', 'POST'])
 def boardObscured():
     if request.method == "GET":

@@ -3,6 +3,7 @@ using Microsoft.Kinect;
 using Newtonsoft.Json;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Net.Http;
 using System.Net;
 using System.Runtime.InteropServices;
@@ -42,6 +43,36 @@ namespace MinorityReport
             }
         }
 
+        private class HandTrackingSample
+        {
+            public float X;
+            public float Y;
+            public DateTime Timestamp;
+        }
+        
+        private class HandTrackingData
+        {
+            public HandTrackingSample[] samples;
+            public float StdDevX { get { return HandTrackingData.StdDev(samples.Select(x => x.X)); } }
+            public float StdDevY { get { return HandTrackingData.StdDev(samples.Select(x => x.Y)); } }
+            public int Count { get { return samples.Count(); } }
+
+            public HandTrackingData(HandTrackingSample[] samples)
+            {
+                this.samples = samples;
+            }
+
+            private static float StdDev(IEnumerable<float> items)
+            {
+                float sum = items.Sum();
+                float mean = sum / items.Count();
+                float dev_sum = (float)items.Sum(x => Math.Pow(x - mean, 2));
+                float dev = dev_sum / items.Count();
+                float sd = (float)Math.Sqrt(dev);
+                return sd;
+            }
+        }
+        
         #region Private variables
         private KinectSensor sensor = null;
         private MultiSourceFrameReader multiFrameReader = null;
@@ -72,6 +103,11 @@ namespace MinorityReport
         private bool calibrationComplete = false;
         private bool boardObstructed = false;
         private bool serverCommsHappening = false;
+
+        private FileStream handTrackingDebug;
+
+        private HandTrackingSample[] leftHandSamples;
+        private HandTrackingSample[] rightHandSamples;
         #endregion
 
         public string Server { get; set; } = null;
@@ -89,6 +125,13 @@ namespace MinorityReport
             {
                 Console.Write("Kinect application is not calibrated.\n");
             }
+
+            this.handTrackingDebug = new FileStream(
+                String.Format("hand_tracking_{0}.csv", DateTime.Now.ToString("dd_MM_yy_hh_mm_ss_ffffff")),
+                FileMode.Create);
+
+            this.leftHandSamples = new HandTrackingSample[6];
+            this.rightHandSamples = new HandTrackingSample[6];
 
             // If this timer elapses, an exception is thrown in Run().
             this.sensorAvailableTimer = new Timer(5000);
@@ -525,7 +568,7 @@ namespace MinorityReport
                                 V[1] = pos.Y;
                                 V[2] = pos.Z;
                                 float dist = this.ShortestDistanceToCanvasPlane(V);
-                                // if (dist < 0.10)
+                                if (dist < 0.10)
                                 {
                                     // Console.Write("Body {0}'s HandTipRight is {1} centimetres from the whiteboard.\n", i, dist * 100);
                                     // Find the point on the canvas plane nearest to the hand position
@@ -548,6 +591,17 @@ namespace MinorityReport
                                     v[1] = c.Y;
                                     v[2] = 1;
                                     v = this.TransformToCanvasSpace(v);
+
+                                    // contact the server
+                                    this.SendMagicalHandCircle((int)v[0], (int)v[1]);
+
+                                    string time = DateTime.Now.ToString("o");
+                                    string debugLine = String.Format("{0},{1},{2}\n", time, v[0], v[1]);
+                                    byte[] debugLineBytes = Encoding.UTF8.GetBytes(debugLine);
+                                    handTrackingDebug.Write(debugLineBytes, 0, debugLineBytes.Length);
+                                    // Console.Write(debugLine);
+                                    Console.Write("kek hand ");
+
                                     // Console.Write("Hand points at pixel ({0},\t{1})\n", v[0], v[1]);
                                 }
                             }
@@ -578,44 +632,83 @@ namespace MinorityReport
             Task.Run(() =>
             {
                 this.serverCommsHappening = true;
-
-                Console.Write("Board " + ((!obscured) ? "no longer " : "") + "obscured!\n");
-
-                //tell server
-                HttpClient client = new HttpClient();
-
-                string payload = String.Format("{{ \"boardObscured\" : {0}, \"kinectID\" : \"{1}\" }}",
-                    obscured ? "true" : "false",
-                    this.instanceID);
-
-                StringContent content = new StringContent(payload);
-
-                if (content.Headers.Contains("Content-Type")) content.Headers.Remove("Content-Type");
-                content.Headers.Add("Content-Type", "application/json");
-
-                string uri = String.Format("http://{0}:{1}/boardObscured", this.Server, this.Port);
-
-                Console.Write("Sending to {1} :\n{0}\n", payload, uri);
-                Task<HttpResponseMessage> req;
                 try
                 {
-                    req = client.PostAsync(uri, content);
-                    req.Wait();
+                    Console.Write("Board " + ((!obscured) ? "no longer " : "") + "obscured!\n");
+
+                    //tell server
+                    HttpClient client = new HttpClient();
+
+                    string payload = String.Format("{{ \"boardObscured\" : {0}, \"kinectID\" : \"{1}\" }}",
+                        obscured ? "true" : "false",
+                        this.instanceID);
+
+                    StringContent content = new StringContent(payload);
+
+                    if (content.Headers.Contains("Content-Type")) content.Headers.Remove("Content-Type");
+                    content.Headers.Add("Content-Type", "application/json");
+
+                    string uri = String.Format("http://{0}:{1}/boardObscured", this.Server, this.Port);
+
+                    Console.Write("Sending to {1} :\n{0}\n", payload, uri);
+                    Task<HttpResponseMessage> req;
+                    try
+                    {
+                        req = client.PostAsync(uri, content);
+                        req.Wait();
+                    }
+                    catch (AggregateException e)
+                    {
+                        Console.Write("Error occurred sending data to the server:\n");
+                        Console.Write(e.ToString());
+                        return;
+                    }
+
+                    Task<byte[]> dataTask = req.Result.Content.ReadAsByteArrayAsync();
+                    dataTask.Wait();
+                    string data = Encoding.UTF8.GetString(dataTask.Result);
+                    Console.Write("Response (status {1}): {0}.\n", data, req.Result.StatusCode);
                 }
-                catch (AggregateException e)
+                catch (Exception e)
                 {
-                    Console.Write("Error occurred sending data to the server:\n");
-                    Console.Write(e.ToString());
-                    return;
+                    Console.Write("Unexpected exception communicating to server:\n{0}\n", e.ToString());
                 }
-
-                Task<byte[]> dataTask = req.Result.Content.ReadAsByteArrayAsync();
-                dataTask.Wait();
-                string data = Encoding.UTF8.GetString(dataTask.Result);
-                Console.Write("Response (status {1}): {0}.\n", data, req.Result.StatusCode);
-
-                this.serverCommsHappening = false;
+                finally
+                {
+                    this.serverCommsHappening = false;
+                }
             });
+        }
+
+        private void SendMagicalHandCircle(int x, int y)
+        {
+            try
+            {
+                Task.Run(async () =>
+                {
+                    try
+                    {
+                        HttpClient client = new HttpClient();
+                        string uri = String.Format("http://{0}:{1}/magicalHandCircle", this.Server, this.Port);
+
+                        string payload = String.Format("{{ \"x\": {0}, \"y\": {1} }}", x, y);
+                        StringContent content = new StringContent(payload);
+                        if (content.Headers.Contains("Content-Type")) content.Headers.Remove("Content-Type");
+                        content.Headers.Add("Content-Type", "application/json");
+
+                        HttpResponseMessage response = await client.PostAsync(uri, content);
+                        Console.Write("magical hand circle response status: {0}\n", response.StatusCode);
+                    }
+                    catch
+                    {
+                        Console.Write("sending magical hand circle failed (RIP) (error within task)\n");
+                    }
+                });
+            }
+            catch
+            {
+                Console.Write("sending magical hand circle failed (RIP)\n");
+            }
         }
 
         private Vector<float> GetCanvasPlaneNormal()
