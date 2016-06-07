@@ -193,12 +193,12 @@ class Image(SqliteObject):
             box = numpy.int0(box)
             # Check the area of the postits to see if they fit within the expected range
             if (cv2.contourArea(box) > min_postit_area) and (cv2.contourArea(box) < max_postit_area):
-                print(cv2.contourArea(box))
+                # print(cv2.contourArea(box))
                 length = numpy.math.hypot(box[0, 0] - box[1, 0], box[0, 1] - box[1, 1])
                 height = numpy.math.hypot(box[2, 0] - box[1, 0], box[2, 1] - box[1, 1])
                 # Check to see how similar the lengths are as a measure of squareness
                 if length * (2 - len_tolerence) < length + height < length * (2 + len_tolerence):
-                    print("len : "+str(length))
+                    # print("len : "+str(length))
                     rectangle = cv2.boundingRect(c)
                     flat_contour = c.flatten()
                     # Create arrays for finding the corners of the postits
@@ -286,37 +286,40 @@ class Image(SqliteObject):
         if current_canvas is not None:
             old_postits = current_canvas.get_postits()
             missing_postits = []
+            old_postit_info =[]
+            new_postit_info = []
             for old_postit in old_postits:
-                odes = old_postit.get_descriptors()
+                old_info = (old_postit.id, old_postit.get_descriptors())
+                old_postit_info.append(old_info)
+
+            for new_postit in found_postits:
+                new_info = (new_postit.id, new_postit.get_descriptors())
+                new_postit_info.append(new_info)
+
+
+            for old_index, old_postit in enumerate(old_postits):
                 good = numpy.zeros(len(found_postits), dtype=numpy.int)
                 IDs = []
-                for new_index, new_postit in enumerate(found_postits):
-                    print("here")
-                    ndes = new_postit.get_descriptors()
+                odes = old_postit_info[old_index][1]
+                for new_index, new_info in enumerate(new_postit_info):
+                    ndes = new_info[1]
                     # Create BFMatcher object
                     bf = cv2.BFMatcher()
                     if ndes is not None and odes is not None:
                         if len(ndes) > 0 and len(odes) > 0:
-                            # print(len(odes))
-                            # print(len(ndes))
-                            # Match descriptors
                             matches = bf.knnMatch(ndes, odes, k=2)
                             IDs.append(old_postit.get_id())
                             for a, b in matches:
                                 if a.distance < (0.75*b.distance):
                                     good[new_index] += 1
                         else:
-                            print("oops")
                             cv2.imshow("debug", odes)
                             cv2.waitKey(0)
                 if odes is not None:
-                    print(good)
-                    print(len(odes))
-                    print(len(odes)*0.1)
                     if not len(good) == 0:
                         if max(good) > 8: #len(odes)*0.1:
                             match_idx = numpy.argmax(good)
-                            old_to_new_postit = (old_postit.id, found_postits[match_idx].id)
+                            old_to_new_postit = (old_postit_info[old_index][0], new_postit_info[match_idx][0])
                             old_to_new_postits.append(old_to_new_postit)
                         else:
                             missing_postits.append(old_postit)
@@ -346,10 +349,10 @@ class Image(SqliteObject):
         postit_delete_list = []
         for pidx, new_postit in enumerate(found_postits):
             if new_postit.displayPosX < 200 and new_postit.displayPosY <200:
-                print(str(new_postit.displayPosX)+", "+str(new_postit.displayPosY))
+                # print(str(new_postit.displayPosX)+", "+str(new_postit.displayPosY))
 
                 postit_delete_list.append((new_postit.id, new_postit))
-                print("deleting postit:", new_postit.id, new_postit.displayPosX, new_postit.displayPosY)
+                # print("deleting postit:", new_postit.id, new_postit.displayPosX, new_postit.displayPosY)
         for del_post in postit_delete_list:
             rmv_from_old_to_new = [i for i, pair in enumerate(old_to_new_postits) if pair[1] == del_post[0]]
             for index in reversed(rmv_from_old_to_new):
@@ -391,7 +394,7 @@ class Image(SqliteObject):
                                 connectionList.append(ipostit.get_id())
 
                 if len(connectionList) > 1:
-                    print(connectionList)
+                    # print(connectionList)
                     for connection_index in range(0, len(connectionList) - 1):
                         postit_id_start = 0
                         postit_id_end = 0

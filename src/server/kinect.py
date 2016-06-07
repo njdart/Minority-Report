@@ -16,12 +16,14 @@ def magicalHandCircle():
         x = data["x"]
         y = data["y"]
         payload = {
-            "x": x,
+            "x": 1920 - x,
             "y": y
         }
         socketio.emit("draw_circle", payload, broadcast=True)
+        return "yay", 200
     else:
-        print("invalid magical hand circle :(")
+        return "invalid request", 500
+
 
 @app.route('/boardObscured', methods=['GET', 'POST'])
 def boardObscured():

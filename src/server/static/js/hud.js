@@ -42,18 +42,7 @@ $(function() {
 
             socket.on("show_loading", showLoading);
 
-            socket.on("draw_circle", function(x, y){
-                console.log("received draw_circle");
-                clearCanvas();
-                redrawCanvas();
-                hudContext.beginPath();
-                hudContext.arc(x, y, POSTIT_SIZE, 0, 2 * Math.PI, false);
-                hudContext.fillStyle = 'green';
-                hudContext.fill();
-                hudContext.lineWidth = 5;
-                hudContext.strokeStyle = '#003300';
-                hudContext.stroke();
-            });
+            socket.on("draw_circle", drawCircle);
 
             socket.on('connect', function() {
                 socket.on('get_latest_canvas_by_session', function(canvas) {
@@ -117,6 +106,21 @@ $(function() {
         console.error('Local Storage Not Available!');
     }
 });
+
+function drawCircle(obj) {
+    x = obj.x;
+    y = obj.y;
+    console.log("received draw_circle: (" + x + ", " + y + ")");
+    clearCanvas();
+    redrawCanvas();
+    hudContext.beginPath();
+    hudContext.arc(x, y, POSTIT_SIZE, 0, 2 * Math.PI, false);
+    hudContext.fillStyle = 'green';
+    hudContext.fill();
+    hudContext.lineWidth = 5;
+    hudContext.strokeStyle = '#003300';
+    hudContext.stroke();
+}
 
 function checkCanvasSize() {
     if($(window).height() != 1080)
