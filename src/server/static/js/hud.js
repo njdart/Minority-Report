@@ -42,6 +42,17 @@ $(function() {
 
             socket.on("show_loading", showLoading);
 
+            socket.on("draw_circle", function(x, y){
+               console.log("received draw_circle");
+               hudContext.beginPath();
+               hudContext.arc(x, y, POSTIT_SIZE, 0, 2 * Math.PI, false);
+               hudContext.fillStyle = 'green';
+               hudContext.fill();
+               hudContext.lineWidth = 5;
+               hudContext.strokeStyle = '#003300';
+               hudContext.stroke();
+            });
+
             socket.on('connect', function() {
                 socket.on('get_latest_canvas_by_session', function(canvas) {
                     console.log("HUD initial canvas received");
