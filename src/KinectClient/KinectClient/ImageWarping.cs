@@ -9,7 +9,7 @@ using MoreLinq;
 
 namespace MinorityReport
 {
-    public static class ImageWarping
+    public static class ImageProcessing
     {
         public static Matrix<float> GetPerspectiveTransform(PointF[] src, PointF[] dst)
         {

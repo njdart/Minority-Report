@@ -92,6 +92,10 @@ def setCameraProperties(uri, properties):
 @socketio.on('generate_canvas')
 def generate_canvas(id):
     image = Image.get(id=id)
+    if image is None:
+        print("Image.get returned None")
+        return
+    socketio.emit('show_loading')
     from src.model.InstanceConfiguration import InstanceConfiguration
     current_canvas = Session.get(InstanceConfiguration.get(id=image.instanceConfigurationId).sessionId).get_latest_canvas()
     next_canvas_id = uuid.uuid4()
