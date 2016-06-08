@@ -58,7 +58,6 @@ $(function() {
 
                         //clear virtual postit local cache
                         //get all virtual postits from new canvas and to cache
-                        clearStorage(["instanceConfigurationId", "sessionId", "userId"]);
                         virtualPostitImages = {};
                         $.each(latestCanvas.postits, function(index, postit)
                         {
