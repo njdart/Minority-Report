@@ -12,37 +12,9 @@ var OFFSET = POSTIT_SIZE/2;
 
 var virtualPostitImages = {};
 
-clearStorage = function(exceptions){
-  var storage = localStorage
-  var keys = [];
-  var exceptions = [].concat(exceptions) //prevent undefined
-
-  //get storage keys
-  $.each(localStorage, function(key, val) {
-    keys.push(key);
-  });
-
-  //loop through keys
-  for( i=0; i<keys.length; i++ ){
-    var key = keys[i]
-    var deleteItem = true
-    //check if key excluded
-    for( j=0; j<exceptions.length; j++ ){
-      var exception = exceptions[j];
-      if( key == exception ) deleteItem = false;
-    }
-    //delete key
-    if( deleteItem ){
-      localStorage.removeItem(key)
-    }
-  }
-}
-
 $(function() {
     //var hudCanvas = $('.hudCanvas');
     var splash = $('.localStorageUnset');
-
-
 
     if (typeof(Storage) !== 'undefined') {
        userId = localStorage.getItem('userId');
@@ -86,18 +58,30 @@ $(function() {
 
                         //clear virtual postit local cache
                         //get all virtual postits from new canvas and to cache
-                        //
                         clearStorage(["instanceConfigurationId", "sessionId", "userId"]);
                         virtualPostitImages = {};
-                        $.each(canvas.postits, function(index, postit)
+                        $.each(latestCanvas.postits, function(index, postit)
                         {
-                           if (postit.physicalFor != userId)
+                           if (latestCanvas.physicalFor != userId)
                            {
-                               //var xmlHttp = new XMLHttpRequest();
-                               //xmlHttp.open( "GET", "/api/postitb64/" + postit.id, false ); // false for synchronous request
-                               //xmlHttp.send( null );
-                               //localStorage.setItem(postit.id, xmlHttp.responseText);
                                var i = new Image();
+                               i.onload = function(evt)
+                               {
+                                   console.log("       EXPERIMENTAL: drawing virtual " + evt.currentTarget.height + "x" + evt.currentTarget.width + " postit at (" + postit.displayPos.x + "," + postit.displayPos.y + ")");
+                                   if (postit.physicalFor == null || postit.physicalFor == "None")
+                                   {
+                                       //virtual for noone
+                                       hudContext.strokeStyle = "#00FF00";
+                                   }
+                                   else
+                                   {
+                                       //physical for someone else
+                                       hudContext.strokeStyle = "#FF0000";
+                                   }
+                                   hudContext.strokeWidth = 20;
+                                   hudContext.strokeRect(postit.displayPos.x - evt.currentTarget.width/2, postit.displayPos.y - evt.currentTarget.height/2, evt.currentTarget.width, evt.currentTarget.height);
+                                   hudContext.drawImage(evt.currentTarget, postit.displayPos.x - evt.currentTarget.width/2, postit.displayPos.y - evt.currentTarget.height/2);
+                               }
                                i.src = "/api/postit/" + postit.id;
                                virtualPostitImages[postit.id] = i;
                            }
@@ -168,7 +152,7 @@ function drawCircle(obj) {
         redrawCanvas();
         hudContext.beginPath();
         hudContext.arc(x, y, POSTIT_SIZE, 0, 2 * Math.PI, false);
-        hudContext.fillStyle = 'green';
+        hudContext.fillStyle = 'rgba(0,255,0,0.5)';
         hudContext.fill();
         hudContext.lineWidth = 5;
         hudContext.strokeStyle = '#003300';
@@ -303,7 +287,7 @@ function redrawCanvas() {
                 };*/
                 //postitImage.src = "/api/postit/" + postit.id;
                 //postitImage.src = "data:image/jpg;base64," + localStorage.getItem(postit.id);
-
+/*
                 var currentTarget = virtualPostitImages[postit.id];
                 console.log("       drawing virtual " + currentTarget.height + "x" + currentTarget.width + " postit at (" + postit.displayPos.x + "," + postit.displayPos.y + ")");
                 if (postit.physicalFor == null || postit.physicalFor == "None")
@@ -318,7 +302,7 @@ function redrawCanvas() {
                 }
                 hudContext.strokeWidth = 20;
                 hudContext.strokeRect(postit.displayPos.x - currentTarget.width/2, postit.displayPos.y - currentTarget.height/2, currentTarget.width, currentTarget.height);
-                hudContext.drawImage(currentTarget, postit.displayPos.x - currentTarget.width/2, postit.displayPos.y - currentTarget.height/2);
+                hudContext.drawImage(currentTarget, postit.displayPos.x - currentTarget.width/2, postit.displayPos.y - currentTarget.height/2);*/
             }
 
         });
