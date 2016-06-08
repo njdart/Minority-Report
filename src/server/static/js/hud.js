@@ -4,6 +4,8 @@ var latestCanvas;
 var userId;
 var sessionId;
 
+var allowDrawCircle = true;
+
 var POSTIT_SIZE = 115;
 
 var OFFSET = POSTIT_SIZE/2;
@@ -53,6 +55,7 @@ $(function() {
                     else {
                         console.log(canvas);
                         latestCanvas = canvas;
+                        allowDrawCircle = true;
                         resizeCanvas();
                     }
                 });
@@ -108,18 +111,25 @@ $(function() {
 });
 
 function drawCircle(obj) {
-    x = obj.x;
-    y = obj.y;
-    console.log("received draw_circle: (" + x + ", " + y + ")");
-    clearCanvas();
-    redrawCanvas();
-    hudContext.beginPath();
-    hudContext.arc(x, y, POSTIT_SIZE, 0, 2 * Math.PI, false);
-    hudContext.fillStyle = 'green';
-    hudContext.fill();
-    hudContext.lineWidth = 5;
-    hudContext.strokeStyle = '#003300';
-    hudContext.stroke();
+    if (allowDrawCircle)
+    {
+        x = obj.x;
+        y = obj.y;
+        console.log("received draw_circle: (" + x + ", " + y + ")");
+        clearCanvas();
+        redrawCanvas();
+        hudContext.beginPath();
+        hudContext.arc(x, y, POSTIT_SIZE, 0, 2 * Math.PI, false);
+        hudContext.fillStyle = 'green';
+        hudContext.fill();
+        hudContext.lineWidth = 5;
+        hudContext.strokeStyle = '#003300';
+        hudContext.stroke();
+    }
+    else
+    {
+        console.log("received draw_circle, but ignoring");
+    }
 }
 
 function checkCanvasSize() {
@@ -256,16 +266,19 @@ var drawImageOnCanvas = function(image, x, y) {
 }
 
 function setCanvasBlack() {
+    allowDrawCircle = false;
     console.log("setCanvasBlack(): setting canvas background black");
     $(".hudCanvas").addClass("blackCanvas");
 }
 
 function setCanvasWhite() {
+    allowDrawCircle = false;
     console.log("setCanvasWhite(): setting canvas background white");
     $(".hudCanvas").removeClass("blackCanvas");
 }
 
 function showLoading() {
+    allowDrawCircle = false;
     console.log("showLoading(): setting loader show");
     $(".loader").show();
 }
