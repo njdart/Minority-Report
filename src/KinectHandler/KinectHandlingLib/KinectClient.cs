@@ -23,6 +23,7 @@ namespace MinorityReport
 {
     public class KinectClient
     {
+        #region Utility classes
         private class Configuration
         {
             public IList<IList<float>> matrix;
@@ -48,16 +49,22 @@ namespace MinorityReport
             public float X;
             public float Y;
             public DateTime Timestamp;
+
+            public HandTrackingSample(float x, float y)
+            {
+                X = x; Y = y;
+                Timestamp = DateTime.Now;
+            }
         }
-        
-        private class HandTrackingData
+
+        private class HandTrackingSamples
         {
             public HandTrackingSample[] samples;
-            public float StdDevX { get { return HandTrackingData.StdDev(samples.Select(x => x.X)); } }
-            public float StdDevY { get { return HandTrackingData.StdDev(samples.Select(x => x.Y)); } }
+            public float StdDevX { get { return HandTrackingSamples.StdDev(samples.Select(x => x.X)); } }
+            public float StdDevY { get { return HandTrackingSamples.StdDev(samples.Select(x => x.Y)); } }
             public int Count { get { return samples.Count(); } }
 
-            public HandTrackingData(HandTrackingSample[] samples)
+            public HandTrackingSamples(HandTrackingSample[] samples)
             {
                 this.samples = samples;
             }
@@ -72,7 +79,44 @@ namespace MinorityReport
                 return sd;
             }
         }
-        
+
+        private class HandTrackingState
+        {
+            public int skeletonID;
+
+            public bool leftHandTracked = false;
+            public bool rightHandTracked = false;
+
+            public int leftHandX = 0;
+            public int leftHandY = 0;
+
+            public int rightHandX = 0;
+            public int rightHandY = 0;
+
+            public bool leftFistClosed = true;
+            public bool rightFistClosed = true;
+
+            public HandTrackingState(int skeletonID)
+            {
+                this.skeletonID = skeletonID;
+            }
+        }
+
+        private class HandTrackingData
+        {
+            public HandTrackingState[] handStates;
+
+            public HandTrackingData()
+            {
+                handStates = new HandTrackingState[6];
+                for (int i = 0; i < 6; ++i)
+                {
+                    handStates[i] = new HandTrackingState(i);
+                }
+            }
+        }
+        #endregion
+
         #region Private variables
         private KinectSensor sensor = null;
         private MultiSourceFrameReader multiFrameReader = null;
@@ -103,18 +147,29 @@ namespace MinorityReport
         private bool calibrationComplete = false;
         private bool boardObstructed = false;
         private bool serverCommsHappening = false;
+        private bool shuttingDown = false;
+        private bool running = false;
+        private bool prevHandsTracked;
 
         private FileStream handTrackingDebug;
 
-        private HandTrackingSample[] leftHandSamples;
-        private HandTrackingSample[] rightHandSamples;
+        private IList<IList<HandTrackingSample>> leftHandSamples;
+        private IList<IList<HandTrackingSample>> rightHandSamples;
+
+        private Object listenerLock = new Object();
         #endregion
 
+        #region Public properties
         public string Server { get; set; } = null;
         public int Port { get; set; } = 8088;
+        public bool Running { get { return this.running; } }
+        #endregion
 
+        #region Public events
         public event EventHandler<bool> BoardObscuredChanged;
+        #endregion
 
+        #region Public methods
         public KinectClient(string server, int port)
         {
             if (this.ConfigurationFromFile())
@@ -130,8 +185,13 @@ namespace MinorityReport
                 String.Format("hand_tracking_{0}.csv", DateTime.Now.ToString("dd_MM_yy_hh_mm_ss_ffffff")),
                 FileMode.Create);
 
-            this.leftHandSamples = new HandTrackingSample[6];
-            this.rightHandSamples = new HandTrackingSample[6];
+            this.leftHandSamples = new List<IList<HandTrackingSample>>();
+            this.rightHandSamples = new List<IList<HandTrackingSample>>();
+            for (int i = 0; i < 6; ++i)
+            {
+                this.leftHandSamples.Add(new List<HandTrackingSample>());
+                this.rightHandSamples.Add(new List<HandTrackingSample>());
+            }
 
             // If this timer elapses, an exception is thrown in Run().
             this.sensorAvailableTimer = new Timer(5000);
@@ -145,8 +205,8 @@ namespace MinorityReport
             // this.bodyIndexReader = this.sensor.BodyIndexFrameSource.OpenReader();
             // this.colorReader = this.sensor.ColorFrameSource.OpenReader();
             this.multiFrameReader = this.sensor.OpenMultiSourceFrameReader(FrameSourceTypes.BodyIndex |
-                                                                           FrameSourceTypes.Color     |
-                                                                           FrameSourceTypes.Depth     |
+                                                                           FrameSourceTypes.Color |
+                                                                           FrameSourceTypes.Depth |
                                                                            FrameSourceTypes.Body);
 
             // this.bodyIndexReader.FrameArrived += this.BodyIndexReader_FrameArrived;
@@ -161,6 +221,8 @@ namespace MinorityReport
         {
             bool active = true;
             bool kinectFault = false;
+            this.running = true;
+
             // Set a background loop to continually check on the status of the Kinect sensor.
             Task sensorTimerTask = new Task(() =>
             {
@@ -187,204 +249,19 @@ namespace MinorityReport
             {
                 while (active && !kinectFault)
                 {
-                    HttpListenerContext context;
-                    try
-                    {
-                        context = listener.GetContext();
-                    }
-                    catch
-                    {
-                        // This probably means an exception has been thrown in the calling thread, invalidating the
-                        // listener object.
-                        active = false;
-                        break;
-                    }
+                    IAsyncResult result = listener.BeginGetContext(
+                        new AsyncCallback(this.HTTPListenerCallback),
+                        listener);
 
-                    if (context.Request.Url.LocalPath == "/debug")
-                    {
-                        string body = "debug or something";
-                        this.WriteStringResponse(context, body);
-                    }
-                    else if (context.Request.Url.LocalPath == "/calibrate")
-                    {
-                        if (context.Request.HttpMethod == "GET")
-                        {
-                            // save a colour image
-                            this.latestColorPNG = null;
-                            this.samplingColorFrames = true;
-                            while (this.samplingColorFrames) ;
+                    while (active && !result.IsCompleted) ;
 
-                            // save image to file for debug purposes
-                            string pngname = String.Format("{0}.png", DateTime.Now.ToString("o")).Replace(":", ".");
-                            FileStream debugPNG = new FileStream(pngname, FileMode.CreateNew);
-                            debugPNG.Write(this.latestColorPNG, 0, this.latestColorPNG.Length);
-                            debugPNG.Close();
-
-                            // respond with the colour image (PNG)
-                            try
-                            {
-                                context.Response.ContentLength64 = this.latestColorPNG.Length;
-                                context.Response.ContentType = "image/png";
-                                context.Response.OutputStream.Write(this.latestColorPNG, 0, this.latestColorPNG.Length);
-                            }
-                            catch (HttpListenerException)
-                            {
-                                // Do nothing (the client closed the connection)
-                            }
-
-                            Console.Write("Sent calibration image to {0}\n", context.Request.RemoteEndPoint.Address);
-                        }
-                        else if (context.Request.HttpMethod == "POST")
-                        {
-                            // Get the sent data
-                            Console.Write("Received calibration data from {0}\n", context.Request.RemoteEndPoint.Address);
-                            MemoryStream mstream = new MemoryStream();
-                            context.Request.InputStream.CopyTo(mstream);
-                            byte[] data = mstream.GetBuffer();
-
-                            // deserialize the sent data
-                            CalibratePOSTData postData = null;
-                            bool success = true;
-                            try
-                            {
-                                string content = Encoding.UTF8.GetString(data, 0, (int)context.Request.ContentLength64);
-                                Console.Write("\n{0}\n", content);
-                                postData = JsonConvert.DeserializeObject<CalibratePOSTData>(content);
-                                if (postData.points == null || postData.points.Count != 4)
-                                {
-                                    Console.Write("Invalid data.\n");
-                                    success = false;
-                                }
-                            }
-                            catch (JsonException e)
-                            {
-                                Console.Write("Invalid JSON. Exception: {0}\n", e.Message);
-                                success = false;
-                            }
-
-                            if (!success)
-                            {
-                                // Handle errors
-                                context.Response.StatusCode = (int)HttpStatusCode.BadRequest;
-                                string body = "Bad request innit haha";
-                                this.WriteStringResponse(context, body);
-                            }
-                            else
-                            {
-                                // Success!
-
-                                if (postData.instanceID != null)
-                                {
-                                    // Store the sent ID
-                                    this.instanceID = postData.instanceID;
-
-                                    // Store the server details (assume port 8088).
-                                    this.Server = context.Request.RemoteEndPoint.Address.ToString();
-                                    this.Port = 8088;
-                                    if (this.Server == "::1")
-                                    {
-                                        // lel hack lel
-                                        this.Server = "127.0.0.1";
-                                    }
-                                    Console.Write("Data POSTed from {0}.\n", this.Server);
-
-                                    // echo ID
-                                    CalibratePOSTData respData = new CalibratePOSTData();
-                                    respData.instanceID = postData.instanceID;
-                                    string body = JsonConvert.SerializeObject(respData, Formatting.Indented);
-                                    this.WriteStringResponse(context, body);
-                                    Console.Write(body + "\n");
-                                }
-                                else
-                                {
-                                    // No ID sent to us; send empty object back
-                                    this.WriteStringResponse(context, "{ }");
-                                }
-
-                                // Store the sent coordinates
-                                this.canvasCoords = new Draw.PointF[4];
-                                Console.Write("Coordinates got:\n");
-                                for (int i = 0; i < postData.points.Count; ++i)
-                                {
-                                    IList<float> p = postData.points[i];
-                                    this.canvasCoords[i] = new Draw.PointF(p[0], p[1]);
-                                    Console.Write("[{0}, {1}]\n", this.canvasCoords[i].X, this.canvasCoords[i].Y);
-                                }
-
-                                // Calculate perspective matrix, which maps between color space and canvas space.
-                                this.canvasCoords = ImageProcessing.OrderPoints(this.canvasCoords);
-                                Draw.PointF[] outputBounds = new Draw.PointF[4] {
-                                    new Draw.PointF(0, 0),
-                                    new Draw.PointF(0, 1079),
-                                    new Draw.PointF(1919, 0),
-                                    new Draw.PointF(1919, 1079)
-                                };
-                                outputBounds = ImageProcessing.OrderPoints(outputBounds);
-                                this.perspectiveMatrix = ImageProcessing.GetPerspectiveTransform(this.canvasCoords, outputBounds);
-
-                                this.ListCanvasPixels();
-
-                                // Convert the depth image to camera space (X,Y,Z; Z extending from the front of the IR
-                                // sensor), at 1080p (so each pixel in color space can be assigned a 3D camera space
-                                // point).
-                                CoordinateMapper mapper = this.sensor.CoordinateMapper;
-                                CameraSpacePoint[] cameraPoints = new CameraSpacePoint[1920 * 1080];
-                                mapper.MapColorFrameToCameraSpace(this.calibrationDepthData, cameraPoints);
-
-                                // Get the camera space points at the canvas corners
-                                Vector<float>[] canvasPoints3D = new Vector<float>[3];
-                                for (int i = 0; i < 3; ++i)
-                                {
-                                    int x = (int)Math.Floor(this.canvasCoords[i].X);
-                                    int y = (int)Math.Floor(this.canvasCoords[i].Y);
-                                    Console.Write("({0}, {1}, {2})\n", cameraPoints[x + y * 1920].X, cameraPoints[x + y * 1920].Y, cameraPoints[x + y * 1920].Z);
-
-                                    canvasPoints3D[i] = CreateVector.Dense<float>(3);
-                                    canvasPoints3D[i][0] = cameraPoints[x + y * 1920].X;
-                                    canvasPoints3D[i][1] = cameraPoints[x + y * 1920].Y;
-                                    canvasPoints3D[i][2] = cameraPoints[x + y * 1920].Z;
-                                }
-                                Console.Write("(Skipping the final point.)\n");
-
-                                // Calculate the normal of the plane of the canvas.
-                                Vector<float> U = canvasPoints3D[0] - canvasPoints3D[1];
-                                Vector<float> V = canvasPoints3D[1] - canvasPoints3D[2];
-                                Vector<float> N = CreateVector.Dense<float>(3);
-                                N[0] = U[1] * V[2] - U[2] * V[1];
-                                N[1] = U[2] * V[0] - U[0] * V[2];
-                                N[2] = U[0] * V[1] - U[1] * V[0];
-                                Console.Write("Normal: ({0}, {1}, {2})\n", N[0], N[1], N[2]);
-
-                                // Calculate the parameters of the plane in the form: ax + by + cz + d = 0
-                                Vector<float> X = canvasPoints3D[0];
-                                this.plane_A = N[0];
-                                this.plane_B = N[1];
-                                this.plane_C = N[2];
-                                this.plane_D = -(N[0] * X[0] + N[1] * X[1] + N[2] * X[2]);
-
-                                this.ConfigurationToFile();
-                                this.calibrationComplete = true;
-                            }
-                        }
-                        else if (context.Request.Url.LocalPath == "/quit")
-                        {
-                            string body = "Goodbye";
-                            this.WriteStringResponse(context, body);
-                            active = false;
-                        }
-                        else
-                        {
-                            context.Response.StatusCode = (int)HttpStatusCode.NotFound;
-                            string body = "<html><head><title>KinectClient: 404</title></head><body><h1>404 : Not Found</h1><p>You messed up lol</p></body></html>";
-                            this.WriteStringResponse(context, body);
-                        }
-                        context.Response.Close();
-                    }
+                    Console.Write("BeginGetContext done\n");
                 }
             });
             listenerTask.Start();
 
-            while (active)
+            // Run until shutdown
+            while (!this.shuttingDown)
             {
                 if (kinectFault)
                 {
@@ -392,8 +269,26 @@ namespace MinorityReport
                     throw new Exception("The Kinect sensor is unavailable.");
                 }
             }
+
+            Console.Write("Quitting...\n");
+
+            // End tasks
+            active = false;
+            listenerTask.Wait();
+            sensorTimerTask.Wait();
+
+            // Communicate to server that the Kinect is shutting down.
+            this.SendShutdownSignal();
+            this.running = false;
         }
 
+        public void Quit()
+        {
+            this.shuttingDown = true;
+        }
+        #endregion
+
+        #region Private event handler callbacks
         private void MultiFrameReader_MultiSourceFrameArrived(object sender, MultiSourceFrameArrivedEventArgs e)
         {
             BodyIndexFrame bodyIndexFrame = null;
@@ -556,55 +451,69 @@ namespace MinorityReport
                         IList<Body> bodies = new Body[bodyFrame.BodyCount];
                         bodyFrame.GetAndRefreshBodyData(bodies);
 
+                        bool handsTracked = false;
+                        HandTrackingData handData = new HandTrackingData();
+
                         for (int i = 0; i < bodies.Count; ++i)
                         {
                             Body body = bodies[i];
-                            Joint handTipRight = body.Joints[JointType.HandTipRight];
-                            if (handTipRight.TrackingState != TrackingState.NotTracked)
+                            Joint handL = body.Joints[JointType.HandLeft];
+                            Joint handR = body.Joints[JointType.HandRight];
+                            HandTrackingSample sampleL = this.GetJointProjectedCanvasPosition(handL);
+                            HandTrackingSample sampleR = this.GetJointProjectedCanvasPosition(handR);
+
+                            // The left and right hands are tracked, but data is only sent to the server when at least
+                            // 6 samples have been taken (the rolling average of these samples is sent).
+
+                            int sampleSize = 6;
+
+                            if (sampleL != null)
                             {
-                                CameraSpacePoint pos = handTipRight.Position;
-                                Vector<float> V = CreateVector.Dense<float>(3);
-                                V[0] = pos.X;
-                                V[1] = pos.Y;
-                                V[2] = pos.Z;
-                                float dist = this.ShortestDistanceToCanvasPlane(V);
-                                if (dist < 1)
+                                this.leftHandSamples[i].Add(sampleL);
+                                if (this.leftHandSamples[i].Count > sampleSize)
                                 {
-                                    // Console.Write("Body {0}'s HandTipRight is {1} centimetres from the whiteboard.\n", i, dist * 100);
-                                    // Find the point on the canvas plane nearest to the hand position
-                                    double k = -(this.plane_A * pos.X +
-                                                 this.plane_B * pos.Y +
-                                                 this.plane_C * pos.Z +
-                                                 this.plane_D) /
-                                                (Math.Pow(this.plane_A, 2) +
-                                                 Math.Pow(this.plane_B, 2) +
-                                                 Math.Pow(this.plane_C, 2));
-                                    V = V + this.GetCanvasPlaneNormal() * (float)k;
-
-                                    CameraSpacePoint p;
-                                    p.X = V[0];
-                                    p.Y = V[1];
-                                    p.Z = V[2];
-                                    ColorSpacePoint c = this.sensor.CoordinateMapper.MapCameraPointToColorSpace(p);
-                                    Vector<float> v = CreateVector.Dense<float>(3);
-                                    v[0] = c.X;
-                                    v[1] = c.Y;
-                                    v[2] = 1;
-                                    v = this.TransformToCanvasSpace(v);
-
-                                    // contact the server
-                                    this.SendMagicalHandCircle((int)v[0], (int)v[1]);
-
-                                    string time = DateTime.Now.ToString("o");
-                                    string debugLine = String.Format("{0},{1},{2}\n", time, v[0], v[1]);
-                                    byte[] debugLineBytes = Encoding.UTF8.GetBytes(debugLine);
-                                    handTrackingDebug.Write(debugLineBytes, 0, debugLineBytes.Length);
-                                    // Console.Write(debugLine);
-                                    Console.Write("kek hand ");
-
-                                    // Console.Write("Hand points at pixel ({0},\t{1})\n", v[0], v[1]);
+                                    this.leftHandSamples.RemoveAt(0);
+                                    handsTracked = true;
                                 }
+
+                                handData.handStates[i].leftHandX = (int)(this.leftHandSamples[i].Sum(x => x.X) / sampleSize);
+                                handData.handStates[i].leftHandY = (int)(this.leftHandSamples[i].Sum(x => x.Y) / sampleSize);
+                                handData.handStates[i].leftHandTracked = true;
+                                handData.handStates[i].leftFistClosed = (body.HandLeftState == HandState.Closed);
                             }
+
+                            if (sampleR != null)
+                            {
+                                this.rightHandSamples[i].Add(sampleR);
+                                if (this.rightHandSamples[i].Count > sampleSize)
+                                {
+                                    this.rightHandSamples.RemoveAt(0);
+                                    handsTracked = true;
+                                }
+
+                                handData.handStates[i].rightHandX = (int)(this.rightHandSamples[i].Sum(x => x.X) / sampleSize);
+                                handData.handStates[i].rightHandY = (int)(this.rightHandSamples[i].Sum(x => x.Y) / sampleSize);
+                                handData.handStates[i].rightHandTracked = true;
+                                handData.handStates[i].rightFistClosed = (body.HandRightState == HandState.Closed);
+                            }
+                        }
+
+                        if (handsTracked)
+                        {
+                            this.SendHandData(handData);
+                        }
+
+                        if (handsTracked != this.prevHandsTracked)
+                        {
+                            if (handsTracked)
+                            {
+                                Console.Write("Tracking hand(s)\n");
+                            }
+                            else
+                            {
+                                Console.Write("Stopped tracking hand(s)\n");
+                            }
+                            this.prevHandsTracked = handsTracked;
                         }
                     }
                 }
@@ -615,6 +524,8 @@ namespace MinorityReport
             }
             finally
             {
+                // No matter what happens, always dispose of the frame objects, otherwise subsequent frames cannot be
+                // retrieved.
                 if (bodyIndexFrame != null) bodyIndexFrame.Dispose();
                 if (colorFrame != null) colorFrame.Dispose();
                 if (depthFrame != null) depthFrame.Dispose();
@@ -679,8 +590,261 @@ namespace MinorityReport
                 }
             });
         }
+        #endregion
 
-        private void SendMagicalHandCircle(int x, int y)
+        #region Private methods
+        private HandTrackingSample GetJointProjectedCanvasPosition(Joint joint)
+        {
+            if (joint.TrackingState != TrackingState.NotTracked)
+            {
+                CameraSpacePoint pos = joint.Position;
+                Vector<float> V = CreateVector.Dense<float>(3);
+                V[0] = pos.X;
+                V[1] = pos.Y;
+                V[2] = pos.Z;
+                float dist = this.ShortestDistanceToCanvasPlane(V);
+                if (dist < 1)
+                {
+                    // Console.Write("Body {0}'s HandTipRight is {1} centimetres from the whiteboard.\n", i, dist * 100);
+                    // Find the point on the canvas plane nearest to the hand position
+                    double k = -(this.plane_A * pos.X +
+                                 this.plane_B * pos.Y +
+                                 this.plane_C * pos.Z +
+                                 this.plane_D) /
+                                (Math.Pow(this.plane_A, 2) +
+                                 Math.Pow(this.plane_B, 2) +
+                                 Math.Pow(this.plane_C, 2));
+                    V = V + this.GetCanvasPlaneNormal() * (float)k;
+
+                    CameraSpacePoint p;
+                    p.X = V[0];
+                    p.Y = V[1];
+                    p.Z = V[2];
+                    ColorSpacePoint c = this.sensor.CoordinateMapper.MapCameraPointToColorSpace(p);
+                    Vector<float> v = CreateVector.Dense<float>(3);
+                    v[0] = c.X;
+                    v[1] = c.Y;
+                    v[2] = 1;
+                    v = this.TransformToCanvasSpace(v);
+
+                    return new HandTrackingSample(v[0], v[1]);
+                }
+            }
+            return null;
+        }
+
+        private void HTTPListenerCallback(IAsyncResult result)
+        {
+            lock (this.listenerLock)
+            {
+                HttpListener listener = (HttpListener)result.AsyncState;
+                HttpListenerContext context = listener.EndGetContext(result);
+                if (context.Request.Url.LocalPath == "/debug")
+                {
+                    string body = "debug or something";
+                    this.WriteStringResponse(context, body);
+                }
+                else if (context.Request.Url.LocalPath == "/calibrate")
+                {
+                    if (context.Request.HttpMethod == "GET")
+                    {
+                        // save a colour image
+                        this.latestColorPNG = null;
+                        this.samplingColorFrames = true;
+                        while (this.samplingColorFrames) ;
+
+                        // save image to file for debug purposes
+                        string pngname = String.Format("{0}.png", DateTime.Now.ToString("o")).Replace(":", ".");
+                        FileStream debugPNG = new FileStream(pngname, FileMode.CreateNew);
+                        debugPNG.Write(this.latestColorPNG, 0, this.latestColorPNG.Length);
+                        debugPNG.Close();
+
+                        // respond with the colour image (PNG)
+                        try
+                        {
+                            context.Response.ContentLength64 = this.latestColorPNG.Length;
+                            context.Response.ContentType = "image/png";
+                            context.Response.OutputStream.Write(this.latestColorPNG, 0, this.latestColorPNG.Length);
+                        }
+                        catch (HttpListenerException)
+                        {
+                            // Do nothing (the client closed the connection)
+                        }
+                        Console.Write("Sent calibration image to {0}\n", context.Request.RemoteEndPoint.Address);
+                    }
+                    else if (context.Request.HttpMethod == "POST")
+                    {
+                        // Get the sent data
+                        Console.Write("Received calibration data from {0}\n", context.Request.RemoteEndPoint.Address);
+                        MemoryStream mstream = new MemoryStream();
+                        context.Request.InputStream.CopyTo(mstream);
+                        byte[] data = mstream.GetBuffer();
+
+                        // deserialize the sent data
+                        CalibratePOSTData postData = null;
+                        bool success = true;
+                        try
+                        {
+                            string content = Encoding.UTF8.GetString(data, 0, (int)context.Request.ContentLength64);
+                            Console.Write("\n{0}\n", content);
+                            postData = JsonConvert.DeserializeObject<CalibratePOSTData>(content);
+                            if (postData.points == null || postData.points.Count != 4)
+                            {
+                                Console.Write("Invalid data.\n");
+                                success = false;
+                            }
+                        }
+                        catch (JsonException e)
+                        {
+                            Console.Write("Invalid JSON. Exception: {0}\n", e.Message);
+                            success = false;
+                        }
+
+                        if (!success)
+                        {
+                            // Handle errors
+                            context.Response.StatusCode = (int)HttpStatusCode.BadRequest;
+                            string body = "Bad request innit haha";
+                            this.WriteStringResponse(context, body);
+                        }
+                        else
+                        {
+                            // Success!
+
+                            if (postData.instanceID != null)
+                            {
+                                // Store the sent ID
+                                this.instanceID = postData.instanceID;
+
+                                // Store the server details (assume port 8088).
+                                this.Server = context.Request.RemoteEndPoint.Address.ToString();
+                                this.Port = 8088;
+                                if (this.Server == "::1")
+                                {
+                                    // lel hack lel
+                                    this.Server = "127.0.0.1";
+                                }
+                                Console.Write("Data POSTed from {0}.\n", this.Server);
+
+                                // echo ID
+                                CalibratePOSTData respData = new CalibratePOSTData();
+                                respData.instanceID = postData.instanceID;
+                                string body = JsonConvert.SerializeObject(respData, Formatting.Indented);
+                                this.WriteStringResponse(context, body);
+                                Console.Write(body + "\n");
+                            }
+                            else
+                            {
+                                // No ID sent to us; send empty object back
+                                this.WriteStringResponse(context, "{ }");
+                            }
+
+                            // Store the sent coordinates
+                            this.canvasCoords = new Draw.PointF[4];
+                            Console.Write("Coordinates got:\n");
+                            for (int i = 0; i < postData.points.Count; ++i)
+                            {
+                                IList<float> p = postData.points[i];
+                                this.canvasCoords[i] = new Draw.PointF(p[0], p[1]);
+                                Console.Write("[{0}, {1}]\n", this.canvasCoords[i].X, this.canvasCoords[i].Y);
+                            }
+
+                            // Calculate perspective matrix, which maps between color space and canvas space.
+                            this.canvasCoords = ImageProcessing.OrderPoints(this.canvasCoords);
+                            Draw.PointF[] outputBounds = new Draw.PointF[4] {
+                                    new Draw.PointF(0, 0),
+                                    new Draw.PointF(0, 1079),
+                                    new Draw.PointF(1919, 0),
+                                    new Draw.PointF(1919, 1079)
+                                };
+                            outputBounds = ImageProcessing.OrderPoints(outputBounds);
+
+                            this.perspectiveMatrix = ImageProcessing.GetPerspectiveTransform(
+                                this.canvasCoords,
+                                outputBounds);
+
+                            this.ListCanvasPixels();
+
+                            // Convert the depth image to camera space (X,Y,Z; Z extending from the front of the IR
+                            // sensor), at 1080p (so each pixel in color space can be assigned a 3D camera space
+                            // point).
+                            CoordinateMapper mapper = this.sensor.CoordinateMapper;
+                            CameraSpacePoint[] cameraPoints = new CameraSpacePoint[1920 * 1080];
+                            mapper.MapColorFrameToCameraSpace(this.calibrationDepthData, cameraPoints);
+
+                            // Get the camera space points at the canvas corners
+                            Vector<float>[] canvasPoints3D = new Vector<float>[3];
+                            for (int i = 0; i < 3; ++i)
+                            {
+                                int x = (int)Math.Floor(this.canvasCoords[i].X);
+                                int y = (int)Math.Floor(this.canvasCoords[i].Y);
+                                Console.Write("({0}, {1}, {2})\n",
+                                              cameraPoints[x + y * 1920].X,
+                                              cameraPoints[x + y * 1920].Y,
+                                              cameraPoints[x + y * 1920].Z);
+
+                                canvasPoints3D[i] = CreateVector.Dense<float>(3);
+                                canvasPoints3D[i][0] = cameraPoints[x + y * 1920].X;
+                                canvasPoints3D[i][1] = cameraPoints[x + y * 1920].Y;
+                                canvasPoints3D[i][2] = cameraPoints[x + y * 1920].Z;
+                            }
+                            Console.Write("(Skipping the final point.)\n");
+
+                            // Calculate the normal of the plane of the canvas.
+                            Vector<float> U = canvasPoints3D[0] - canvasPoints3D[1];
+                            Vector<float> V = canvasPoints3D[1] - canvasPoints3D[2];
+                            Vector<float> N = CreateVector.Dense<float>(3);
+                            N[0] = U[1] * V[2] - U[2] * V[1];
+                            N[1] = U[2] * V[0] - U[0] * V[2];
+                            N[2] = U[0] * V[1] - U[1] * V[0];
+                            Console.Write("Normal: ({0}, {1}, {2})\n", N[0], N[1], N[2]);
+
+                            // Calculate the parameters of the plane in the form: ax + by + cz + d = 0
+                            Vector<float> X = canvasPoints3D[0];
+                            this.plane_A = N[0];
+                            this.plane_B = N[1];
+                            this.plane_C = N[2];
+                            this.plane_D = -(N[0] * X[0] + N[1] * X[1] + N[2] * X[2]);
+
+                            this.ConfigurationToFile();
+                            this.calibrationComplete = true;
+                        }
+                    }
+                }
+                else if (context.Request.Url.LocalPath == "/quit")
+                {
+                    string body = "Goodbye";
+                    this.WriteStringResponse(context, body);
+                    this.shuttingDown = true;
+                }
+                else
+                {
+                    context.Response.StatusCode = (int)HttpStatusCode.NotFound;
+                    string body = "<html><head><title>KinectClient: 404</title></head><body><h1>404 : Not Found</h1><p>You messed up lol</p></body></html>";
+                    this.WriteStringResponse(context, body);
+                }
+                context.Response.Close();
+                Console.Write("Request handled\n");
+            }
+        }
+
+        private void SendShutdownSignal()
+        {
+            try
+            {
+                HttpClient client = new HttpClient();
+                string payload = String.Format("{{ \"id\": {0} }}", this.instanceID);
+                StringContent content = new StringContent(payload);
+                string uri = String.Format("http://{0}:{1}/kinectShutdown", this.Server, this.Port);
+                client.PostAsync(uri, content).Wait();
+            }
+            catch
+            {
+                Console.Write("Failed to notify server of Kinect shutdown\n");
+            }
+        }
+
+        private void SendHandData(HandTrackingData data)
         {
             try
             {
@@ -689,25 +853,29 @@ namespace MinorityReport
                     try
                     {
                         HttpClient client = new HttpClient();
-                        string uri = String.Format("http://{0}:{1}/magicalHandCircle", this.Server, this.Port);
+                        string uri = String.Format("http://{0}:{1}/magicalHandCircles", this.Server, this.Port);
 
-                        string payload = String.Format("{{ \"x\": {0}, \"y\": {1} }}", x, y);
+                        string payload = JsonConvert.SerializeObject(data, Formatting.Indented);
+                        Console.Write("\n{0}\n", payload);
                         StringContent content = new StringContent(payload);
                         if (content.Headers.Contains("Content-Type")) content.Headers.Remove("Content-Type");
                         content.Headers.Add("Content-Type", "application/json");
 
                         HttpResponseMessage response = await client.PostAsync(uri, content);
-                        Console.Write("magical hand circle response status: {0}\n", response.StatusCode);
+                        if (response.StatusCode != HttpStatusCode.OK)
+                        {
+                            Console.Write("magical hand circles response status: {0}\n", response.StatusCode);
+                        }
                     }
                     catch
                     {
-                        Console.Write("sending magical hand circle failed (RIP) (error within task)\n");
+                        Console.Write("sending magical hand circles failed (RIP) (error within task)\n");
                     }
                 });
             }
             catch
             {
-                Console.Write("sending magical hand circle failed (RIP)\n");
+                Console.Write("sending magical hand circles failed (RIP)\n");
             }
         }
 
@@ -956,5 +1124,6 @@ namespace MinorityReport
                 this.latestColorPNG = stream.ToArray();
             }
         }
+        #endregion
     }
 }
