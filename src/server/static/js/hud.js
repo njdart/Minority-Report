@@ -287,7 +287,7 @@ function redrawCanvas() {
                 };*/
                 //postitImage.src = "/api/postit/" + postit.id;
                 //postitImage.src = "data:image/jpg;base64," + localStorage.getItem(postit.id);
-/*
+
                 var currentTarget = virtualPostitImages[postit.id];
                 console.log("       drawing virtual " + currentTarget.height + "x" + currentTarget.width + " postit at (" + postit.displayPos.x + "," + postit.displayPos.y + ")");
                 if (postit.physicalFor == null || postit.physicalFor == "None")
@@ -302,7 +302,7 @@ function redrawCanvas() {
                 }
                 hudContext.strokeWidth = 20;
                 hudContext.strokeRect(postit.displayPos.x - currentTarget.width/2, postit.displayPos.y - currentTarget.height/2, currentTarget.width, currentTarget.height);
-                hudContext.drawImage(currentTarget, postit.displayPos.x - currentTarget.width/2, postit.displayPos.y - currentTarget.height/2);*/
+                hudContext.drawImage(currentTarget, postit.displayPos.x - currentTarget.width/2, postit.displayPos.y - currentTarget.height/2);
             }
 
         });
