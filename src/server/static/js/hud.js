@@ -33,22 +33,6 @@ var handColors = {
     }
 };
 
- "handStates": [
-        {
-            "skeletonID": 0,
-            "leftHandTracked": true,
-            "rightHandTracked": false,
-            "leftHandX": 500,
-            "leftHandY": 700,
-            "rightHandX": 0,
-            "rightHandY": 0,
-            "leftFistClosed": false,
-            "rightFistClosed": false
-        }
-    ]
-}
-
-
 var POSTIT_SIZE = 115;
 
 var OFFSET = POSTIT_SIZE/2;
