@@ -3,7 +3,7 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 14
 VisualStudioVersion = 14.0.25123.0
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "KinectClient", "KinectClient\KinectClient.csproj", "{C33C5E88-D683-4D8E-9D4C-9907F3FDAB90}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "KinectHandlingLib", "KinectHandlingLib\KinectHandlingLib.csproj", "{C33C5E88-D683-4D8E-9D4C-9907F3FDAB90}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
