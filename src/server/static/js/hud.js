@@ -10,6 +10,8 @@ var POSTIT_SIZE = 115;
 
 var OFFSET = POSTIT_SIZE/2;
 
+var virtualPostitImages = {};
+
 clearStorage = function(exceptions){
   var storage = localStorage
   var keys = [];
@@ -86,14 +88,18 @@ $(function() {
                         //get all virtual postits from new canvas and to cache
                         //
                         clearStorage(["instanceConfigurationId", "sessionId", "userId"]);
+                        virtualPostitImages = {};
                         $.each(canvas.postits, function(index, postit)
                         {
                            if (postit.physicalFor != userId)
                            {
-                               var xmlHttp = new XMLHttpRequest();
-                               xmlHttp.open( "GET", "/api/postitb64/" + postit.id, false ); // false for synchronous request
-                               xmlHttp.send( null );
-                               localStorage.setItem(postit.id, xmlHttp.responseText);
+                               //var xmlHttp = new XMLHttpRequest();
+                               //xmlHttp.open( "GET", "/api/postitb64/" + postit.id, false ); // false for synchronous request
+                               //xmlHttp.send( null );
+                               //localStorage.setItem(postit.id, xmlHttp.responseText);
+                               var i = new Image();
+                               i.src = "/api/postit" + postit.id;
+                               virtualPostitImages[postit.id] = i;
                            }
                         });
 
@@ -277,7 +283,7 @@ function redrawCanvas() {
             else
             {
                 //virtual for all users
-                postitImage = new Image();
+                /*postitImage = new Image();
                 postitImage.src = "";
                 postitImage.onload = function(evt){
                     console.log("       drawing virtual " + evt.currentTarget.height + "x" + evt.currentTarget.width + " postit at (" + postit.displayPos.x + "," + postit.displayPos.y + ")");
@@ -294,9 +300,25 @@ function redrawCanvas() {
                     hudContext.strokeWidth = 20;
                     hudContext.strokeRect(postit.displayPos.x - evt.currentTarget.width/2, postit.displayPos.y - evt.currentTarget.height/2, evt.currentTarget.width, evt.currentTarget.height);
                     hudContext.drawImage(evt.currentTarget, postit.displayPos.x - evt.currentTarget.width/2, postit.displayPos.y - evt.currentTarget.height/2);
-                };
+                };*/
                 //postitImage.src = "/api/postit/" + postit.id;
-                postitImage.src = "data:image/jpg;base64," + localStorage.getItem(postit.id);
+                //postitImage.src = "data:image/jpg;base64," + localStorage.getItem(postit.id);
+
+                var currentTarget = virtualPostitImages[postit.id];
+                console.log("       drawing virtual " + evt.currentTarget.height + "x" + evt.currentTarget.width + " postit at (" + postit.displayPos.x + "," + postit.displayPos.y + ")");
+                if (postit.physicalFor == null || postit.physicalFor == "None")
+                {
+                    //virtual for noone
+                    hudContext.strokeStyle = "#00FF00";
+                }
+                else
+                {
+                    //physical for someone else
+                    hudContext.strokeStyle = "#FF0000";
+                }
+                hudContext.strokeWidth = 20;
+                hudContext.strokeRect(postit.displayPos.x - evt.currentTarget.width/2, postit.displayPos.y - evt.currentTarget.height/2, evt.currentTarget.width, evt.currentTarget.height);
+                hudContext.drawImage(evt.currentTarget, postit.displayPos.x - evt.currentTarget.width/2, postit.displayPos.y - evt.currentTarget.height/2);
             }
 
         });
