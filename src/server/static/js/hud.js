@@ -6,6 +6,49 @@ var sessionId;
 
 var allowDrawCircle = true;
 
+var handColors = {
+    0: {
+        "leftFistOpen": "rgba(0,255,0,0.5)",
+        "leftFistClosed": "rgba(0,128,0,0.5)"
+    },
+    1: {
+        "leftFistOpen": "rgba(0,0,255,0.5)",
+        "leftFistClosed": "rgba(0,0,128,0.5)"
+    },
+    2: {
+        "leftFistOpen": "rgba(255,0,0,0.5)",
+        "leftFistClosed": "rgba(128,0,0,0.5)"
+    },
+    3: {
+        "leftFistOpen": "rgba(255,255,0,0.5)",
+        "leftFistClosed": "rgba(128,128,0,0.5)"
+    },
+    4: {
+        "leftFistOpen": "rgba(0,255,255,0.5)",
+        "leftFistClosed": "rgba(0,128,128,0.5)"
+    },
+    5: {
+        "leftFistOpen": "rgba(255,0,255,0.5)",
+        "leftFistClosed": "rgba(128,0,128,0.5)"
+    }
+};
+
+ "handStates": [
+        {
+            "skeletonID": 0,
+            "leftHandTracked": true,
+            "rightHandTracked": false,
+            "leftHandX": 500,
+            "leftHandY": 700,
+            "rightHandX": 0,
+            "rightHandY": 0,
+            "leftFistClosed": false,
+            "rightFistClosed": false
+        }
+    ]
+}
+
+
 var POSTIT_SIZE = 115;
 
 var OFFSET = POSTIT_SIZE/2;
@@ -44,7 +87,7 @@ $(function() {
 
             socket.on("show_loading", showLoading);
 
-            socket.on("draw_circle", drawCircle);
+            socket.on("draw_circle", drawCircles);
 
             socket.on('connect', function() {
                 socket.on('get_latest_canvas_by_session', function(canvas) {
@@ -141,25 +184,35 @@ $(function() {
     }
 });
 
-function drawCircle(obj) {
+function drawCircles(handStates) {
     if (allowDrawCircle)
     {
-        x = obj.x;
-        y = obj.y;
-        console.log("received draw_circle: (" + x + ", " + y + ")");
         clearCanvas();
         redrawCanvas();
-        hudContext.beginPath();
-        hudContext.arc(x, y, POSTIT_SIZE, 0, 2 * Math.PI, false);
-        hudContext.fillStyle = 'rgba(0,255,0,0.5)';
-        hudContext.fill();
-        hudContext.lineWidth = 5;
-        hudContext.strokeStyle = '#003300';
-        hudContext.stroke();
+        $.each(handStates, function (index, state) {
+            console.log("received hand state: left(" + state.leftHandX + ", " + state.leftHandY + ") and right(" + state.rightHandX + ", " + state.rightHandY + ")");
+            hudContext.beginPath();
+            hudContext.arc(state.leftHandX, state.leftHandY, POSTIT_SIZE - 15, 0, 2 * Math.PI, false);
+            hudContext.fillStyle = state.leftFistClosed ? handColors[state.skeletonID].leftFirstClosed : handColors[state.skeletonID].leftFistOpen;
+            hudContext.fill();
+            hudContext.lineWidth = 5;
+            hudContext.strokeStyle = '#003300';
+            hudContext.stroke();
+            hudContext.closePath();
+
+            hudContext.beginPath();
+            hudContext.arc(state.rightHandX, state.rightHandY, POSTIT_SIZE - 15, 0, 2 * Math.PI, false);
+            hudContext.fillStyle = state.rightFistClosed ? handColors[state.skeletonID].rightFistClosed : handColors[state.skeletonID].rightFistOpen;
+            hudContext.fill();
+            hudContext.lineWidth = 5;
+            hudContext.strokeStyle = '#003300';
+            hudContext.stroke();
+            hudContext.closePath();
+        });
     }
     else
     {
-        console.log("received draw_circle, but ignoring");
+        console.log("received hand states, but ignoring");
     }
 }
 
