@@ -10,6 +10,32 @@ var POSTIT_SIZE = 115;
 
 var OFFSET = POSTIT_SIZE/2;
 
+clearStorage = function(exceptions){
+  var storage = localStorage
+  var keys = [];
+  var exceptions = [].concat(exceptions) //prevent undefined
+
+  //get storage keys
+  $.each(localStorage, function(key, val) {
+    keys.push(key);
+  });
+
+  //loop through keys
+  for( i=0; i<keys.length; i++ ){
+    var key = keys[i]
+    var deleteItem = true
+    //check if key excluded
+    for( j=0; j<exceptions.length; j++ ){
+      var exception = exceptions[j];
+      if( key == exception ) deleteItem = false;
+    }
+    //delete key
+    if( deleteItem ){
+      localStorage.removeItem(key)
+    }
+  }
+}
+
 $(function() {
     //var hudCanvas = $('.hudCanvas');
     var splash = $('.localStorageUnset');
@@ -55,6 +81,22 @@ $(function() {
                     else {
                         console.log(canvas);
                         latestCanvas = canvas;
+
+                        //clear virtual postit local cache
+                        //get all virtual postits from new canvas and to cache
+                        //
+                        clearStorage(["instanceConfigurationId", "sessionId", "userId"]);
+                        $.each(canvas.postits, function(index, postit)
+                        {
+                           if (postit.physicalFor != userId)
+                           {
+                               var xmlHttp = new XMLHttpRequest();
+                               xmlHttp.open( "GET", "/api/postitb64/" + postit.id, false ); // false for synchronous request
+                               xmlHttp.send( null );
+                               localStorage.setItem(postit.id, xmlHttp.responseText);
+                           }
+                        });
+
                         allowDrawCircle = true;
                         resizeCanvas();
                     }
@@ -253,7 +295,8 @@ function redrawCanvas() {
                     hudContext.strokeRect(postit.displayPos.x - evt.currentTarget.width/2, postit.displayPos.y - evt.currentTarget.height/2, evt.currentTarget.width, evt.currentTarget.height);
                     hudContext.drawImage(evt.currentTarget, postit.displayPos.x - evt.currentTarget.width/2, postit.displayPos.y - evt.currentTarget.height/2);
                 };
-                postitImage.src = "/api/postit/" + postit.id;
+                //postitImage.src = "/api/postit/" + postit.id;
+                postitImage.src = "data:image/jpg;base64," + localStorage.getItem(postit.id);
             }
 
         });

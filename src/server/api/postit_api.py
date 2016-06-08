@@ -5,6 +5,7 @@ from flask.ext.socketio import emit
 from werkzeug.exceptions import NotFound
 from src.model.Postit import Postit
 from src.server import (app, socketio)
+import base64
 
 
 @socketio.on('get_postits')
@@ -65,6 +66,23 @@ def postit_serve(postitId):
 
     i = cv2.imencode('.jpg', image)[1].tostring()
     return send_file(io.BytesIO(i), mimetype='image/jpg')
+
+@app.route('/api/postitb64/<postitId>')
+def postitb64_serve(postitId):
+
+    postit = Postit.get(id=postitId)
+
+    if postit is None:
+        raise NotFound()
+
+    image = postit.get_image_binarized()
+
+    if image is None:
+        raise NotFound()
+
+    i = cv2.imencode('.jpg', image)[1].tostring()
+    b64 = base64.b64encode(i)
+    return b64, 200
 
 
 @socketio.on("purge_postits")
