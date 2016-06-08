@@ -98,7 +98,7 @@ $(function() {
                                //xmlHttp.send( null );
                                //localStorage.setItem(postit.id, xmlHttp.responseText);
                                var i = new Image();
-                               i.src = "/api/postit" + postit.id;
+                               i.src = "/api/postit/" + postit.id;
                                virtualPostitImages[postit.id] = i;
                            }
                         });
@@ -305,7 +305,7 @@ function redrawCanvas() {
                 //postitImage.src = "data:image/jpg;base64," + localStorage.getItem(postit.id);
 
                 var currentTarget = virtualPostitImages[postit.id];
-                console.log("       drawing virtual " + evt.currentTarget.height + "x" + evt.currentTarget.width + " postit at (" + postit.displayPos.x + "," + postit.displayPos.y + ")");
+                console.log("       drawing virtual " + currentTarget.height + "x" + currentTarget.width + " postit at (" + postit.displayPos.x + "," + postit.displayPos.y + ")");
                 if (postit.physicalFor == null || postit.physicalFor == "None")
                 {
                     //virtual for noone
@@ -317,8 +317,8 @@ function redrawCanvas() {
                     hudContext.strokeStyle = "#FF0000";
                 }
                 hudContext.strokeWidth = 20;
-                hudContext.strokeRect(postit.displayPos.x - evt.currentTarget.width/2, postit.displayPos.y - evt.currentTarget.height/2, evt.currentTarget.width, evt.currentTarget.height);
-                hudContext.drawImage(evt.currentTarget, postit.displayPos.x - evt.currentTarget.width/2, postit.displayPos.y - evt.currentTarget.height/2);
+                hudContext.strokeRect(postit.displayPos.x - currentTarget.width/2, postit.displayPos.y - currentTarget.height/2, currentTarget.width, currentTarget.height);
+                hudContext.drawImage(currentTarget, postit.displayPos.x - currentTarget.width/2, postit.displayPos.y - currentTarget.height/2);
             }
 
         });
