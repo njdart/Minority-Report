@@ -9,17 +9,11 @@ from src.server.api.image_api import generate_canvas
 import time
 import uuid
 
-@app.route("/magicalHandCircle", methods=["POST"])
+@app.route("/magicalHandCircles", methods=["POST"])
 def magicalHandCircle():
     data = request.get_json()
     if data:
-        x = data["x"]
-        y = data["y"]
-        payload = {
-            "x": 1920 - x,
-            "y": y
-        }
-        socketio.emit("draw_circle", payload, broadcast=True)
+        socketio.emit("draw_circle", data, broadcast=True)
         return "yay", 200
     else:
         return "invalid request", 500

@@ -9,27 +9,45 @@ var allowDrawCircle = true;
 var handColors = {
     0: {
         "leftFistOpen": "rgba(0,255,0,0.5)",
-        "leftFistClosed": "rgba(0,128,0,0.5)"
+        "leftFistClosed": "rgba(0,128,0,0.5)",
+
+        "rightFistOpen": "rgba(0,255,0,0.5)",
+        "rightFistClosed": "rgba(0,128,0,0.5)"
     },
     1: {
         "leftFistOpen": "rgba(0,0,255,0.5)",
-        "leftFistClosed": "rgba(0,0,128,0.5)"
+        "leftFistClosed": "rgba(0,0,128,0.5)",
+
+        "rightFistOpen": "rgba(0,255,0,0.5)",
+        "rightFistClosed": "rgba(0,128,0,0.5)"
     },
     2: {
         "leftFistOpen": "rgba(255,0,0,0.5)",
-        "leftFistClosed": "rgba(128,0,0,0.5)"
+        "leftFistClosed": "rgba(128,0,0,0.5)",
+
+        "rightFistOpen": "rgba(0,255,0,0.5)",
+        "rightFistClosed": "rgba(0,128,0,0.5)"
     },
     3: {
         "leftFistOpen": "rgba(255,255,0,0.5)",
-        "leftFistClosed": "rgba(128,128,0,0.5)"
+        "leftFistClosed": "rgba(128,128,0,0.5)",
+
+        "rightFistOpen": "rgba(0,255,0,0.5)",
+        "rightFistClosed": "rgba(0,128,0,0.5)"
     },
     4: {
         "leftFistOpen": "rgba(0,255,255,0.5)",
-        "leftFistClosed": "rgba(0,128,128,0.5)"
+        "leftFistClosed": "rgba(0,128,128,0.5)",
+
+        "rightFistOpen": "rgba(0,255,0,0.5)",
+        "rightFistClosed": "rgba(0,128,0,0.5)"
     },
     5: {
         "leftFistOpen": "rgba(255,0,255,0.5)",
-        "leftFistClosed": "rgba(128,0,128,0.5)"
+        "leftFistClosed": "rgba(128,0,128,0.5)",
+
+        "rightFistOpen": "rgba(0,255,0,0.5)",
+        "rightFistClosed": "rgba(0,128,0,0.5)"
     }
 };
 
@@ -174,24 +192,30 @@ function drawCircles(handStates) {
         clearCanvas();
         redrawCanvas();
         $.each(handStates, function (index, state) {
-            console.log("received hand state: left(" + state.leftHandX + ", " + state.leftHandY + ") and right(" + state.rightHandX + ", " + state.rightHandY + ")");
-            hudContext.beginPath();
-            hudContext.arc(state.leftHandX, state.leftHandY, POSTIT_SIZE - 15, 0, 2 * Math.PI, false);
-            hudContext.fillStyle = state.leftFistClosed ? handColors[state.skeletonID].leftFirstClosed : handColors[state.skeletonID].leftFistOpen;
-            hudContext.fill();
-            hudContext.lineWidth = 5;
-            hudContext.strokeStyle = '#003300';
-            hudContext.stroke();
-            hudContext.closePath();
-
-            hudContext.beginPath();
-            hudContext.arc(state.rightHandX, state.rightHandY, POSTIT_SIZE - 15, 0, 2 * Math.PI, false);
-            hudContext.fillStyle = state.rightFistClosed ? handColors[state.skeletonID].rightFistClosed : handColors[state.skeletonID].rightFistOpen;
-            hudContext.fill();
-            hudContext.lineWidth = 5;
-            hudContext.strokeStyle = '#003300';
-            hudContext.stroke();
-            hudContext.closePath();
+            if (state.leftHandTracked)
+            {
+                console.log("received hand state, ID " + state.skeletonID + ": left(" + state.leftHandX + ", " + state.leftHandY + ")");
+                hudContext.beginPath();
+                hudContext.arc(state.leftHandX, state.leftHandY, POSTIT_SIZE - 15, 0, 2 * Math.PI, false);
+                hudContext.fillStyle = state.leftFistClosed ? handColors[state.skeletonID].leftFirstClosed : handColors[state.skeletonID].leftFistOpen;
+                hudContext.fill();
+                hudContext.lineWidth = 5;
+                hudContext.strokeStyle = '#003300';
+                hudContext.stroke();
+                hudContext.closePath();
+            }
+            if (state.rightHandTracked)
+            {
+                console.log("received hand state, ID " + state.skeletonID + ": right(" + state.rightHandX + ", " + state.rightHandY + ")");
+                hudContext.beginPath();
+                hudContext.arc(state.rightHandX, state.rightHandY, POSTIT_SIZE - 15, 0, 2 * Math.PI, false);
+                hudContext.fillStyle = state.rightFistClosed ? handColors[state.skeletonID].rightFistClosed : handColors[state.skeletonID].rightFistOpen;
+                hudContext.fill();
+                hudContext.lineWidth = 5;
+                hudContext.strokeStyle = '#003300';
+                hudContext.stroke();
+                hudContext.closePath();
+            }
         });
     }
     else
