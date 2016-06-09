@@ -472,11 +472,11 @@ namespace MinorityReport
                                 this.leftHandSamples[i].Add(sampleL);
                                 if (this.leftHandSamples[i].Count > sampleSize)
                                 {
-                                    this.leftHandSamples.RemoveAt(0);
+                                    this.leftHandSamples[i].RemoveAt(0);
                                     handsTracked = true;
                                 }
 
-                                handData.handStates[i].leftHandX = (int)(this.leftHandSamples[i].Sum(x => x.X) / sampleSize);
+                                handData.handStates[i].leftHandX = 1920 - (int)(this.leftHandSamples[i].Sum(x => x.X) / sampleSize);
                                 handData.handStates[i].leftHandY = (int)(this.leftHandSamples[i].Sum(x => x.Y) / sampleSize);
                                 handData.handStates[i].leftHandTracked = true;
                                 handData.handStates[i].leftFistClosed = (body.HandLeftState == HandState.Closed);
@@ -487,11 +487,11 @@ namespace MinorityReport
                                 this.rightHandSamples[i].Add(sampleR);
                                 if (this.rightHandSamples[i].Count > sampleSize)
                                 {
-                                    this.rightHandSamples.RemoveAt(0);
+                                    this.rightHandSamples[i].RemoveAt(0);
                                     handsTracked = true;
                                 }
 
-                                handData.handStates[i].rightHandX = (int)(this.rightHandSamples[i].Sum(x => x.X) / sampleSize);
+                                handData.handStates[i].rightHandX = 1920 - (int)(this.rightHandSamples[i].Sum(x => x.X) / sampleSize);
                                 handData.handStates[i].rightHandY = (int)(this.rightHandSamples[i].Sum(x => x.Y) / sampleSize);
                                 handData.handStates[i].rightHandTracked = true;
                                 handData.handStates[i].rightFistClosed = (body.HandRightState == HandState.Closed);
@@ -846,6 +846,7 @@ namespace MinorityReport
 
         private void SendHandData(HandTrackingData data)
         {
+            Console.Write("Sending hand data. {0}\n", DateTime.Now.ToString("o"));
             try
             {
                 Task.Run(async () =>
@@ -856,7 +857,7 @@ namespace MinorityReport
                         string uri = String.Format("http://{0}:{1}/magicalHandCircles", this.Server, this.Port);
 
                         string payload = JsonConvert.SerializeObject(data, Formatting.Indented);
-                        Console.Write("\n{0}\n", payload);
+                        // Console.Write("\n{0}\n", payload);
                         StringContent content = new StringContent(payload);
                         if (content.Headers.Contains("Content-Type")) content.Headers.Remove("Content-Type");
                         content.Headers.Add("Content-Type", "application/json");

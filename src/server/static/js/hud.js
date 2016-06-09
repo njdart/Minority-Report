@@ -191,7 +191,7 @@ function drawCircles(handStates) {
     {
         clearCanvas();
         redrawCanvas();
-        $.each(handStates, function (index, state) {
+        $.each(handStates.handStates, function (index, state) {
             if (state.leftHandTracked)
             {
                 console.log("received hand state, ID " + state.skeletonID + ": left(" + state.leftHandX + ", " + state.leftHandY + ")");
@@ -274,6 +274,12 @@ function redrawCanvas() {
     console.log("redrawCanvas(): redrawing canvas");
     hideLoading();
     drawCanvasBin();
+
+    if (!latestCanvas)
+    {
+        console.log("No canvas to redraw.");
+        return;
+    }
 
     if(latestCanvas.postits == undefined || latestCanvas.postits == null)
     {
