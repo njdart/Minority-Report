@@ -88,7 +88,7 @@ $(function() {
                         virtualPostitImages = {};
                         $.each(latestCanvas.postits, function(index, postit)
                         {
-                           if (latestCanvas.physicalFor != userId)
+                           if (postit.physicalFor != userId)
                            {
                                var i = new Image();
                                i.onload = function(evt)
