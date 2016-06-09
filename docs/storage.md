@@ -77,7 +77,7 @@ We decided to store the whole raw image as a base64 encoded string. Whist this i
                 "height": 10,
                 "width": 10,
     
-                // If the posit was a physical (Not projected) stickyNote or not, if the stickyNote was
+                // If the stickyNote was a physical (Not projected) stickyNote or not, if the stickyNote was
                 // removed, but not binned then this should be true.
                 "isPhysical": true
             },
