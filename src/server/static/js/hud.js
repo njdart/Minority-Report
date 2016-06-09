@@ -18,36 +18,36 @@ var handColors = {
         "leftFistOpen": "rgba(0,0,255,0.5)",
         "leftFistClosed": "rgba(0,0,128,0.5)",
 
-        "rightFistOpen": "rgba(0,255,0,0.5)",
-        "rightFistClosed": "rgba(0,128,0,0.5)"
+        "rightFistOpen": "rgba(0,0,255,0.5)",
+        "rightFistClosed": "rgba(0,0,128,0.5)"
     },
     2: {
         "leftFistOpen": "rgba(255,0,0,0.5)",
         "leftFistClosed": "rgba(128,0,0,0.5)",
 
-        "rightFistOpen": "rgba(0,255,0,0.5)",
-        "rightFistClosed": "rgba(0,128,0,0.5)"
+        "rightFistOpen": "rgba(255,0,0,0.5)",
+        "rightFistClosed": "rgba(128,0,0,0.5)"
     },
     3: {
         "leftFistOpen": "rgba(255,255,0,0.5)",
         "leftFistClosed": "rgba(128,128,0,0.5)",
 
-        "rightFistOpen": "rgba(0,255,0,0.5)",
-        "rightFistClosed": "rgba(0,128,0,0.5)"
+        "rightFistOpen": "rgba(255,255,0,0.5)",
+        "rightFistClosed": "rgba(128,128,0,0.5)"
     },
     4: {
         "leftFistOpen": "rgba(0,255,255,0.5)",
         "leftFistClosed": "rgba(0,128,128,0.5)",
 
-        "rightFistOpen": "rgba(0,255,0,0.5)",
-        "rightFistClosed": "rgba(0,128,0,0.5)"
+        "rightFistOpen": "rgba(0,255,255,0.5)",
+        "rightFistClosed": "rgba(0,128,128,0.5)"
     },
     5: {
         "leftFistOpen": "rgba(255,0,255,0.5)",
         "leftFistClosed": "rgba(128,0,128,0.5)",
 
-        "rightFistOpen": "rgba(0,255,0,0.5)",
-        "rightFistClosed": "rgba(0,128,0,0.5)"
+        "rightFistOpen": "rgba(255,0,255,0.5)",
+        "rightFistClosed": "rgba(128,0,128,0.5)"
     }
 };
 
