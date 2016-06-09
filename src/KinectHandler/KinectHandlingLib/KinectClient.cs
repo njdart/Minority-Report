@@ -121,8 +121,7 @@ namespace MinorityReport
         private KinectSensor sensor = null;
         private MultiSourceFrameReader multiFrameReader = null;
 
-        private bool samplingColorFrames = false;
-        private bool samplingBodyData = false;
+        private volatile bool samplingColorFrames = false;
 
         private ushort[] calibrationDepthData;
 
@@ -142,21 +141,21 @@ namespace MinorityReport
         private IList<ColorSpacePoint> mappedCanvasPoints;
 
         private Timer sensorAvailableTimer;
-        private bool sensorTimerElapsed = false;
-        private bool testMapping = true;
-        private bool calibrationComplete = false;
-        private bool boardObstructed = false;
-        private bool serverCommsHappening = false;
-        private bool shuttingDown = false;
-        private bool running = false;
-        private bool prevHandsTracked;
+        private volatile bool sensorTimerElapsed = false;
+        private volatile bool testMapping = true;
+        private volatile bool calibrationComplete = false;
+        private volatile bool boardObstructed = false;
+        private volatile bool serverCommsHappening = false;
+        private volatile bool shuttingDown = false;
+        private volatile bool running = false;
+        private volatile bool prevHandsTracked;
 
         private FileStream handTrackingDebug;
 
         private IList<IList<HandTrackingSample>> leftHandSamples;
         private IList<IList<HandTrackingSample>> rightHandSamples;
 
-        private Object listenerLock = new Object();
+        private volatile Object listenerLock = new Object();
         #endregion
 
         #region Public properties
@@ -180,10 +179,6 @@ namespace MinorityReport
             {
                 Console.Write("Kinect application is not calibrated.\n");
             }
-
-            this.handTrackingDebug = new FileStream(
-                String.Format("hand_tracking_{0}.csv", DateTime.Now.ToString("dd_MM_yy_hh_mm_ss_ffffff")),
-                FileMode.Create);
 
             this.leftHandSamples = new List<IList<HandTrackingSample>>();
             this.rightHandSamples = new List<IList<HandTrackingSample>>();
@@ -212,7 +207,6 @@ namespace MinorityReport
             // this.bodyIndexReader.FrameArrived += this.BodyIndexReader_FrameArrived;
             // this.colorReader.FrameArrived += this.ColorReader_FrameArrived;
             this.multiFrameReader.MultiSourceFrameArrived += this.MultiFrameReader_MultiSourceFrameArrived;
-            this.samplingBodyData = true;
 
             this.BoardObscuredChanged += this.KinectClient_BoardObscuredChanged;
         }
@@ -399,7 +393,7 @@ namespace MinorityReport
                     this.testMapping = false;
                 }
 
-                if (this.samplingBodyData && this.perspectiveMatrix != null && this.calibrationComplete)
+                if (this.perspectiveMatrix != null && this.calibrationComplete)
                 {
                     // Detect board obstruction
                     {
