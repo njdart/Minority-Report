@@ -53,7 +53,7 @@
     "derivedAt":"2016-04-01 12:42:56.650753",
     "derivedFrom":"None",
     "height":3120,
-    "postits":[
+    "stickyNotes":[
       {
         "colour":"YELLOW",
         "height":128,
@@ -166,7 +166,7 @@
     "derivedAt":"2016-04-01 12:42:58.490595",
     "derivedFrom":"d942f81d-1d88-4762-b6df-200ba53108fa",
     "height":3120,
-    "postits":[
+    "stickyNotes":[
       {
         "colour":"YELLOW",
         "height":128,

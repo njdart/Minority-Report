@@ -135,40 +135,40 @@ class Image(SqliteObject):
 
         return response.status_code == 200
 
-    def find_postits(self,
+    def find_stickyNotes(self,
                      next_canvas_id,
                      current_canvas=None,
                      save=True,
-                     min_postit_area=6000,
-                     max_postit_area=40000,
+                     min_stickyNote_area=6000,
+                     max_stickyNote_area=40000,
                      len_tolerence=0.15,
                      min_colour_thresh=64,
                      max_colour_thresh=220,
-                     save_postits=True):
+                     save_stickyNotes=True):
         """
         :param next_canvas_id:
         :param current_canvas:
         :param save:
-        :param min_postit_area:
-        :param max_postit_area:
+        :param min_stickyNote_area:
+        :param max_stickyNote_area:
         :param len_tolerence:
         :param min_colour_thresh:
         :param max_colour_thresh:
-        :param save_postits:
-        :return: found_postits:
+        :param save_stickyNotes:
+        :return: found_stickyNotes:
 
-        Find postits in new image first
-        Compare with postits in previous canvas, those that are not in new image are included as
+        Find stickyNotes in new image first
+        Compare with stickyNotes in previous canvas, those that are not in new image are included as
         """
         from src.model.InstanceConfiguration import InstanceConfiguration
-        from src.model.Postit import Postit
+        from src.model.StickyNote import StickyNote
 
         userId = InstanceConfiguration.get(self.instanceConfigurationId).userId
-        old_to_new_postits = [] # List of old id and corresponding new id
-        found_postits = []
+        old_to_new_stickyNotes = [] # List of old id and corresponding new id
+        found_stickyNotes = []
         canvas_image = self.get_image_projection()
         display_ratio = (1920.0/canvas_image.shape[1])
-        # Finding postits is based on saturation levels, first the image must be converted to HSV format
+        # Finding stickyNotes is based on saturation levels, first the image must be converted to HSV format
         hsv_image = cv2.cvtColor(canvas_image.copy(), cv2.COLOR_BGR2HSV)
         satthresh = 100  # CONST
         # All pixels with a saturation below threshold are set to black
@@ -177,22 +177,22 @@ class Image(SqliteObject):
         # All pixels below brightness threshold set to black
         # to remove any lines that have some saturation from reflections
         hsv_image[numpy.where((hsv_image < [90, 120, 160]).all(axis=2))] = [0, 0, 0]
-        cv2.imwrite("debug/postit-"+str(next_canvas_id)+".png", hsv_image)
+        # cv2.imwrite("debug/stickyNote-"+str(next_canvas_id)+".png", hsv_image)
         # Convert image to grayscale and then canny filter and get contour
         gray_img = cv2.cvtColor(hsv_image, cv2.COLOR_BGR2GRAY)
         gray_img = cv2.dilate(gray_img, numpy.ones((7, 7)))
         edge_gray = cv2.Canny(gray_img, 150, 200)
-        cv2.imwrite("debug/postitEdge-"+str(next_canvas_id)+".png", edge_gray)
+        # cv2.imwrite("debug/stickyNoteEdge-"+str(next_canvas_id)+".png", edge_gray)
         (_, contours, _) = cv2.findContours(edge_gray.copy(), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
-        postitPts = []
-        postitImages = []
-        postitPos = []
+        stickyNotePts = []
+        stickyNoteImages = []
+        stickyNotePos = []
 
         for c in contours:
             box = cv2.boxPoints(cv2.minAreaRect(c))
             box = numpy.int0(box)
-            # Check the area of the postits to see if they fit within the expected range
-            if (cv2.contourArea(box) > min_postit_area) and (cv2.contourArea(box) < max_postit_area):
+            # Check the area of the stickyNotes to see if they fit within the expected range
+            if (cv2.contourArea(box) > min_stickyNote_area) and (cv2.contourArea(box) < max_stickyNote_area):
                 # print(cv2.contourArea(box))
                 length = numpy.math.hypot(box[0, 0] - box[1, 0], box[0, 1] - box[1, 1])
                 height = numpy.math.hypot(box[2, 0] - box[1, 0], box[2, 1] - box[1, 1])
@@ -201,7 +201,7 @@ class Image(SqliteObject):
                     # print("len : "+str(length))
                     rectangle = cv2.boundingRect(c)
                     flat_contour = c.flatten()
-                    # Create arrays for finding the corners of the postits
+                    # Create arrays for finding the corners of the stickyNotes
                     canvx = numpy.zeros([int(len(flat_contour) / 2), 1])
                     canvy = numpy.zeros([int(len(flat_contour) / 2), 1])
                     topLeft = numpy.zeros(int(len(flat_contour) / 2))
@@ -234,24 +234,24 @@ class Image(SqliteObject):
                     maxTopRight = numpy.argmax(topRight)
                     maxBottomRight = numpy.argmax(bottomRight)
                     maxBottomLeft = numpy.argmax(bottomLeft)
-                    postit_pts = [(canvx[maxTopLeft][0], canvy[maxTopLeft][0]),
+                    stickyNote_pts = [(canvx[maxTopLeft][0], canvy[maxTopLeft][0]),
                                   (canvx[maxTopRight][0], canvy[maxTopRight][0]),
                                   (canvx[maxBottomRight][0], canvy[maxBottomRight][0]),
                                   (canvx[maxBottomLeft][0], canvy[maxBottomLeft][0])]
                     # Crop and transform image based on points
-                    postitimg = src.model.processing.four_point_transform(canvas_image, numpy.array(postit_pts))
-                    postitPts.append(src.model.processing.order_points(numpy.array(postit_pts)))
-                    postitImages.append(postitimg)
-                    postitPos.append(rectangle)
-        for idx, postit_image in enumerate(postitImages):
-            # Calculate average postit colour in order to guess the colour of the postit
-            gray_image = cv2.cvtColor(postit_image, cv2.COLOR_BGR2GRAY)
+                    stickyNoteimg = src.model.processing.four_point_transform(canvas_image, numpy.array(stickyNote_pts))
+                    stickyNotePts.append(src.model.processing.order_points(numpy.array(stickyNote_pts)))
+                    stickyNoteImages.append(stickyNoteimg)
+                    stickyNotePos.append(rectangle)
+        for idx, stickyNote_image in enumerate(stickyNoteImages):
+            # Calculate average stickyNote colour in order to guess the colour of the stickyNote
+            gray_image = cv2.cvtColor(stickyNote_image, cv2.COLOR_BGR2GRAY)
             red_total = green_total = blue_total = 0
-            (width, height, depth) = postit_image.shape
+            (width, height, depth) = stickyNote_image.shape
             for y in range(height):
                 for x in range(width):
                     if min_colour_thresh < gray_image[x, y] < max_colour_thresh:
-                        b, g, r = postit_image[x, y]
+                        b, g, r = stickyNote_image[x, y]
                         red_total += r
                         green_total += g
                         blue_total += b
@@ -263,52 +263,52 @@ class Image(SqliteObject):
             blue_average = blue_total / count
 
             guessed_colour = src.model.processing.guess_colour(red_average, green_average, blue_average)
-            # Only if a postit colour valid create a postit
+            # Only if a stickyNote colour valid create a stickyNote
             if guessed_colour is not None:
-                postit = Postit(physicalFor=userId,
+                stickyNote = StickyNote(physicalFor=userId,
                                 canvas = next_canvas_id,
-                                topLeftX=postitPts[idx][0][0],
-                                topLeftY=postitPts[idx][0][1],
-                                topRightX=postitPts[idx][1][0],
-                                topRightY=postitPts[idx][1][1],
-                                bottomRightX=postitPts[idx][2][0],
-                                bottomRightY=postitPts[idx][2][1],
-                                bottomLeftX=postitPts[idx][3][0],
-                                bottomLeftY=postitPts[idx][3][1],
-                                displayPosX=(postitPts[idx][0][0]+postitPts[idx][2][0])*display_ratio*0.5,
-                                displayPosY=(postitPts[idx][0][1]+postitPts[idx][2][1])*display_ratio*0.5,
+                                topLeftX=stickyNotePts[idx][0][0],
+                                topLeftY=stickyNotePts[idx][0][1],
+                                topRightX=stickyNotePts[idx][1][0],
+                                topRightY=stickyNotePts[idx][1][1],
+                                bottomRightX=stickyNotePts[idx][2][0],
+                                bottomRightY=stickyNotePts[idx][2][1],
+                                bottomLeftX=stickyNotePts[idx][3][0],
+                                bottomLeftY=stickyNotePts[idx][3][1],
+                                displayPosX=(stickyNotePts[idx][0][0]+stickyNotePts[idx][2][0])*display_ratio*0.5,
+                                displayPosY=(stickyNotePts[idx][0][1]+stickyNotePts[idx][2][1])*display_ratio*0.5,
                                 colour=guessed_colour,
                                 image=self.get_id())
-                if save_postits:
-                    postit.create(self.database)
-                found_postits.append(postit)
+                if save_stickyNotes:
+                    stickyNote.create(self.database)
+                found_stickyNotes.append(stickyNote)
 
         if current_canvas is not None:
-            old_postits = current_canvas.get_postits()
-            missing_postits = []
-            old_postit_info =[]
-            new_postit_info = []
-            for old_postit in old_postits:
-                old_info = (old_postit.id, old_postit.get_descriptors())
-                old_postit_info.append(old_info)
+            old_stickyNotes = current_canvas.get_stickyNotes()
+            missing_stickyNotes = []
+            old_stickyNote_info =[]
+            new_stickyNote_info = []
+            for old_stickyNote in old_stickyNotes:
+                old_info = (old_stickyNote.id, old_stickyNote.get_descriptors())
+                old_stickyNote_info.append(old_info)
 
-            for new_postit in found_postits:
-                new_info = (new_postit.id, new_postit.get_descriptors())
-                new_postit_info.append(new_info)
+            for new_stickyNote in found_stickyNotes:
+                new_info = (new_stickyNote.id, new_stickyNote.get_descriptors())
+                new_stickyNote_info.append(new_info)
 
 
-            for old_index, old_postit in enumerate(old_postits):
-                good = numpy.zeros(len(found_postits), dtype=numpy.int)
+            for old_index, old_stickyNote in enumerate(old_stickyNotes):
+                good = numpy.zeros(len(found_stickyNotes), dtype=numpy.int)
                 IDs = []
-                odes = old_postit_info[old_index][1]
-                for new_index, new_info in enumerate(new_postit_info):
+                odes = old_stickyNote_info[old_index][1]
+                for new_index, new_info in enumerate(new_stickyNote_info):
                     ndes = new_info[1]
                     # Create BFMatcher object
                     bf = cv2.BFMatcher()
                     if ndes is not None and odes is not None:
                         if len(ndes) > 0 and len(odes) > 0:
                             matches = bf.knnMatch(ndes, odes, k=2)
-                            IDs.append(old_postit.get_id())
+                            IDs.append(old_stickyNote.get_id())
                             for a, b in matches:
                                 if a.distance < (0.75*b.distance):
                                     good[new_index] += 1
@@ -319,56 +319,56 @@ class Image(SqliteObject):
                     if not len(good) == 0:
                         if max(good) > 8: #len(odes)*0.1:
                             match_idx = numpy.argmax(good)
-                            old_to_new_postit = (old_postit_info[old_index][0], new_postit_info[match_idx][0])
-                            old_to_new_postits.append(old_to_new_postit)
+                            old_to_new_stickyNote = (old_stickyNote_info[old_index][0], new_stickyNote_info[match_idx][0])
+                            old_to_new_stickyNotes.append(old_to_new_stickyNote)
                         else:
-                            missing_postits.append(old_postit)
+                            missing_stickyNotes.append(old_stickyNote)
                     else:
-                            missing_postits.append(old_postit)
-            for missing_postit in missing_postits:
-                postit = Postit(physicalFor=None,
+                            missing_stickyNotes.append(old_stickyNote)
+            for missing_stickyNote in missing_stickyNotes:
+                stickyNote = stickyNote(physicalFor=None,
                                 canvas=next_canvas_id,
-                                topLeftX=missing_postit.topLeftX,
-                                topLeftY=missing_postit.topLeftY,
-                                topRightX=missing_postit.topRightX,
-                                topRightY=missing_postit.topRightY,
-                                bottomRightX=missing_postit.bottomRightX,
-                                bottomRightY=missing_postit.bottomRightY,
-                                bottomLeftX=missing_postit.bottomLeftX,
-                                bottomLeftY=missing_postit.bottomLeftY,
-                                displayPosX=missing_postit.displayPosX,
-                                displayPosY=missing_postit.displayPosY,
-                                colour=missing_postit.colour,
-                                image=missing_postit.image.get_id())
+                                topLeftX=missing_stickyNote.topLeftX,
+                                topLeftY=missing_stickyNote.topLeftY,
+                                topRightX=missing_stickyNote.topRightX,
+                                topRightY=missing_stickyNote.topRightY,
+                                bottomRightX=missing_stickyNote.bottomRightX,
+                                bottomRightY=missing_stickyNote.bottomRightY,
+                                bottomLeftX=missing_stickyNote.bottomLeftX,
+                                bottomLeftY=missing_stickyNote.bottomLeftY,
+                                displayPosX=missing_stickyNote.displayPosX,
+                                displayPosY=missing_stickyNote.displayPosY,
+                                colour=missing_stickyNote.colour,
+                                image=missing_stickyNote.image.get_id())
 
-                old_to_new_postit = (missing_postit.id, postit.id)
-                old_to_new_postits.append(old_to_new_postit)
-                if save_postits:
-                    postit.create(self.database)
-                found_postits.append(postit)
-        postit_delete_list = []
-        for pidx, new_postit in enumerate(found_postits):
-            if new_postit.displayPosX < 200 and new_postit.displayPosY <200:
-                # print(str(new_postit.displayPosX)+", "+str(new_postit.displayPosY))
+                old_to_new_stickyNote = (missing_stickyNote.id, stickyNote.id)
+                old_to_new_stickyNotes.append(old_to_new_stickyNote)
+                if save_stickyNotes:
+                    stickyNote.create(self.database)
+                found_stickyNotes.append(stickyNote)
+        stickyNote_delete_list = []
+        for pidx, new_stickyNote in enumerate(found_stickyNotes):
+            if new_stickyNote.displayPosX < 200 and new_stickyNote.displayPosY <200:
+                # print(str(new_stickyNote.displayPosX)+", "+str(new_stickyNote.displayPosY))
 
-                postit_delete_list.append((new_postit.id, new_postit))
-                # print("deleting postit:", new_postit.id, new_postit.displayPosX, new_postit.displayPosY)
-        for del_post in postit_delete_list:
-            rmv_from_old_to_new = [i for i, pair in enumerate(old_to_new_postits) if pair[1] == del_post[0]]
+                stickyNote_delete_list.append((new_stickyNote.id, new_stickyNote))
+                # print("deleting stickyNote:", new_stickyNote.id, new_stickyNote.displayPosX, new_stickyNote.displayPosY)
+        for del_post in stickyNote_delete_list:
+            rmv_from_old_to_new = [i for i, pair in enumerate(old_to_new_stickyNotes) if pair[1] == del_post[0]]
             for index in reversed(rmv_from_old_to_new):
-                del old_to_new_postits[index]
-            found_postits.remove(del_post[1])
-            Postit.get(id=del_post[0]).delete()
-        return (found_postits, old_to_new_postits)
+                del old_to_new_stickyNotes[index]
+            found_stickyNotes.remove(del_post[1])
+            stickyNote.get(id=del_post[0]).delete()
+        return (found_stickyNotes, old_to_new_stickyNotes)
 
-    def find_connections(self, postits, old_to_new_postits, next_canvas_id, current_canvas, save=True):
+    def find_connections(self, stickyNotes, old_to_new_stickyNotes, next_canvas_id, current_canvas, save=True):
         from src.model.Connection import Connection
 
         found_connections = []
         canvas_image = self.get_image_projection()
         edged = src.model.processing.edge(canvas_image)
-        cv2.imwrite("debug/lines-"+str(next_canvas_id)+".png",
-                    cv2.resize(edged, None, fx=0.5, fy=0.5, interpolation=cv2.INTER_AREA))
+        # cv2.imwrite("debug/lines-"+str(next_canvas_id)+".png",
+        #             cv2.resize(edged, None, fx=0.5, fy=0.5, interpolation=cv2.INTER_AREA))
         (_, line_contours, _) = cv2.findContours(edged.copy(), cv2.RETR_TREE, cv2.CHAIN_APPROX_NONE)
         for line_contour in line_contours:
             debug_img = canvas_image.copy()
@@ -377,35 +377,35 @@ class Image(SqliteObject):
 
                 for index in range(0, len(line_contour), 10):
                     contained = False
-                    for idx, ipostit in enumerate(postits):
-                        ipostitpoints = ipostit.get_corner_points()
-                        rectanglearea = src.model.processing.get_area(ipostitpoints)
-                        pointarea = src.model.processing.get_area((ipostitpoints[0], ipostitpoints[1], line_contour[index][0]))\
-                                    + src.model.processing.get_area((ipostitpoints[1], ipostitpoints[2], line_contour[index][0]))\
-                                    + src.model.processing.get_area((ipostitpoints[2], ipostitpoints[3], line_contour[index][0]))\
-                                    + src.model.processing.get_area((ipostitpoints[3], ipostitpoints[0], line_contour[index][0]))
+                    for idx, istickyNote in enumerate(stickyNotes):
+                        istickyNotepoints = istickyNote.get_corner_points()
+                        rectanglearea = src.model.processing.get_area(istickyNotepoints)
+                        pointarea = src.model.processing.get_area((istickyNotepoints[0], istickyNotepoints[1], line_contour[index][0]))\
+                                    + src.model.processing.get_area((istickyNotepoints[1], istickyNotepoints[2], line_contour[index][0]))\
+                                    + src.model.processing.get_area((istickyNotepoints[2], istickyNotepoints[3], line_contour[index][0]))\
+                                    + src.model.processing.get_area((istickyNotepoints[3], istickyNotepoints[0], line_contour[index][0]))
                         if pointarea < rectanglearea*1.1:
                                 contained = True
                         if pointarea < rectanglearea*1.25 and not contained:
                             if not connectionList:
-                                connectionList.append(ipostit.get_id())
+                                connectionList.append(istickyNote.get_id())
 
-                            elif ipostit.get_id() is not connectionList[-1]:
-                                connectionList.append(ipostit.get_id())
+                            elif istickyNote.get_id() is not connectionList[-1]:
+                                connectionList.append(istickyNote.get_id())
 
                 if len(connectionList) > 1:
                     # print(connectionList)
                     for connection_index in range(0, len(connectionList) - 1):
-                        postit_id_start = 0
-                        postit_id_end = 0
+                        stickyNote_id_start = 0
+                        stickyNote_id_end = 0
                         if len(str(connectionList[connection_index])) == 36:
-                            postit_id_start = connectionList[connection_index]
+                            stickyNote_id_start = connectionList[connection_index]
                         if len(str(connectionList[connection_index + 1])) == 36:
-                            postit_id_end = connectionList[connection_index + 1]
-                        if postit_id_start and postit_id_end:
+                            stickyNote_id_end = connectionList[connection_index + 1]
+                        if stickyNote_id_start and stickyNote_id_end:
                             found_connection = {
-                                "postitIdStart": postit_id_start,
-                                "postitIdEnd": postit_id_end
+                                "stickyNoteIdStart": stickyNote_id_start,
+                                "stickyNoteIdEnd": stickyNote_id_end
                             }
                             found_connections.append(found_connection)
         new_connections = []
@@ -414,7 +414,7 @@ class Image(SqliteObject):
             for old_connection in old_connections:
                 new_start_id = 0
                 new_finish_id = 0
-                for id_pair in old_to_new_postits:
+                for id_pair in old_to_new_stickyNotes:
                     if old_connection.start == id_pair[0]:
                         new_start_id = id_pair[1]
                     if old_connection.finish == id_pair[0]:
@@ -432,15 +432,15 @@ class Image(SqliteObject):
                 unique = True
                 if new_connections:
                     for new_connection in new_connections:
-                        if (str(next_connection["postitIdStart"]) == str(new_connection.start)
-                            and str(next_connection["postitIdEnd"]) == str(new_connection.finish)
-                            or (str(next_connection["postitIdEnd"]) == str(new_connection.start)
-                                and str(next_connection["postitIdStart"]) == str(new_connection.finish))):
+                        if (str(next_connection["stickyNoteIdStart"]) == str(new_connection.start)
+                            and str(next_connection["stickyNoteIdEnd"]) == str(new_connection.finish)
+                            or (str(next_connection["stickyNoteIdEnd"]) == str(new_connection.start)
+                                and str(next_connection["stickyNoteIdStart"]) == str(new_connection.finish))):
                             unique = False
 
                 if unique:
-                    connection = Connection(start=next_connection["postitIdStart"],
-                                                finish=next_connection["postitIdEnd"],
+                    connection = Connection(start=next_connection["stickyNoteIdStart"],
+                                                finish=next_connection["stickyNoteIdEnd"],
                                                 canvas=next_canvas_id)
                     if save:
                         connection.create(self.database)
@@ -449,12 +449,12 @@ class Image(SqliteObject):
 
         return new_connections
 
-    def update_canvases(self, new_postits, connections, current_canvas, next_canvas_id):
+    def update_canvases(self, new_stickyNotes, connections, current_canvas, next_canvas_id):
         from src.model.Canvas import Canvas
 
         new_canvas = Canvas(session=self.get_instance_configuration().sessionId,
                             id=next_canvas_id,
-                            postits=new_postits,
+                            stickyNotes=new_stickyNotes,
                             connections=connections,
                             derivedFrom=current_canvas.id if current_canvas is not None else None,
                             derivedAt=datetime.datetime.now())

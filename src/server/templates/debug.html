@@ -72,7 +72,7 @@
 
             <div class="col-md-3">
               <div class="form-group">
-                <button type="submit" id="purge-postits" class="btn btn-danger btn-block">Postits</button>
+                <button type="submit" id="purge-stickyNotes" class="btn btn-danger btn-block">StickyNotes</button>
               </div>
             </div>
 
@@ -446,9 +446,9 @@
         </div>
       </div>
 
-      <!-- POSTITS -->
+      <!-- STICKYNOTES -->
       <div class="panel panel-info">
-        <div class="panel-heading">Postits</div>
+        <div class="panel-heading">StickyNotes</div>
         <div class="panel-body">
           <table class="table table-hover">
             <thead>
@@ -460,7 +460,7 @@
                 <td class="col-md-2"></td>
               </tr>
             </thead>
-            <tbody class="postitsTable">
+            <tbody class="stickyNotesTable">
 
             </tbody>
             <tfoot>
@@ -468,45 +468,45 @@
                 <td></td>
                 <td>
                   <label>Canvas</label>
-                  <select class="postitsTable-add_canvas canvasList form-control">
+                  <select class="stickyNotesTable-add_canvas canvasList form-control">
                     <option selected="selected" value="">None</option>
                   </select>
                 </td>
                 <td>
                   <div class="form-group">
                     <label>Top Left as (x,y)</label>
-                    <input type="text" class="postitsTable-add_topLeft form-control" placeholder="(x,y)">
+                    <input type="text" class="stickyNotesTable-add_topLeft form-control" placeholder="(x,y)">
                   </div>
 
                   <div class="form-group">
                     <label>Top Right as (x,y)</label>
-                    <input type="text" class="postitsTable-add_topRight form-control" placeholder="(x,y)">
+                    <input type="text" class="stickyNotesTable-add_topRight form-control" placeholder="(x,y)">
                   </div>
 
                   <div class="form-group">
                     <label>Top Right as (x,y)</label>
-                    <input type="text" class="postitsTable-add_bottomRight form-control" placeholder="(x,y)">
+                    <input type="text" class="stickyNotesTable-add_bottomRight form-control" placeholder="(x,y)">
                   </div>
 
                   <div class="form-group">
                     <label>Bottom Left as (x,y)</label>
-                    <input type="text" class="postitsTable-add_bottomLeft form-control" placeholder="(x,y)">
+                    <input type="text" class="stickyNotesTable-add_bottomLeft form-control" placeholder="(x,y)">
                   </div>
 
                   <div class="form-group">
                     <label>Display Position (x,y)</label>
-                    <input type="text" class="postitsTable-add_displayPosition form-control" placeholder="(x,y)">
+                    <input type="text" class="stickyNotesTable-add_displayPosition form-control" placeholder="(x,y)">
                   </div>
 
                   <div class="form-group">
                     <label>Bottom Left as (x,y)</label>
-                    <input type="text" class="postitsTable-add_bottomLeft form-control" placeholder="(x,y)">
+                    <input type="text" class="stickyNotesTable-add_bottomLeft form-control" placeholder="(x,y)">
                   </div>
                 </td>
                 <td>
                   <div class="form-group">
                     <label>Colour</label>
-                    <input type="text" class="form-control postitsTable-add_color" placeholder="orange">
+                    <input type="text" class="form-control stickyNotesTable-add_color" placeholder="orange">
                   </div>
                   <div class="form-group">
                     <label>Physical For</label>
@@ -517,11 +517,11 @@
 
                   <div class="form-group">
                     <label>Display Position as (x,y)</label>
-                    <input type="text" class="postitsTable-add_displayPos form-control" placeholder="(x,y)">
+                    <input type="text" class="stickyNotesTable-add_displayPos form-control" placeholder="(x,y)">
                   </div>
                 </td>
                 <td>
-                  <button type="submit" class="btn btn-success postitsTable-add">Add</button>
+                  <button type="submit" class="btn btn-success stickyNotesTable-add">Add</button>
                 </td>
               </tr>
             </tfoot>
@@ -545,7 +545,7 @@
     <script src="/static/js/debug/instanceConfiguration.js"></script>
     <script src="/static/js/debug/images.js"></script>
     <script src="/static/js/debug/canvas.js"></script>
-    <script src="/static/js/debug/postits.js"></script>
+    <script src="/static/js/debug/stickyNotes.js"></script>
     <script src="/static/js/debug/purge.js"></script>
   </body>
 </html>

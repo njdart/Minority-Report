@@ -51,11 +51,11 @@ var handColors = {
     }
 };
 
-var POSTIT_SIZE = 115;
+var STICKYNOTE_SIZE = 115;
 
-var OFFSET = POSTIT_SIZE/2;
+var OFFSET = STICKYNOTE_SIZE/2;
 
-var virtualPostitImages = {};
+var virtualStickyNoteImages = {};
 
 $(function() {
     //var hudCanvas = $('.hudCanvas');
@@ -101,18 +101,18 @@ $(function() {
                         console.log(canvas);
                         latestCanvas = canvas;
 
-                        //clear virtual postit local cache
-                        //get all virtual postits from new canvas and to cache
-                        virtualPostitImages = {};
-                        $.each(latestCanvas.postits, function(index, postit)
+                        //clear virtual stickyNote local cache
+                        //get all virtual stickyNotes from new canvas and to cache
+                        virtualStickyNoteImages = {};
+                        $.each(latestCanvas.stickyNotes, function(index, stickyNote)
                         {
-                           if (postit.physicalFor != userId)
+                           if (stickyNote.physicalFor != userId)
                            {
                                var i = new Image();
                                i.onload = function(evt)
                                {
-                                   console.log("       EXPERIMENTAL: drawing virtual " + evt.currentTarget.height + "x" + evt.currentTarget.width + " postit at (" + postit.displayPos.x + "," + postit.displayPos.y + ")");
-                                   if (postit.physicalFor == null || postit.physicalFor == "None")
+                                   console.log("       EXPERIMENTAL: drawing virtual " + evt.currentTarget.height + "x" + evt.currentTarget.width + " stickyNote at (" + stickyNote.displayPos.x + "," + stickyNote.displayPos.y + ")");
+                                   if (stickyNote.physicalFor == null || stickyNote.physicalFor == "None")
                                    {
                                        //virtual for noone
                                        hudContext.strokeStyle = "#00FF00";
@@ -123,11 +123,11 @@ $(function() {
                                        hudContext.strokeStyle = "#FF0000";
                                    }
                                    hudContext.strokeWidth = 20;
-                                   hudContext.strokeRect(postit.displayPos.x - evt.currentTarget.width/2, postit.displayPos.y - evt.currentTarget.height/2, evt.currentTarget.width, evt.currentTarget.height);
-                                   hudContext.drawImage(evt.currentTarget, postit.displayPos.x - evt.currentTarget.width/2, postit.displayPos.y - evt.currentTarget.height/2);
+                                   hudContext.strokeRect(stickyNote.displayPos.x - evt.currentTarget.width/2, stickyNote.displayPos.y - evt.currentTarget.height/2, evt.currentTarget.width, evt.currentTarget.height);
+                                   hudContext.drawImage(evt.currentTarget, stickyNote.displayPos.x - evt.currentTarget.width/2, stickyNote.displayPos.y - evt.currentTarget.height/2);
                                }
-                               i.src = "/api/postit/" + postit.id;
-                               virtualPostitImages[postit.id] = i;
+                               i.src = "/api/stickyNote/" + stickyNote.id;
+                               virtualstickyNoteImages[stickyNote.id] = i;
                            }
                         });
 
@@ -196,7 +196,7 @@ function drawCircles(handStates) {
             {
                 console.log("received hand state, ID " + state.skeletonID + ": left(" + state.leftHandX + ", " + state.leftHandY + ")");
                 hudContext.beginPath();
-                hudContext.arc(state.leftHandX, state.leftHandY, POSTIT_SIZE - 15, 0, 2 * Math.PI, false);
+                hudContext.arc(state.leftHandX, state.leftHandY, STICKYNOTE_SIZE - 15, 0, 2 * Math.PI, false);
                 hudContext.fillStyle = state.leftFistClosed ? handColors[state.skeletonID].leftFirstClosed : handColors[state.skeletonID].leftFistOpen;
                 hudContext.fill();
                 hudContext.lineWidth = 5;
@@ -208,7 +208,7 @@ function drawCircles(handStates) {
             {
                 console.log("received hand state, ID " + state.skeletonID + ": right(" + state.rightHandX + ", " + state.rightHandY + ")");
                 hudContext.beginPath();
-                hudContext.arc(state.rightHandX, state.rightHandY, POSTIT_SIZE - 15, 0, 2 * Math.PI, false);
+                hudContext.arc(state.rightHandX, state.rightHandY, STICKYNOTE_SIZE - 15, 0, 2 * Math.PI, false);
                 hudContext.fillStyle = state.rightFistClosed ? handColors[state.skeletonID].rightFistClosed : handColors[state.skeletonID].rightFistOpen;
                 hudContext.fill();
                 hudContext.lineWidth = 5;
@@ -281,17 +281,17 @@ function redrawCanvas() {
         return;
     }
 
-    if(latestCanvas.postits == undefined || latestCanvas.postits == null)
+    if(latestCanvas.stickyNotes == undefined || latestCanvas.stickyNotes == null)
     {
-        console.log("redrawCanvas(): No postits on canvas");
+        console.log("redrawCanvas(): No stickyNotes on canvas");
     }
     else
     {
-        console.log("redrawCanvas(): mapping " + latestCanvas.postits.length + " postit ids to coords");
-        postitIdToCoords = {};
-        $.each(latestCanvas.postits, function(index, postit)
+        console.log("redrawCanvas(): mapping " + latestCanvas.stickyNotes.length + " stickyNote ids to coords");
+        stickyNoteIdToCoords = {};
+        $.each(latestCanvas.stickyNotes, function(index, stickyNote)
         {
-           postitIdToCoords[postit.id] = postit.displayPos;
+           stickyNoteIdToCoords[stickyNote.id] = stickyNote.displayPos;
         });
     }
 
@@ -307,37 +307,37 @@ function redrawCanvas() {
             console.log("   connection from " + connection.start + " to " + connection.finish);
             hudContext.strokeStyle = "#0000FF";
             hudContext.beginPath();
-            hudContext.moveTo(postitIdToCoords[connection.start].x + POSTIT_SIZE/2 - OFFSET, postitIdToCoords[connection.start].y + POSTIT_SIZE/2 - OFFSET);
-            hudContext.lineTo(postitIdToCoords[connection.finish].x + POSTIT_SIZE/2 - OFFSET, postitIdToCoords[connection.finish].y + POSTIT_SIZE/2 - OFFSET);
+            hudContext.moveTo(stickyNoteIdToCoords[connection.start].x + STICKYNOTE_SIZE/2 - OFFSET, stickyNoteIdToCoords[connection.start].y + STICKYNOTE_SIZE/2 - OFFSET);
+            hudContext.lineTo(stickyNoteIdToCoords[connection.finish].x + STICKYNOTE_SIZE/2 - OFFSET, stickyNoteIdToCoords[connection.finish].y + STICKYNOTE_SIZE/2 - OFFSET);
             hudContext.closePath();
             hudContext.stroke();
         });
     }
 
-    if(latestCanvas.postits == undefined || latestCanvas.postits == null)
+    if(latestCanvas.stickyNotes == undefined || latestCanvas.stickyNotes == null)
     {
-        console.log("redrawCanvas(): No postits on canvas");
+        console.log("redrawCanvas(): No stickyNotes on canvas");
     }
     else
     {
-        console.log("redrawCanvas(): drawing " + latestCanvas.postits.length + " postits");
-        $.each(latestCanvas.postits, function (index, postit) {
-            console.log("   postit at (" + postit.displayPos.x + "," + postit.displayPos.y + ")");
+        console.log("redrawCanvas(): drawing " + latestCanvas.stickyNotes.length + " stickyNotes");
+        $.each(latestCanvas.stickyNotes, function (index, stickyNote) {
+            console.log("   stickyNote at (" + stickyNote.displayPos.x + "," + stickyNote.displayPos.y + ")");
             hudContext.fillStyle = "#000000";
-            if (postit.physicalFor == userId) {
-                //postit is physical for this user
+            if (stickyNote.physicalFor == userId) {
+                //stickyNote is physical for this user
                 hudContext.strokeStyle = "#00FF00";
-                hudContext.fillRect(postit.displayPos.x - OFFSET, postit.displayPos.y - OFFSET, POSTIT_SIZE, POSTIT_SIZE);
-                hudContext.strokeRect(postit.displayPos.x - OFFSET, postit.displayPos.y - OFFSET, POSTIT_SIZE, POSTIT_SIZE);
+                hudContext.fillRect(stickyNote.displayPos.x - OFFSET, stickyNote.displayPos.y - OFFSET, stickyNote_SIZE, stickyNote_SIZE);
+                hudContext.strokeRect(stickyNote.displayPos.x - OFFSET, stickyNote.displayPos.y - OFFSET, stickyNote_SIZE, stickyNote_SIZE);
             }
             else
             {
                 //virtual for all users
-                /*postitImage = new Image();
-                postitImage.src = "";
-                postitImage.onload = function(evt){
-                    console.log("       drawing virtual " + evt.currentTarget.height + "x" + evt.currentTarget.width + " postit at (" + postit.displayPos.x + "," + postit.displayPos.y + ")");
-                    if (postit.physicalFor == null || postit.physicalFor == "None")
+                /*stickyNoteImage = new Image();
+                stickyNoteImage.src = "";
+                stickyNoteImage.onload = function(evt){
+                    console.log("       drawing virtual " + evt.currentTarget.height + "x" + evt.currentTarget.width + " stickyNote at (" + stickyNote.displayPos.x + "," + stickyNote.displayPos.y + ")");
+                    if (stickyNote.physicalFor == null || stickyNote.physicalFor == "None")
                     {
                         //virtual for noone
                         hudContext.strokeStyle = "#00FF00";
@@ -348,15 +348,15 @@ function redrawCanvas() {
                         hudContext.strokeStyle = "#FF0000";
                     }
                     hudContext.strokeWidth = 20;
-                    hudContext.strokeRect(postit.displayPos.x - evt.currentTarget.width/2, postit.displayPos.y - evt.currentTarget.height/2, evt.currentTarget.width, evt.currentTarget.height);
-                    hudContext.drawImage(evt.currentTarget, postit.displayPos.x - evt.currentTarget.width/2, postit.displayPos.y - evt.currentTarget.height/2);
+                    hudContext.strokeRect(stickyNote.displayPos.x - evt.currentTarget.width/2, stickyNote.displayPos.y - evt.currentTarget.height/2, evt.currentTarget.width, evt.currentTarget.height);
+                    hudContext.drawImage(evt.currentTarget, stickyNote.displayPos.x - evt.currentTarget.width/2, stickyNote.displayPos.y - evt.currentTarget.height/2);
                 };*/
-                //postitImage.src = "/api/postit/" + postit.id;
-                //postitImage.src = "data:image/jpg;base64," + localStorage.getItem(postit.id);
+                //stickyNoteImage.src = "/api/stickyNote/" + stickyNote.id;
+                //stickyNoteImage.src = "data:image/jpg;base64," + localStorage.getItem(stickyNote.id);
 
-                var currentTarget = virtualPostitImages[postit.id];
-                console.log("       drawing virtual " + currentTarget.height + "x" + currentTarget.width + " postit at (" + postit.displayPos.x + "," + postit.displayPos.y + ")");
-                if (postit.physicalFor == null || postit.physicalFor == "None")
+                var currentTarget = virtualStickyNoteImages[stickyNote.id];
+                console.log("       drawing virtual " + currentTarget.height + "x" + currentTarget.width + " stickyNote at (" + stickyNote.displayPos.x + "," + stickyNote.displayPos.y + ")");
+                if (stickyNote.physicalFor == null || stickyNote.physicalFor == "None")
                 {
                     //virtual for noone
                     hudContext.strokeStyle = "#00FF00";
@@ -367,8 +367,8 @@ function redrawCanvas() {
                     hudContext.strokeStyle = "#FF0000";
                 }
                 hudContext.strokeWidth = 20;
-                hudContext.strokeRect(postit.displayPos.x - currentTarget.width/2, postit.displayPos.y - currentTarget.height/2, currentTarget.width, currentTarget.height);
-                hudContext.drawImage(currentTarget, postit.displayPos.x - currentTarget.width/2, postit.displayPos.y - currentTarget.height/2);
+                hudContext.strokeRect(stickyNote.displayPos.x - currentTarget.width/2, stickyNote.displayPos.y - currentTarget.height/2, currentTarget.width, currentTarget.height);
+                hudContext.drawImage(currentTarget, stickyNote.displayPos.x - currentTarget.width/2, stickyNote.displayPos.y - currentTarget.height/2);
             }
 
         });

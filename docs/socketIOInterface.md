@@ -56,7 +56,7 @@ If one of the booleans is false, the UI should check if error messages are prese
 Otherwise, it just means we are 'waiting' for calibration to complete.
 
 ## Response events:
-Requests that are accepted by the server. Responses will be emitted with the same name eg on ```getPostit``` will also emit ```getPostit```
+Requests that are accepted by the server. Responses will be emitted with the same name eg on ```getStickyNote``` will also emit ```getStickyNote```
 
 ###### ```registerKinectClient```
 Sent by Kinect client to server to register its existence and associated web client:
@@ -90,13 +90,13 @@ This returns:
 
 The status can be ```"OK"``` or other things (top kek; TBC). It is not analogous to ```calibrationStatus```; it is simply meant to indicate whether it is possible to **start** calibration.
 
-###### ```getPostits``` 
-Requests postits from its UUID and canvas UUID:
+###### ```getStickyNotes``` 
+Requests stickyNotes from its UUID and canvas UUID:
 
 ```javascript
 [
-  {RequestPostitObject},
-  {RequestPostitObject},
+  {RequestStickyNoteObject},
+  {RequestStickyNoteObject},
   ...
 ]
 ```
@@ -105,8 +105,8 @@ will return:
 
 ```javascript
 {
-    {RequestPostitObject}: {PostitObject},
-    {RequestPostitObject}: {PostitObject},
+    {RequestStickyNoteObject}: {StickyNoteObject},
+    {RequestStickyNoteObject}: {StickyNoteObject},
     ...
 }
 ```
@@ -148,7 +148,7 @@ Return the canvas tree/history
 ## Definitions
 Definitions of above comments
 
-##### ```PostitObject```
+##### ```StickyNoteObject```
 ```javascript
 {
     "id": GUID,
@@ -177,9 +177,9 @@ Definitions of above comments
     "timestamp": "YYYY-mm-DDTHH:MM:SS.SSSZ",
     "width": int,
     "height", int,
-    "postits": [
-        PostitObject,
-        PostitObject,
+    "stickyNotes": [
+        StickyNoteObject,
+        StickyNoteObject,
         ...
     ]
     "connections": [
@@ -190,7 +190,7 @@ Definitions of above comments
 }
 ```
 
-##### ```RequestPostitObject```
+##### ```RequestStickyNoteObject```
 ```javascript
 {
     "canvas": GUID,
@@ -234,7 +234,7 @@ Emit a json representation of the graph, where the UUIDs can be requested later.
     "timestamp": "2016-03-18T14:02:56.541Z",
     "width": 3000,
     "height", 1500,
-    "postits": [
+    "stickyNotes": [
         {
             "id": "23a29456-5ded-4b66-b3f0-178b7afdc0e7",
             "realX": 10,
@@ -279,10 +279,10 @@ Emit a json representation of the graph, where the UUIDs can be requested later.
 ```
 
 ## Response events:
-Requests that are accepted by the server. Responses will be emitted with the same name eg on ```getPostit``` will also emit ```getPostit```
+Requests that are accepted by the server. Responses will be emitted with the same name eg on ```getStickyNote``` will also emit ```getStickyNote```
 
-###### ```getPostits``` 
-Requests postits from its UUID and canvas UUID:
+###### ```getStickyNotes``` 
+Requests stickyNotes from its UUID and canvas UUID:
 
 ```javascript
 [
@@ -320,7 +320,7 @@ Request a canvas from its uuid. Same data structure as updateCanvasGraph
     "timestamp": "2016-03-18T14:02:56.541Z",
     "width": 3000,
     "height": 1500,
-    "postits": [
+    "stickyNotes": [
         {
             "id": "23a29456-5ded-4b66-b3f0-178b7afdc0e7",
             "realX": 10,

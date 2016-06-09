@@ -5,9 +5,9 @@ import src.model.processing
 from src.model.SqliteObject import SqliteObject
 
 
-class Postit(SqliteObject):
+class StickyNote(SqliteObject):
     """
-    Represents a postit in a canvas
+    Represents a stickyNote in a canvas
     """
 
     properties = [
@@ -28,7 +28,7 @@ class Postit(SqliteObject):
         "image"
     ]
 
-    table = "postits"
+    table = "stickyNotes"
 
     def __init__(self,
                  canvas,
@@ -47,7 +47,7 @@ class Postit(SqliteObject):
                  physicalFor=None,
                  id=None,
                  database=None):
-        super(Postit, self).__init__(id=id,
+        super(StickyNote, self).__init__(id=id,
                                      database=database)
         self.canvas = canvas
         self.topLeftX = int(topLeftX)
@@ -115,16 +115,16 @@ class Postit(SqliteObject):
     def get_image_binarized(self):
         image = self.get_image_keystoned()
         image = image[7:image.shape[0]-7, 7:image.shape[1]-7]
-        postitImage = src.model.processing.binarize(image, lightest=False)
+        stickyNoteImage = src.model.processing.binarize(image, lightest=False)
         if self.colour == "ORANGE":
-            postitImage[numpy.where((postitImage > [0, 0, 0]).all(axis=2))] = [26, 160, 255]
+            stickyNoteImage[numpy.where((stickyNoteImage > [0, 0, 0]).all(axis=2))] = [26, 160, 255]
         elif self.colour == "YELLOW":
-            postitImage[numpy.where((postitImage > [0, 0, 0]).all(axis=2))] = [93, 255, 237]
+            stickyNoteImage[numpy.where((stickyNoteImage > [0, 0, 0]).all(axis=2))] = [93, 255, 237]
         elif self.colour == "BLUE":
-            postitImage[numpy.where((postitImage > [0, 0, 0]).all(axis=2))] = [255, 200, 41]
+            stickyNoteImage[numpy.where((stickyNoteImage > [0, 0, 0]).all(axis=2))] = [255, 200, 41]
         elif self.colour == "MAGENTA":
-            postitImage[numpy.where((postitImage > [0, 0, 0]).all(axis=2))] = [182, 90, 255]
-        return postitImage
+            stickyNoteImage[numpy.where((stickyNoteImage > [0, 0, 0]).all(axis=2))] = [182, 90, 255]
+        return stickyNoteImage
 
     def get_corner_points(self):
         return numpy.array([
@@ -148,8 +148,8 @@ class Postit(SqliteObject):
                              WTA_K=2,
                              scoreType=cv2.ORB_HARRIS_SCORE,
                              patchSize=31)
-        binary_postit_image = self.get_image_binarized()
-        __, descriptors = orb.detectAndCompute(binary_postit_image, None)
+        binary_stickyNote_image = self.get_image_binarized()
+        __, descriptors = orb.detectAndCompute(binary_stickyNote_image, None)
         return descriptors
 
     def get_canvas(self):
@@ -162,7 +162,7 @@ class Postit(SqliteObject):
 
         return self.canvas
 
-    def get_postit_image(self):
+    def get_stickyNote_image(self):
         from src.model.Image import Image
         image = Image.get(self.image)
 
@@ -171,7 +171,7 @@ class Postit(SqliteObject):
 
         return src.model.processing.four_point_transform(image.get_image_projection(), self.get_corner_points())
 
-    def update_postit(self,
+    def update_stickyNote(self,
                       x,
                       y,
                       width,

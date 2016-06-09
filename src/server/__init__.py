@@ -19,7 +19,7 @@ import src.server.api.sessions_api
 import src.server.api.instanceConfiguration_api
 import src.server.api.image_api
 import src.server.api.canvas_api
-import src.server.api.postit_api
+import src.server.api.stickyNote_api
 
 def run_server():
     socketio.run(app, host="0.0.0.0", port=8088, debug=True)

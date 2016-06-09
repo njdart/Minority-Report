@@ -34,7 +34,7 @@ $(function() {
     var socket = io(),
         image,
         canvas,
-        postits = []
+        stickyNotes = []
 
     var RAW_IMAGE_PREFIX = "/api/image/";
     var KINECT_RAW_IMAGE_PREFIX = "http://10.0.0.2:8081/calibrate";
@@ -141,8 +141,8 @@ $(function() {
         canvasImage = canvas.last().id;
     }
 
-    function updatePostits() {
-        canvasImage = postits.last().id;
+    function updateStickyNotes() {
+        canvasImage = stickyNotes.last().id;
     }
 
     socket.on('getImages', function(data) {
@@ -157,10 +157,10 @@ $(function() {
         updateCanvas();
     });
 
-    socket.on('getPostits', function(data) {
-        console.log('getPostits', arguments);
-        postits = data;
-        updatePostits();
+    socket.on('getStickyNotes', function(data) {
+        console.log('getStickyNotes', arguments);
+        stickyNotes = data;
+        updateStickyNotes();
     });
 
     var setupPointCanvas = true;

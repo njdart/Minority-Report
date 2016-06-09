@@ -7,18 +7,18 @@ from PIL import Image
 
 class GraphExtractor:
     """
-    Get postits from a board image
+    Get stickyNotes from a board image
     """
 
-    def __init__(self, image, previous_postits):
+    def __init__(self, image, previous_stickyNotes):
         self.DEBUG_PLOT = False
         self.rawImage = image
-        self.prevPostits = previous_postits
+        self.prevStickyNote = previous_stickyNotes
         self.image = image
-        self.postitPos = []
-        self.postitPts = []
-        self.postitImages = []
-        self.postitColour = []
+        self.stickyNotePos = []
+        self.stickyNotePts = []
+        self.stickyNoteImages = []
+        self.stickyNoteColour = []
         self.lineEnds = []
 
         self.ColourThresholds = {
@@ -59,35 +59,35 @@ class GraphExtractor:
     # Extracts a representation of the canvas
     def extract_graph(self,
                       show_debug,
-                      min_postit_area,
-                      max_postit_area,
+                      min_stickyNote_area,
+                      max_stickyNote_area,
                       len_tolerence,
                       min_colour_thresh,
                       max_colour_thresh):
-        postits = self.extract_postits(show_debug=show_debug,
-                                       min_postit_area=min_postit_area,
-                                       max_postit_area=max_postit_area,
+        stickyNotes = self.extract_stickyNotes(show_debug=show_debug,
+                                       min_stickyNote_area=min_stickyNote_area,
+                                       max_stickyNote_area=max_stickyNote_area,
                                        len_tolerence=len_tolerence,
                                        min_colour_thresh=min_colour_thresh,
                                        max_colour_thresh=max_colour_thresh)
-        lines = self.extract_lines(postits=postits,
+        lines = self.extract_lines(stickyNotes=stickyNotes,
                                    show_debug=show_debug)
         graph = {
-            "postits": postits,
+            "stickyNotes": stickyNotes,
             "lines": lines
         }
         return graph
 
-    # Extracts a representation of the postits
-    def extract_postits(self,
+    # Extracts a representation of the stickyNotes
+    def extract_stickyNotes(self,
                         show_debug,
-                        min_postit_area,
-                        max_postit_area,
+                        min_stickyNote_area,
+                        max_stickyNote_area,
                         len_tolerence,
                         min_colour_thresh,
                         max_colour_thresh):
 
-        found_postits = []
+        found_stickyNotes = []
         img = self.image
 
         testimg1 = img.copy()
@@ -112,7 +112,7 @@ class GraphExtractor:
             if show_debug:
                 print(cv2.contourArea(box))
             #display("Debug", boxedimg)
-            if (cv2.contourArea(box) > min_postit_area) and (cv2.contourArea(box) < max_postit_area):
+            if (cv2.contourArea(box) > min_stickyNote_area) and (cv2.contourArea(box) < max_stickyNote_area):
                 length = math.hypot(box[0, 0] - box[1, 0], box[0, 1] - box[1, 1])
                 height = math.hypot(box[2, 0] - box[1, 0], box[2, 1] - box[1, 1])
                 if length * (2 - len_tolerence) < length + height < length * (2 + len_tolerence):
@@ -143,28 +143,28 @@ class GraphExtractor:
                     max2 = np.argmax(l2)
                     max3 = np.argmax(l3)
                     max4 = np.argmax(l4)
-                    postit_pts = [(canvx[max1][0], canvy[max1][0]),
+                    stickyNote_pts = [(canvx[max1][0], canvy[max1][0]),
                                   (canvx[max2][0], canvy[max2][0]),
                                   (canvx[max3][0], canvy[max3][0]),
                                   (canvx[max4][0], canvy[max4][0])]
 
-                    postitimg = self.four_point_transform(img, np.array(postit_pts))
+                    stickyNoteimg = self.four_point_transform(img, np.array(stickyNote_pts))
                     if show_debug:
-                        cv2.imshow("debug", postitimg)
+                        cv2.imshow("debug", stickyNoteimg)
                         cv2.waitKey(0)
-                    self.postitPts.append(np.array(postit_pts))
-                    self.postitImages.append(postitimg)
-                    self.postitPos.append(rectangle)
+                    self.stickyNotePts.append(np.array(stickyNote_pts))
+                    self.stickyNoteImages.append(stickyNoteimg)
+                    self.stickyNotePos.append(rectangle)
 
-        for idx, postit_image in enumerate(self.postitImages):
+        for idx, stickyNote_image in enumerate(self.stickyNoteImages):
 
-            gray_image = cv2.cvtColor(postit_image, cv2.COLOR_BGR2GRAY)
+            gray_image = cv2.cvtColor(stickyNote_image, cv2.COLOR_BGR2GRAY)
             red_total = green_total = blue_total = 0
-            (width, height, depth) = postit_image.shape
+            (width, height, depth) = stickyNote_image.shape
             for y in range(height):
                 for x in range(width):
                     if min_colour_thresh < gray_image[x, y] < max_colour_thresh:
-                        b, g, r = postit_image[x, y]
+                        b, g, r = stickyNote_image[x, y]
                         red_total += r
                         green_total += g
                         blue_total += b
@@ -177,20 +177,20 @@ class GraphExtractor:
 
             guessed_colour = self.guess_colour(red_average, green_average, blue_average)
             # print(guessed_colour)
-            self.postitPts[idx] = self.order_points(self.postitPts[idx])
-            midpoint = (self.postitPts[idx][2][0]-self.postitPts[idx][0][0],self.postitPts[idx][2][0]-self.postitPts[idx][0][0])
+            self.stickyNotePts[idx] = self.order_points(self.stickyNotePts[idx])
+            midpoint = (self.stickyNotePts[idx][2][0]-self.stickyNotePts[idx][0][0],self.stickyNotePts[idx][2][0]-self.stickyNotePts[idx][0][0])
 
             if guessed_colour is not None:
-                self.postitColour.append(guessed_colour)
-                found_postit = {
-                    "image": postit_image,
+                self.stickyNoteColour.append(guessed_colour)
+                found_stickyNote = {
+                    "image": stickyNote_image,
                     "colour": guessed_colour,
-                    "position": self.postitPos[idx],
-                    "points": self.postitPts[idx]
+                    "position": self.stickyNotePos[idx],
+                    "points": self.stickyNotePts[idx]
                 }
-                found_postits.append(found_postit)
+                found_stickyNotes.append(found_stickyNote)
 
-        return found_postits
+        return found_stickyNotes
 
     # Takes 4 corner points and use them to try and unwarp a rectangular image
     def four_point_transform(self, image, pts):
@@ -279,7 +279,7 @@ class GraphExtractor:
         return None
 
     # Extracts a representation of the connections
-    def extract_lines(self, postits, show_debug):
+    def extract_lines(self, stickyNotes, show_debug):
         found_lines = []
         img = self.image
         edged = self.edge(img, show_debug)
@@ -290,12 +290,12 @@ class GraphExtractor:
                 array = []
                 for index in range(0, len(c), 10):
                     contained = False
-                    for idx, ipostit in enumerate(postits):
-                        rectanglearea = self.get_area(ipostit["points"])
-                        pointarea = self.get_area((ipostit["points"][0], ipostit["points"][1], c[index][0]))\
-                                    + self.get_area((ipostit["points"][1], ipostit["points"][2], c[index][0]))\
-                                    + self.get_area((ipostit["points"][2], ipostit["points"][3], c[index][0]))\
-                                    + self.get_area((ipostit["points"][3], ipostit["points"][0], c[index][0]))
+                    for idx, istickyNote in enumerate(stickyNotes):
+                        rectanglearea = self.get_area(istickyNote["points"])
+                        pointarea = self.get_area((istickyNote["points"][0], istickyNote["points"][1], c[index][0]))\
+                                    + self.get_area((istickyNote["points"][1], istickyNote["points"][2], c[index][0]))\
+                                    + self.get_area((istickyNote["points"][2], istickyNote["points"][3], c[index][0]))\
+                                    + self.get_area((istickyNote["points"][3], istickyNote["points"][0], c[index][0]))
                         if pointarea < rectanglearea*1.1:
                                 contained = True
                         if pointarea < rectanglearea*1.25 and not contained:
@@ -305,58 +305,58 @@ class GraphExtractor:
                             elif idx is not array[-1]:
                                 array.append(idx)
 
-                    for idx, jpostit in enumerate(self.prevPostits):
-                        if not jpostit.physical:
-                            postitpoints = jpostit.get_points()
-                            rectanglearea = self.get_area(postitpoints)
-                            pointarea = self.get_area((postitpoints[0], postitpoints[1], c[index][0])) \
-                                    + self.get_area((postitpoints[1], postitpoints[2], c[index][0]))\
-                                    + self.get_area((postitpoints[2], postitpoints[3], c[index][0]))\
-                                    + self.get_area((postitpoints[3], postitpoints[0], c[index][0]))
+                    for idx, jstickyNote in enumerate(self.prevstickyNotes):
+                        if not jstickyNote.physical:
+                            stickyNotepoints = jstickyNote.get_points()
+                            rectanglearea = self.get_area(stickyNotepoints)
+                            pointarea = self.get_area((stickyNotepoints[0], stickyNotepoints[1], c[index][0])) \
+                                    + self.get_area((stickyNotepoints[1], stickyNotepoints[2], c[index][0]))\
+                                    + self.get_area((stickyNotepoints[2], stickyNotepoints[3], c[index][0]))\
+                                    + self.get_area((stickyNotepoints[3], stickyNotepoints[0], c[index][0]))
                             if pointarea < rectanglearea*1.1:
                                 contained = True
                             if pointarea < rectanglearea*1.25 and not contained:
                                 if not array:
-                                    array.append(jpostit.get_id())
+                                    array.append(jstickyNote.get_id())
                                     line_start_point = c[index][0]
-                                elif jpostit.get_id() is not array[-1]:
-                                    array.append(jpostit.get_id())
+                                elif jstickyNote.get_id() is not array[-1]:
+                                    array.append(jstickyNote.get_id())
                                     line_end_point = c[index][0]
 
                 if len(array) > 1:
                     for i in range(0, len(array) - 1):
-                        postit_idx = [-1, -1]
-                        postit_id_start = 0
-                        postit_id_end = 0
+                        stickyNote_idx = [-1, -1]
+                        stickyNote_id_start = 0
+                        stickyNote_id_end = 0
                         if len(str(array[i])) == 36:
-                            postit_id_start = array[i]
+                            stickyNote_id_start = array[i]
                         else:
-                            postit_idx[0] = array[i]
+                            stickyNote_idx[0] = array[i]
                         if len(str(array[i + 1])) == 36:
-                            postit_id_end = array[i + 1]
+                            stickyNote_id_end = array[i + 1]
                         else:
-                            postit_idx[1] = array[i + 1]
-                        if postit_id_start and postit_id_end:
+                            stickyNote_idx[1] = array[i + 1]
+                        if stickyNote_id_start and stickyNote_id_end:
                             found_line = {
-                                "postitIdStart": postit_id_start,
-                                "postitIdEnd": postit_id_end
+                                "stickyNoteIdStart": stickyNote_id_start,
+                                "stickyNoteIdEnd": stickyNote_id_end
                             }
                             found_lines.append(found_line)
-                        elif postit_id_start and postit_idx[1] > -1:
+                        elif stickyNote_id_start and stickyNote_idx[1] > -1:
                             found_line = {
-                                "postitIdStart": postit_id_start,
-                                "postitIdx": postit_idx
+                                "stickyNoteIdStart": stickyNote_id_start,
+                                "stickyNoteIdx": stickyNote_idx
                             }
                             found_lines.append(found_line)
-                        elif postit_id_end and postit_idx[0] > -1:
+                        elif stickyNote_id_end and stickyNote_idx[0] > -1:
                             found_line = {
-                                "postitIdEnd": postit_id_end,
-                                "postitIdx": postit_idx
+                                "stickyNoteIdEnd": stickyNote_id_end,
+                                "stickyNoteIdx": stickyNote_idx
                             }
                             found_lines.append(found_line)
-                        elif postit_idx[0] > -1 and postit_idx[1] > -1:
+                        elif stickyNote_idx[0] > -1 and stickyNote_idx[1] > -1:
                             found_line = {
-                                "postitIdx": postit_idx
+                                "stickyNoteIdx": stickyNote_idx
                             }
                             found_lines.append(found_line)
         return found_lines
@@ -441,60 +441,60 @@ if __name__ == "__main__":
     image1 = image1[canvArea[1]:(canvArea[1] + canvArea[3]), canvArea[0]:(canvArea[0] + canvArea[2])]
     image2 = cv2.imread("IMG_20160304_154821.jpg")
     image2 = image2[canvArea[1]:(canvArea[1] + canvArea[3]), canvArea[0]:(canvArea[0] + canvArea[2])]
-    activePostits = []
+    activeStickyNotes = []
 
-    extractor1 = GraphExtractor(image1, activePostits)
+    extractor1 = GraphExtractor(image1, activeStickyNotes)
     graph1 = extractor1.extract_graph(show_debug=False,
-                                      min_postit_area=10000,
-                                      max_postit_area=40000,
+                                      min_stickyNote_area=10000,
+                                      max_stickyNote_area=40000,
                                       len_tolerence=0.4,
                                       min_colour_thresh=64,
                                       max_colour_thresh=200)
 
-    extractor2 = GraphExtractor(image2, activePostits)
+    extractor2 = GraphExtractor(image2, activeStickyNotes)
     graph2 = extractor2.extract_graph(show_debug=False,
-                                      min_postit_area=10000,
-                                      max_postit_area=40000,
+                                      min_stickyNote_area=10000,
+                                      max_stickyNote_area=40000,
                                       len_tolerence=0.4,
                                       min_colour_thresh=64,
                                       max_colour_thresh=200)
 
-    for postit in graph1["postits"]:
-        x1 = postit["position"][0]
-        y1 = postit["position"][1]
-        x2 = postit["position"][0] + postit["position"][2]
-        y2 = postit["position"][1] + postit["position"][3]
+    for stickyNote in graph1["stickyNotes"]:
+        x1 = stickyNote["position"][0]
+        y1 = stickyNote["position"][1]
+        x2 = stickyNote["position"][0] + stickyNote["position"][2]
+        y2 = stickyNote["position"][1] + stickyNote["position"][3]
         cv2.rectangle(image1, (x1, y1), (x2, y2), (0, 255, 0), thickness=4)
     for line in graph1["lines"]:
         cv2.line(image1, line["startPoint"], line["endPoint"], [255, 0, 0], thickness=4)
-    for postit in graph2["postits"]:
-        x1 = postit["position"][0]
-        y1 = postit["position"][1]
-        x2 = postit["position"][0] + postit["position"][2]
-        y2 = postit["position"][1] + postit["position"][3]
+    for stickyNote in graph2["stickyNotes"]:
+        x1 = stickyNote["position"][0]
+        y1 = stickyNote["position"][1]
+        x2 = stickyNote["position"][0] + stickyNote["position"][2]
+        y2 = stickyNote["position"][1] + stickyNote["position"][3]
         cv2.rectangle(image2, (x1, y1), (x2, y2), (0, 255, 0), thickness=4)
     for line in graph2["lines"]:
         cv2.line(image2, line["startPoint"], line["endPoint"], [255, 0, 0], thickness=4)
 
     bf = cv2.BFMatcher()
-    postitPair = []
-    for o, postit1 in enumerate(graph1["postits"]):
-        for p, postit2 in enumerate(graph2["postits"]):
-            matches = bf.knnMatch(postit1["descriptors"], postit2["descriptors"], k=2)
+    stickyNotePair = []
+    for o, stickyNote1 in enumerate(graph1["stickyNotes"]):
+        for p, stickyNote2 in enumerate(graph2["stickyNotes"]):
+            matches = bf.knnMatch(stickyNote1["descriptors"], stickyNote2["descriptors"], k=2)
             good = []
             for m, n in matches:
                 if m.distance < 0.45 * n.distance:
                     good.append([m])
             # print(o, p, len(good))
             if len(good) > 5:
-                postitPair.append([o, p])
-                gray = cv2.cvtColor(postit1["image"], cv2.COLOR_BGR2GRAY)
+                stickyNotePair.append([o, p])
+                gray = cv2.cvtColor(stickyNote1["image"], cv2.COLOR_BGR2GRAY)
                 gray = cv2.GaussianBlur(gray, (3, 3), 0)
                 ret, threshed = cv2.threshold(gray, 127, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
                 kernel = np.ones((3, 3), np.uint8)
                 threshed = cv2.dilate(threshed, kernel)
-                print(pytesseract.image_to_string(Image.open("postit.png")))
-    print(postitPair)
+                print(pytesseract.image_to_string(Image.open("stickyNote.png")))
+    print(stickyNotePair)
 
     display("canvas1", image1)
     display("canvas2", image2)

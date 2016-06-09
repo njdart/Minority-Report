@@ -90,7 +90,7 @@ def order_points(pts):
 
 
 def guess_colour(r, g, b):
-    # Use the average RGB values of a postit and then using the difference between them
+    # Use the average RGB values of a stickyNote and then using the difference between them
     # to establish which of the four supported colours it is.
     r = int(r)
     g = int(g)

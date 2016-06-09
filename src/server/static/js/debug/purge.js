@@ -24,16 +24,16 @@ $(function() {
        socket.emit("purge_canvases");
    });
 
-   $("#purge-postits").on("click", function(){
-       console.log("Purging postits table");
-       socket.emit("purge_postits");
+   $("#purge-stickyNotes").on("click", function(){
+       console.log("Purging stickyNotes table");
+       socket.emit("purge_stickyNotes");
    });
 
    $("#purge-josh").on("click", function(){
-       console.log("Purging connections, canvases and postits");
+       console.log("Purging connections, canvases and stickyNotes");
        socket.emit("purge_connections");
        socket.emit("purge_canvases");
-       socket.emit("purge_postits");
+       socket.emit("purge_stickyNotes");
    });
 
    $("#purge-josh-inverse").on("click", function(){
@@ -48,7 +48,7 @@ $(function() {
        console.log("Nuking DB");
        socket.emit("purge_sessions");
        socket.emit("purge_canvases");
-       socket.emit("purge_postits");
+       socket.emit("purge_stickyNotes");
        socket.emit("purge_users");
        socket.emit("purge_instance_configurations");
        socket.emit("purge_images");

@@ -3,7 +3,7 @@ from src.model.SqliteObject import SqliteObject
 
 class Connection(SqliteObject):
     """
-    A Connection object joins two postits together
+    A Connection object joins two stickyNotes together
     """
 
     properties = [
@@ -23,10 +23,10 @@ class Connection(SqliteObject):
                  type=None,
                  id=None):
         """
-        Represents a connection between two postits on a canvas
-        :param start: the postit to connect from
-        :param finish: the postit to connect to
-        :param canvas: the canvas the postits are in
+        Represents a connection between two stickyNotes on a canvas
+        :param start: the stickyNote to connect from
+        :param finish: the stickyNote to connect to
+        :param canvas: the canvas the stickyNotes are in
         :param type: the type (currently only None)
         :param id: the id of the connection
         """

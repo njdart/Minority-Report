@@ -74,7 +74,7 @@ def segmentation(inputColour):
 
 if __name__ == "__main__":
     # Load input image
-    inputBigColour =  cv2.imread("whiteboard-postit.jpg")
+    inputBigColour =  cv2.imread("whiteboard-stickyNote.jpg")
     # Scale down
     inputResizedColour = cv2.resize(inputBigColour, dsize=(0,0), fx=SCALE_DOWN_FACTOR, fy=SCALE_DOWN_FACTOR, interpolation=cv2.INTER_AREA)
 

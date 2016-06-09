@@ -40,21 +40,21 @@ def update_canvas(id, session, derivedFrom, derivedAt, width, height):
     emit('update_canvas', canvas.update().as_object())
 
 
-@socketio.on('autoExtractPostits')
-def autoExtractPostits(canvas_id):
+@socketio.on('autoExtractStickyNotes')
+def autoExtractStickyNote(canvas_id):
     canvas = Canvas.get(canvas_id)
 
     if canvas is None:
-        emit('autoExtractPostits', None)
+        emit('autoExtractStickyNotes', None)
         return
 
-    postits = canvas.find_postits()
+    stickyNotes = canvas.find_stickyNotes()
 
-    if postits is None:
-        emit('autoExtractPostits', None)
+    if stickyNotes is None:
+        emit('autoExtractStickyNotes', None)
         return
 
-    emit('autoExtractPostits', [postit.as_object() for postit in postits])
+    emit('autoExtractStickyNotes', [stickyNote.as_object() for stickyNote in stickyNotes])
 
 
 @app.route('/api/canvas/<canvasId>')
