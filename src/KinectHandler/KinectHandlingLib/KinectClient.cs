@@ -509,6 +509,7 @@ namespace MinorityReport
                                 if (dist < distThreshold)
                                 {
                                     Point pL = this.GetProjectedCanvasCoords(handL.Position);
+                                    // Console.Write("Skeleton {0}, hand L, ({1},\t{2})\n", i, pL.X, pL.Y);
                                     this.trackedPeople[i].LeftHand.AddSample(pL.X, pL.Y, body.HandLeftState);
                                 }
                             }
@@ -519,6 +520,7 @@ namespace MinorityReport
                                 if (dist < distThreshold)
                                 {
                                     Point pR = this.GetProjectedCanvasCoords(handR.Position);
+                                    // Console.Write("Skeleton {0}, hand R, ({1},\t{2})\n", i, pR.X, pR.Y);
                                     this.trackedPeople[i].RightHand.AddSample(pR.X, pR.Y, body.HandRightState);
                                 }
                             }
@@ -674,7 +676,9 @@ namespace MinorityReport
             V[1] = c.Y;
             V[2] = 1;
             V = this.TransformToCanvasSpace(V);
-            return new Point(V[0], V[1]);
+
+            // We need to left-right mirror
+            return new Point(1920 - V[0], V[1]);
         }
 
         private void HTTPListenerCallback(IAsyncResult result)
