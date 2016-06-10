@@ -193,7 +193,7 @@ $(function() {
 });
 
 function drawCircles(handStates) {
-    if (allowDrawCircle)
+    if (allowDrawCircle && handStates.configID == localStorage["instanceConfigurationId"])
     {
         clearCanvas();
         redrawCanvas();

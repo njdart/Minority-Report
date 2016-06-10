@@ -20,7 +20,8 @@ def magicalHandCircle():
             kinectHost = "localhost"
 
         config = InstanceConfiguration.get_config_by_kinect(kinectHost)
-        socketio.emit("draw_circle", data, config.id, broadcast=True)
+        data["configID"] = config.id
+        socketio.emit("draw_circle", data, broadcast=True)
         return "yay", 200
     else:
         return "invalid request", 500
