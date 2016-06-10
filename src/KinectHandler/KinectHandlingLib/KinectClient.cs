@@ -525,25 +525,44 @@ namespace MinorityReport
                         }
 
                         TrackedPeopleJSON trackedPeopleJson = new TrackedPeopleJSON();
+                        bool peopleTransmitted = false;
                         foreach (TrackedPerson person in this.trackedPeople)
                         {
+                            TrackedPersonJSON personJson = new TrackedPersonJSON(person.SkeletonID);
+                            bool transmitPerson = false;
                             double timeThreshold = 0.5; // seconds
-                            if (person.LeftHand.SecondsSinceLastSample < timeThreshold &&
-                                person.RightHand.SecondsSinceLastSample < timeThreshold)
+
+                            if (person.LeftHand.MaxSamplesCollected &&
+                                person.LeftHand.SecondsSinceLastSample < timeThreshold)
                             {
-                                TrackedPersonJSON personJson = new TrackedPersonJSON(person.SkeletonID);
                                 personJson.leftHandX = (int)person.LeftHand.MeanPosition.X;
                                 personJson.leftHandY = (int)person.LeftHand.MeanPosition.Y;
+                                personJson.leftHandTracked = true;
+                                personJson.leftFistClosed = person.LeftHand.LastHandState == HandState.Closed;
+                                transmitPerson = true;
+                            }
+
+                            if (person.LeftHand.MaxSamplesCollected &&
+                                person.LeftHand.SecondsSinceLastSample < timeThreshold)
+                            {
                                 personJson.rightHandX = (int)person.RightHand.MeanPosition.X;
                                 personJson.rightHandY = (int)person.RightHand.MeanPosition.Y;
-                                personJson.leftHandTracked = true;
                                 personJson.rightHandTracked = true;
-                                personJson.leftFistClosed = person.LeftHand.LastHandState == HandState.Closed;
-                                personJson.leftFistClosed = person.RightHand.LastHandState == HandState.Closed;
+                                personJson.rightFistClosed = person.RightHand.LastHandState == HandState.Closed;
+                                transmitPerson = true;
+                            }
+
+                            if (transmitPerson)
+                            {
                                 trackedPeopleJson.handStates.Add(personJson);
+                                peopleTransmitted = true;
                             }
                         }
-                        this.SendHandData(trackedPeopleJson);
+
+                        if (peopleTransmitted)
+                        {
+                            this.SendSerializedObject(trackedPeopleJson, "magicalHandCircles");
+                        }
                     }
                 }
             }
@@ -869,9 +888,8 @@ namespace MinorityReport
             }
         }
 
-        private void SendHandData(TrackedPeopleJSON data)
+        private void SendSerializedObject<T>(T obj, string url)
         {
-            Console.Write("Sending hand data. {0}\n", DateTime.Now.ToString("o"));
             try
             {
                 Task.Run(async () =>
@@ -879,10 +897,9 @@ namespace MinorityReport
                     try
                     {
                         HttpClient client = new HttpClient();
-                        string uri = String.Format("http://{0}:{1}/magicalHandCircles", this.Server, this.Port);
+                        string uri = String.Format("http://{0}:{1}/{2}", this.Server, this.Port, url);
 
-                        string payload = JsonConvert.SerializeObject(data, Formatting.Indented);
-                        // Console.Write("\n{0}\n", payload);
+                        string payload = JsonConvert.SerializeObject(obj, Formatting.Indented);
                         StringContent content = new StringContent(payload);
                         if (content.Headers.Contains("Content-Type")) content.Headers.Remove("Content-Type");
                         content.Headers.Add("Content-Type", "application/json");
@@ -890,18 +907,18 @@ namespace MinorityReport
                         HttpResponseMessage response = await client.PostAsync(uri, content);
                         if (response.StatusCode != HttpStatusCode.OK)
                         {
-                            Console.Write("magical hand circles response status: {0}\n", response.StatusCode);
+                            Console.Write("{1} response status: {0}\n", response.StatusCode, url);
                         }
                     }
                     catch
                     {
-                        Console.Write("sending magical hand circles failed (RIP) (error within task)\n");
+                        Console.Write("sending to {0} failed (RIP) (error within task)\n", url);
                     }
                 });
             }
             catch
             {
-                Console.Write("sending magical hand circles failed (RIP)\n");
+                Console.Write("sending to {0} failed (RIP)\n", url);
             }
         }
 
