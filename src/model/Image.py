@@ -387,12 +387,17 @@ class Image(SqliteObject):
         # cv2.imwrite("debug/lines-"+str(next_canvas_id)+".png",
         #             cv2.resize(edged, None, fx=0.5, fy=0.5, interpolation=cv2.INTER_AREA))
         (_, line_contours, _) = cv2.findContours(edged.copy(), cv2.RETR_TREE, cv2.CHAIN_APPROX_NONE)
+        line_ratio = (1920.0/canvas_image.shape[1])
+        postit_ratio=[]
+        for idx, istickyNote in enumerate(stickyNotes):
+            postit_canvas_image = istickyNote.get_image()
+            postit_ratio.append(1920.0/postit_canvas_image.get_image_projection().shape[1])
         for line_contour in line_contours:
             debug_img = canvas_image.copy()
             if cv2.arcLength(line_contour, True) > 100:
                 connectionList = []
 
-                for index in range(0, len(line_contour), 5):
+                for index in range(0, len(line_contour), 10):
                     contained = False
                     #debugImage = cv2.circle(canvas_image.copy(), (line_contour[index][0][0],line_contour[index][0][1]),4,[0,0,255],thickness=5)
                     #cv2.imshow("debug", cv2.resize(debugImage,None,fx=0.25, fy=0.25,))
@@ -400,18 +405,19 @@ class Image(SqliteObject):
                     for idx, istickyNote in enumerate(stickyNotes):
                         istickyNotepoints = istickyNote.get_corner_points()
                         rectanglearea = src.model.processing.get_area(istickyNotepoints)
-                        pointarea = src.model.processing.get_area(((istickyNotepoints[0][0]+7, istickyNotepoints[0][1]+7),
-                                                                   (istickyNotepoints[1][0]-7, istickyNotepoints[1][1]+7),
-                                                                   line_contour[index][0]))\
-                                    + src.model.processing.get_area(((istickyNotepoints[1][0]-7, istickyNotepoints[1][1]+7),
-                                                                     (istickyNotepoints[2][0]-7, istickyNotepoints[2][1]-7),
-                                                                     line_contour[index][0]))\
-                                    + src.model.processing.get_area(((istickyNotepoints[2][0]-7, istickyNotepoints[2][1]-7),
-                                                                     (istickyNotepoints[3][0]+7, istickyNotepoints[3][1]-7),
-                                                                     line_contour[index][0]))\
-                                    + src.model.processing.get_area(((istickyNotepoints[3][0]+7, istickyNotepoints[3][1]-7),
-                                                                     (istickyNotepoints[0][0]+7, istickyNotepoints[0][1]+7),
-                                                                     line_contour[index][0]))
+                        scaled_contour_point = (line_contour[index][0][0]*line_ratio, line_contour[index][0][1]*line_ratio)
+                        pointarea = src.model.processing.get_area(((istickyNotepoints[0][0]*postit_ratio[idx], istickyNotepoints[0][1]*postit_ratio[idx]),
+                                                                   (istickyNotepoints[1][0]*postit_ratio[idx], istickyNotepoints[1][1]*postit_ratio[idx]),
+                                                                   scaled_contour_point))\
+                                    + src.model.processing.get_area(((istickyNotepoints[1][0]*postit_ratio[idx], istickyNotepoints[1][1]*postit_ratio[idx]),
+                                                                     (istickyNotepoints[2][0]*postit_ratio[idx], istickyNotepoints[2][1]*postit_ratio[idx]),
+                                                                     scaled_contour_point))\
+                                    + src.model.processing.get_area(((istickyNotepoints[2][0]*postit_ratio[idx], istickyNotepoints[2][1]*postit_ratio[idx]),
+                                                                     (istickyNotepoints[3][0]*postit_ratio[idx], istickyNotepoints[3][1]*postit_ratio[idx]),
+                                                                     scaled_contour_point))\
+                                    + src.model.processing.get_area(((istickyNotepoints[3][0]*postit_ratio[idx], istickyNotepoints[3][1]*postit_ratio[idx]),
+                                                                     (istickyNotepoints[0][0]*postit_ratio[idx], istickyNotepoints[0][1]*postit_ratio[idx]),
+                                                                     scaled_contour_point))
                         if pointarea < rectanglearea*1.05:
                                 contained = True
                         if pointarea < rectanglearea*1.1 and not contained:
