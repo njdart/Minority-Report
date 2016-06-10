@@ -6,6 +6,11 @@ app = Flask(__name__)
 app.config['SECRET_KEY'] = 'secret!'
 socketio = SocketIO(app)
 
+# Prevent the spam of death
+import logging
+log = logging.getLogger('werkzeug')
+log.setLevel(logging.WARNING)
+
 
 def databaseHandler():
     if not hasattr(g, "databaseHandler"):
