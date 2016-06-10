@@ -79,12 +79,18 @@ $(function() {
                checkCanvasSize();
             });
 
-            socket.on("body_detected", function(){
-                $("#body-detect-indicator").show();
+            socket.on("body_detected", function(configId){
+                if(configId == localStorage["instanceConfigurationId"])
+                {
+                    $("#body-detect-indicator").show();
+                }
             });
 
-            socket.on("body_not_detected", function(){
-                $("#body-detect-indicator").hide();
+            socket.on("body_not_detected", function(configId){
+                if(configId == localStorage["instanceConfigurationId"])
+                {
+                    $("#body-detect-indicator").hide();
+                }
             });
 
             socket.on("show_loading", showLoading);

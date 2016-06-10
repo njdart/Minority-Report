@@ -13,7 +13,14 @@ import uuid
 def magicalHandCircle():
     data = request.get_json()
     if data:
-        socketio.emit("draw_circle", data, broadcast=True)
+        # IP address 127.0.0.1 is localhost
+        localhosts = ["127.0.0.1", "localhost", "::1"]
+        kinectHost = request.remote_addr
+        if kinectHost in localhosts:
+            kinectHost = "localhost"
+
+        config = InstanceConfiguration.get_config_by_kinect(kinectHost)
+        socketio.emit("draw_circle", data, config.id, broadcast=True)
         return "yay", 200
     else:
         return "invalid request", 500
@@ -24,29 +31,29 @@ def boardObscured():
     if request.method == "GET":
         return "404 pls post instead kek", 404
 
-    print("/boardObscured, POST")
-    print(request.data)
-
-    if request.get_json()["boardObscured"]:
-        print("board obscured")
-        socketio.emit("body_detected", broadcast=True)
-        return jsonify({"message": "nothing to do"}), 200
-
-    print("board not obscured")
-    socketio.emit("body_not_detected", broadcast=True)
-    # ignore message if global flag is set
-    if not GetKinectEnable():
-        print("ignoring (kinectEnable = False)")
-        return jsonify({"message": "echo that. ignoring due to kinectEnable flag."}), 200
-
-    # IP address 127.0.0.1 is localhost
     localhosts = ["127.0.0.1", "localhost", "::1"]
     kinectHost = request.remote_addr
     if kinectHost in localhosts:
         kinectHost = "localhost"
 
-    # get instance config
     config = InstanceConfiguration.get_config_by_kinect(kinectHost)
+
+    print("/boardObscured, POST")
+    print(request.data)
+
+    if request.get_json()["boardObscured"]:
+        print("board obscured")
+
+        socketio.emit("body_detected", config.id, broadcast=True)
+        return jsonify({"message": "nothing to do"}), 200
+
+    print("board not obscured")
+    socketio.emit("body_not_detected", config.id, broadcast=True)
+    # ignore message if global flag is set
+    if not GetKinectEnable():
+        print("ignoring (kinectEnable = False)")
+        return jsonify({"message": "echo that. ignoring due to kinectEnable flag."}), 200
+
     if config is None:
         print("kinect's IP matches no instance configurations")
         return jsonify({"message": "your IP does not belong to any instance configurations."}), 400
