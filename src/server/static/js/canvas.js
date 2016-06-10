@@ -53,7 +53,7 @@ var testJson = `[
 	"derivedAt":"2016-04-01 12:42:56.650753",
 	"derivedFrom":"None",
 	"height":3120,
-	"postits":[
+	"stickyNotes":[
 	{
 		"colour":"YELLOW",
 		"height":128,
@@ -166,7 +166,7 @@ var testJson = `[
 	"derivedAt":"2016-04-01 12:42:58.490595",
 	"derivedFrom":"d942f81d-1d88-4762-b6df-200ba53108fa",
 	"height":3120,
-	"postits":[
+	"stickyNotes":[
 	{
 		"colour":"YELLOW",
 		"height":128,
@@ -227,9 +227,9 @@ var testJson = `[
 }
 ]`
 
-uuid_to_postit_scaled = {}
+uuid_to_stickyNote_scaled = {}
 
-function createPostIt(postit, boardW, boardH) {
+function createStickyNote(stickyNote, boardW, boardH) {
 	var canv = document.getElementById("picanvas");
 	var ctx = canv.getContext("2d");
 	ctx.fillStyle = "#000";
@@ -237,13 +237,13 @@ function createPostIt(postit, boardW, boardH) {
 	var canvW = canv.clientWidth;
 	var canvH = canv.clientHeight;
 
-	var width = Math.floor((postit.width/boardW)*canvW);
-	var height = Math.floor((postit.height/boardH)*canvH);
+	var width = Math.floor((stickyNote.width/boardW)*canvW);
+	var height = Math.floor((stickyNote.height/boardH)*canvH);
 
-	var x = Math.floor((postit.x/boardW)*canvW);
-	var y = Math.floor((postit.y/boardH)*canvH);
+	var x = Math.floor((stickyNote.x/boardW)*canvW);
+	var y = Math.floor((stickyNote.y/boardH)*canvH);
 
-	uuid_to_postit_scaled[postit.uuid] = {
+	uuid_to_stickyNote_scaled[stickyNote.uuid] = {
 		"x": x,
 		"y": y,
 		"width": width,
@@ -253,24 +253,24 @@ function createPostIt(postit, boardW, boardH) {
 	ctx.fillRect(x, y, width, height);
 }
 
-function drawPostIts(boardJSON) {
-	var postits = boardJSON.postits;
+function drawStickyNotes(boardJSON) {
+	var stickyNotes = boardJSON.stickyNotes;
 	var canvW = boardJSON.width;
 	var canvH = boardJSON.height;
-	for(i=0;i<postits.length;i++)
+	for(i=0;i<stickyNotes.length;i++)
 	{
-		createPostIt(postits[i], canvW, canvH);
-		console.log(postits[i]);
+		createStickyNote(stickyNotes[i], canvW, canvH);
+		console.log(stickyNotes[i]);
 	}
-	console.log("End drawPostIts()");
+	console.log("End drawStickyNotes()");
 }
 
 function createConnection(connection)
 {
 	var ctx = document.getElementById("picanvas").getContext("2d");
 
-	var from = uuid_to_postit_scaled[connection.from];
-	var to = uuid_to_postit_scaled[connection.to];
+	var from = uuid_to_stickyNote_scaled[connection.from];
+	var to = uuid_to_stickyNote_scaled[connection.to];
 
 	var fromx = from.x + (from.width/2);
 	var fromy = from.y + (from.height/2);

@@ -64,12 +64,12 @@ CREATE TABLE IF NOT EXISTS connections (
   canvas                    TEXT NOT NULL,
   type                      TEXT,
 
-  FOREIGN KEY(start) REFERENCES postits(id),
-  FOREIGN Key(finish) REFERENCES postits(id),
+  FOREIGN KEY(start) REFERENCES stickyNotes(id),
+  FOREIGN Key(finish) REFERENCES stickyNotes(id),
   Foreign Key(canvas) REFERENCES canvases(id)
 );
 
-CREATE TABLE IF NOT EXISTS postits (
+CREATE TABLE IF NOT EXISTS stickyNotes (
   id                        TEXT PRIMARY KEY,
   canvas                    TEXT NOT NULL,
   physicalFor               TEXT,

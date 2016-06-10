@@ -90,6 +90,8 @@ def order_points(pts):
 
 
 def guess_colour(r, g, b):
+    # Use the average RGB values of a stickyNote and then using the difference between them
+    # to establish which of the four supported colours it is.
     r = int(r)
     g = int(g)
     b = int(b)
@@ -100,7 +102,7 @@ def guess_colour(r, g, b):
 
     colour_thresholds = {
         "ORANGE": {
-            "min_rg": 0,
+            "min_rg": 20,
             "max_rg": 90,
             "min_rb": 60,
             "max_rb": 160,
@@ -145,12 +147,16 @@ def guess_colour(r, g, b):
     return None
 
 def binarize(image, lightest=True):
+    # Process converts an image to black and white using clustering to the lightest and darkest areas
     Z = image.reshape((-1,3))
     # convert to np.float32
     Z = numpy.float32(Z)
     # define criteria, number of clusters(K) and apply kmeans()
     criteria = (cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, 10, 1.0)
-    K = 3
+    if lightest:
+        K = 3
+    else:
+        K = 2
     ret,label,center = cv2.kmeans(data=Z,
                                   K=K,
                                   bestLabels=None,

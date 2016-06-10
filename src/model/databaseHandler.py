@@ -5,7 +5,7 @@ import sqlite3
 class ModelDatabase(object):
     """
     Handler and wrapper for the SQLite database used to store users and information about canvases and
-    extracted postits
+    extracted stickyNotes
     """
 
     def __init__(self, file='./database.sqlite'):

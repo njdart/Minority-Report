@@ -4,9 +4,58 @@ var latestCanvas;
 var userId;
 var sessionId;
 
-var POSTIT_SIZE = 115;
+var allowDrawCircle = true;
 
-var OFFSET = POSTIT_SIZE/2;
+var handColors = {
+    0: {
+        "leftFistOpen": "rgba(0,255,0,0.5)",
+        "leftFistClosed": "rgba(0,128,0,0.5)",
+
+        "rightFistOpen": "rgba(0,255,0,0.5)",
+        "rightFistClosed": "rgba(0,128,0,0.5)"
+    },
+    1: {
+        "leftFistOpen": "rgba(0,0,255,0.5)",
+        "leftFistClosed": "rgba(0,0,128,0.5)",
+
+        "rightFistOpen": "rgba(0,0,255,0.5)",
+        "rightFistClosed": "rgba(0,0,128,0.5)"
+    },
+    2: {
+        "leftFistOpen": "rgba(255,0,0,0.5)",
+        "leftFistClosed": "rgba(128,0,0,0.5)",
+
+        "rightFistOpen": "rgba(255,0,0,0.5)",
+        "rightFistClosed": "rgba(128,0,0,0.5)"
+    },
+    3: {
+        "leftFistOpen": "rgba(255,255,0,0.5)",
+        "leftFistClosed": "rgba(128,128,0,0.5)",
+
+        "rightFistOpen": "rgba(255,255,0,0.5)",
+        "rightFistClosed": "rgba(128,128,0,0.5)"
+    },
+    4: {
+        "leftFistOpen": "rgba(0,255,255,0.5)",
+        "leftFistClosed": "rgba(0,128,128,0.5)",
+
+        "rightFistOpen": "rgba(0,255,255,0.5)",
+        "rightFistClosed": "rgba(0,128,128,0.5)"
+    },
+    5: {
+        "leftFistOpen": "rgba(255,0,255,0.5)",
+        "leftFistClosed": "rgba(128,0,128,0.5)",
+
+        "rightFistOpen": "rgba(255,0,255,0.5)",
+        "rightFistClosed": "rgba(128,0,128,0.5)"
+    }
+};
+
+var STICKYNOTE_SIZE = 115;
+
+var OFFSET = STICKYNOTE_SIZE/2;
+
+var virtualStickyNoteImages = {};
 
 $(function() {
     //var hudCanvas = $('.hudCanvas');
@@ -17,15 +66,19 @@ $(function() {
        sessionId = localStorage.getItem('sessionId');
        console.log("userId: " + userId);
        console.log("sessionId: " + sessionId);
-
+       checkCanvasSize();
         if (!userId || !sessionId) {
             console.error('Either userId or sessionId was not set:', userId, sessionId);
         } else {
             hudContext = document.getElementById("hudCanvas").getContext("2d");
-            $(window).on("resize", resizeCanvas);
             var socket = io();
             splash.hide();
-            
+
+            $(window).on("resize", function(){
+               resizeCanvas();
+               checkCanvasSize();
+            });
+
             socket.on("body_detected", function(){
                 $("#body-detect-indicator").show();
             });
@@ -33,6 +86,10 @@ $(function() {
             socket.on("body_not_detected", function(){
                 $("#body-detect-indicator").hide();
             });
+
+            socket.on("show_loading", showLoading);
+
+            socket.on("draw_circle", drawCircles);
 
             socket.on('connect', function() {
                 socket.on('get_latest_canvas_by_session', function(canvas) {
@@ -43,6 +100,38 @@ $(function() {
                     else {
                         console.log(canvas);
                         latestCanvas = canvas;
+
+                        //clear virtual stickyNote local cache
+                        //get all virtual stickyNotes from new canvas and to cache
+                        virtualStickyNoteImages = {};
+                        $.each(latestCanvas.stickyNotes, function(index, stickyNote)
+                        {
+                           if (stickyNote.physicalFor != userId)
+                           {
+                               var i = new Image();
+                               i.onload = function(evt)
+                               {
+                                   console.log("       EXPERIMENTAL: drawing virtual " + evt.currentTarget.height + "x" + evt.currentTarget.width + " stickyNote at (" + stickyNote.displayPos.x + "," + stickyNote.displayPos.y + ")");
+                                   if (stickyNote.physicalFor == null || stickyNote.physicalFor == "None")
+                                   {
+                                       //virtual for noone
+                                       hudContext.strokeStyle = "#00FF00";
+                                   }
+                                   else
+                                   {
+                                       //physical for someone else
+                                       hudContext.strokeStyle = "#FF0000";
+                                   }
+                                   hudContext.strokeWidth = 20;
+                                   hudContext.strokeRect(stickyNote.displayPos.x - evt.currentTarget.width/2, stickyNote.displayPos.y - evt.currentTarget.height/2, evt.currentTarget.width, evt.currentTarget.height);
+                                   hudContext.drawImage(evt.currentTarget, stickyNote.displayPos.x - evt.currentTarget.width/2, stickyNote.displayPos.y - evt.currentTarget.height/2);
+                               }
+                               i.src = "/api/stickyNote/" + stickyNote.id;
+                               virtualstickyNoteImages[stickyNote.id] = i;
+                           }
+                        });
+
+                        allowDrawCircle = true;
                         resizeCanvas();
                     }
                 });
@@ -97,6 +186,63 @@ $(function() {
     }
 });
 
+function drawCircles(handStates) {
+    if (allowDrawCircle)
+    {
+        clearCanvas();
+        redrawCanvas();
+        $.each(handStates.handStates, function (index, state) {
+            if (state.leftHandTracked)
+            {
+                console.log("received hand state, ID " + state.skeletonID + ": left(" + state.leftHandX + ", " + state.leftHandY + ")");
+                hudContext.beginPath();
+                hudContext.arc(state.leftHandX, state.leftHandY, STICKYNOTE_SIZE - 15, 0, 2 * Math.PI, false);
+                hudContext.fillStyle = state.leftFistClosed ? handColors[state.skeletonID].leftFirstClosed : handColors[state.skeletonID].leftFistOpen;
+                hudContext.fill();
+                hudContext.lineWidth = 5;
+                hudContext.strokeStyle = '#003300';
+                hudContext.stroke();
+                hudContext.closePath();
+            }
+            if (state.rightHandTracked)
+            {
+                console.log("received hand state, ID " + state.skeletonID + ": right(" + state.rightHandX + ", " + state.rightHandY + ")");
+                hudContext.beginPath();
+                hudContext.arc(state.rightHandX, state.rightHandY, STICKYNOTE_SIZE - 15, 0, 2 * Math.PI, false);
+                hudContext.fillStyle = state.rightFistClosed ? handColors[state.skeletonID].rightFistClosed : handColors[state.skeletonID].rightFistOpen;
+                hudContext.fill();
+                hudContext.lineWidth = 5;
+                hudContext.strokeStyle = '#003300';
+                hudContext.stroke();
+                hudContext.closePath();
+            }
+        });
+    }
+    else
+    {
+        console.log("received hand states, but ignoring");
+    }
+}
+
+function checkCanvasSize() {
+    if($(window).height() != 1080)
+    {
+        console.error("Window height " + $(window).height() + " is suboptimal");
+    }
+    else
+    {
+        console.log("Window height optimal");
+    }
+
+    if($(window).width() != 1920)
+    {
+        console.error("Window width " + $(window).width() + " is suboptimal");
+    }
+    else
+    {
+        console.log("Window width optimal");
+    }
+}
 
 function resizeCanvas() {
     console.log("resizeCanvas(): resizing canvas");
@@ -126,19 +272,26 @@ function redrawCanvas() {
     hudContext.strokeWidth = 10;
     hudContext.lineWidth = 10;
     console.log("redrawCanvas(): redrawing canvas");
+    hideLoading();
     drawCanvasBin();
 
-    if(latestCanvas.postits == undefined || latestCanvas.postits == null)
+    if (!latestCanvas)
     {
-        console.log("redrawCanvas(): No postits on canvas");
+        console.log("No canvas to redraw.");
+        return;
+    }
+
+    if(latestCanvas.stickyNotes == undefined || latestCanvas.stickyNotes == null)
+    {
+        console.log("redrawCanvas(): No stickyNotes on canvas");
     }
     else
     {
-        console.log("redrawCanvas(): mapping " + latestCanvas.postits.length + " postit ids to coords");
-        postitIdToCoords = {};
-        $.each(latestCanvas.postits, function(index, postit)
+        console.log("redrawCanvas(): mapping " + latestCanvas.stickyNotes.length + " stickyNote ids to coords");
+        stickyNoteIdToCoords = {};
+        $.each(latestCanvas.stickyNotes, function(index, stickyNote)
         {
-           postitIdToCoords[postit.id] = postit.displayPos;
+           stickyNoteIdToCoords[stickyNote.id] = stickyNote.displayPos;
         });
     }
 
@@ -154,42 +307,68 @@ function redrawCanvas() {
             console.log("   connection from " + connection.start + " to " + connection.finish);
             hudContext.strokeStyle = "#0000FF";
             hudContext.beginPath();
-            hudContext.moveTo(postitIdToCoords[connection.start].x + POSTIT_SIZE/2 - OFFSET, postitIdToCoords[connection.start].y + POSTIT_SIZE/2 - OFFSET);
-            hudContext.lineTo(postitIdToCoords[connection.finish].x + POSTIT_SIZE/2 - OFFSET, postitIdToCoords[connection.finish].y + POSTIT_SIZE/2 - OFFSET);
+            hudContext.moveTo(stickyNoteIdToCoords[connection.start].x + STICKYNOTE_SIZE/2 - OFFSET, stickyNoteIdToCoords[connection.start].y + STICKYNOTE_SIZE/2 - OFFSET);
+            hudContext.lineTo(stickyNoteIdToCoords[connection.finish].x + STICKYNOTE_SIZE/2 - OFFSET, stickyNoteIdToCoords[connection.finish].y + STICKYNOTE_SIZE/2 - OFFSET);
             hudContext.closePath();
             hudContext.stroke();
         });
     }
 
-    if(latestCanvas.postits == undefined || latestCanvas.postits == null)
+    if(latestCanvas.stickyNotes == undefined || latestCanvas.stickyNotes == null)
     {
-        console.log("redrawCanvas(): No postits on canvas");
+        console.log("redrawCanvas(): No stickyNotes on canvas");
     }
     else
     {
-        console.log("redrawCanvas(): drawing " + latestCanvas.postits.length + " postits");
-        $.each(latestCanvas.postits, function (index, postit) {
-            console.log("   postit at (" + postit.displayPos.x + "," + postit.displayPos.y + ")");
+        console.log("redrawCanvas(): drawing " + latestCanvas.stickyNotes.length + " stickyNotes");
+        $.each(latestCanvas.stickyNotes, function (index, stickyNote) {
+            console.log("   stickyNote at (" + stickyNote.displayPos.x + "," + stickyNote.displayPos.y + ")");
             hudContext.fillStyle = "#000000";
-            if (postit.physicalFor == userId) {
-                //postit is physical for this user
+            if (stickyNote.physicalFor == userId) {
+                //stickyNote is physical for this user
                 hudContext.strokeStyle = "#00FF00";
-                hudContext.fillRect(postit.displayPos.x - OFFSET, postit.displayPos.y - OFFSET, POSTIT_SIZE, POSTIT_SIZE);
-                hudContext.strokeRect(postit.displayPos.x - OFFSET, postit.displayPos.y - OFFSET, POSTIT_SIZE, POSTIT_SIZE);
+                hudContext.fillRect(stickyNote.displayPos.x - OFFSET, stickyNote.displayPos.y - OFFSET, stickyNote_SIZE, stickyNote_SIZE);
+                hudContext.strokeRect(stickyNote.displayPos.x - OFFSET, stickyNote.displayPos.y - OFFSET, stickyNote_SIZE, stickyNote_SIZE);
             }
             else
             {
-
-                postitImage = new Image();
-                postitImage.src = "";
-                postitImage.onload = function(evt){
-                    console.log("       drawing virtual " + evt.currentTarget.height + "x" + evt.currentTarget.width + " postit at (" + postit.displayPos.x + "," + postit.displayPos.y + ")");
-                    hudContext.strokeStyle = "#FFFF00";
+                //virtual for all users
+                /*stickyNoteImage = new Image();
+                stickyNoteImage.src = "";
+                stickyNoteImage.onload = function(evt){
+                    console.log("       drawing virtual " + evt.currentTarget.height + "x" + evt.currentTarget.width + " stickyNote at (" + stickyNote.displayPos.x + "," + stickyNote.displayPos.y + ")");
+                    if (stickyNote.physicalFor == null || stickyNote.physicalFor == "None")
+                    {
+                        //virtual for noone
+                        hudContext.strokeStyle = "#00FF00";
+                    }
+                    else
+                    {
+                        //physical for someone else
+                        hudContext.strokeStyle = "#FF0000";
+                    }
                     hudContext.strokeWidth = 20;
-                    hudContext.strokeRect(postit.displayPos.x - OFFSET/evt.currentTarget.width, postit.displayPos.y - OFFSET/evt.currentTarget.height, evt.currentTarget.width, evt.currentTarget.height)
-                    hudContext.drawImage(evt.currentTarget, postit.displayPos.x - OFFSET/evt.currentTarget.width, postit.displayPos.y - OFFSET/evt.currentTarget.height);
+                    hudContext.strokeRect(stickyNote.displayPos.x - evt.currentTarget.width/2, stickyNote.displayPos.y - evt.currentTarget.height/2, evt.currentTarget.width, evt.currentTarget.height);
+                    hudContext.drawImage(evt.currentTarget, stickyNote.displayPos.x - evt.currentTarget.width/2, stickyNote.displayPos.y - evt.currentTarget.height/2);
+                };*/
+                //stickyNoteImage.src = "/api/stickyNote/" + stickyNote.id;
+                //stickyNoteImage.src = "data:image/jpg;base64," + localStorage.getItem(stickyNote.id);
+
+                var currentTarget = virtualStickyNoteImages[stickyNote.id];
+                console.log("       drawing virtual " + currentTarget.height + "x" + currentTarget.width + " stickyNote at (" + stickyNote.displayPos.x + "," + stickyNote.displayPos.y + ")");
+                if (stickyNote.physicalFor == null || stickyNote.physicalFor == "None")
+                {
+                    //virtual for noone
+                    hudContext.strokeStyle = "#00FF00";
                 }
-                postitImage.src = "/api/postit/" + postit.id;
+                else
+                {
+                    //physical for someone else
+                    hudContext.strokeStyle = "#FF0000";
+                }
+                hudContext.strokeWidth = 20;
+                hudContext.strokeRect(stickyNote.displayPos.x - currentTarget.width/2, stickyNote.displayPos.y - currentTarget.height/2, currentTarget.width, currentTarget.height);
+                hudContext.drawImage(currentTarget, stickyNote.displayPos.x - currentTarget.width/2, stickyNote.displayPos.y - currentTarget.height/2);
             }
 
         });
@@ -202,11 +381,24 @@ var drawImageOnCanvas = function(image, x, y) {
 }
 
 function setCanvasBlack() {
+    allowDrawCircle = false;
     console.log("setCanvasBlack(): setting canvas background black");
     $(".hudCanvas").addClass("blackCanvas");
 }
 
 function setCanvasWhite() {
+    allowDrawCircle = false;
     console.log("setCanvasWhite(): setting canvas background white");
     $(".hudCanvas").removeClass("blackCanvas");
+}
+
+function showLoading() {
+    allowDrawCircle = false;
+    console.log("showLoading(): setting loader show");
+    $(".loader").show();
+}
+
+function hideLoading() {
+    console.log("hideLoading(): setting loader hide");
+    $(".loader").hide();
 }

@@ -5,11 +5,11 @@ using System.Runtime.InteropServices;
 // General Information about an assembly is controlled through the following 
 // set of attributes. Change these attribute values to modify the information
 // associated with an assembly.
-[assembly: AssemblyTitle("SensorTesting")]
+[assembly: AssemblyTitle("KinectHandlerApp")]
 [assembly: AssemblyDescription("")]
 [assembly: AssemblyConfiguration("")]
 [assembly: AssemblyCompany("")]
-[assembly: AssemblyProduct("SensorTesting")]
+[assembly: AssemblyProduct("KinectHandlerApp")]
 [assembly: AssemblyCopyright("Copyright ©  2016")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]
@@ -20,7 +20,7 @@ using System.Runtime.InteropServices;
 [assembly: ComVisible(false)]
 
 // The following GUID is for the ID of the typelib if this project is exposed to COM
-[assembly: Guid("4a2f47fd-8436-4c21-b089-7c29bf6c2246")]
+[assembly: Guid("bfa25168-439b-4488-a420-f588bd01fc31")]
 
 // Version information for an assembly consists of the following four values:
 //

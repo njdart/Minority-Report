@@ -23,7 +23,7 @@ class Canvas(SqliteObject):
     def __init__(self,
                  session,
                  id=None,
-                 postits=[],
+                 stickyNotes=[],
                  connections=[],
                  derivedFrom=None,
                  derivedAt=datetime.datetime.now(),
@@ -33,15 +33,15 @@ class Canvas(SqliteObject):
         """
         :param session UUID v4 of session to which canvas belongs
         :param id UUID v4
-        :param postits list of postit objects or UUID v4s
-        :param connections list of (postit/postitUUID, postit/postitUUID) tuples
+        :param stickyNotes list of stickyNote objects or UUID v4s
+        :param connections list of (stickyNote/stickyNoteUUID, stickyNote/stickyNoteUUID) tuples
         :param derivedFrom canvas object or ID this object derives from
         :param width integer width of HUD
         :param height integer height of HUD
         """
         super(Canvas, self).__init__(id=id)
         self.session = session
-        self.postits = postits
+        self.stickyNotes = stickyNotes
         self.connections = connections
         self.derivedFrom = derivedFrom
         self.derivedAt = derivedAt
@@ -62,9 +62,9 @@ class Canvas(SqliteObject):
             "height": self.height
         }
 
-    def get_postits(self):
-        from src.model.Postit import Postit
-        return Postit.get_by_property('canvas', self.id)
+    def get_stickyNotes(self):
+        from src.model.StickyNote import StickyNote
+        return StickyNote.get_by_property('canvas', self.id)
 
     @staticmethod
     def get_latest_canvas_by_session(sessionId, database=None):
@@ -88,14 +88,14 @@ class Canvas(SqliteObject):
         return Canvas(**props)
 
     def clone(self):
-        postits = self.get_postits()
+        stickyNotes = self.get_stickyNotes()
 
         new_canvas_id = uuid.uuid4()
 
-        for postit in postits:
-            postit.id = uuid.uuid4()
-            postit.canvas = new_canvas_id
-            postit.create()
+        for stickyNote in stickyNotes:
+            stickyNote.id = uuid.uuid4()
+            stickyNote.canvas = new_canvas_id
+            stickyNote.create()
 
         self.derivedAt = datetime.datetime.isoformat(datetime.datetime.now())
         self.derivedFrom = self.id

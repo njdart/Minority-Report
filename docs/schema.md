@@ -44,6 +44,6 @@ kinectPort   | Intege Not Null                                   | Connection Pr
 
 ### Canvas
 
-### Postit
+### StickyNote
 
 ## Connection

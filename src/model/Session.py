@@ -19,7 +19,7 @@ class Session(SqliteObject):
         super(Session, self).__init__(id=id)
 
         self.name = name or "A Whiteboard Story"
-        self.description = description or "Snowboard and the 7 postits"
+        self.description = description or "Snowboard and the 7 stickyNotes"
 
     def get_latest_canvas(self):
         from src.model.Canvas import Canvas

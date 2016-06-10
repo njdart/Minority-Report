@@ -2,7 +2,7 @@ from flask.ext.socketio import emit
 from src.server import socketio
 from src.model.Session import Session
 from src.model.Canvas import Canvas
-from src.model.Postit import Postit
+from src.model.StickyNote import StickyNote
 from src.model.Connection import Connection
 import uuid
 import pdb
@@ -72,21 +72,21 @@ def delete_session(id):
 
 
 
-@socketio.on('get_postits_by_session')
-def get_postits_by_session(sessionId):
+@socketio.on('get_stickyNotes_by_session')
+def get_stickyNotes_by_session(sessionId):
     session = Session.get(sessionId)
     if session is not None:
         canvases = Canvas.get_by_property(sessionId, prop="session")
-        postits = []
+        stickyNotes = []
         print("canvases {}".format(canvases))
         pdb.set_trace()
         for canvas in canvases:
-            postits.extend(Postit.get_by_property(canvas.id, prop="canvas"))
-        print("Postits {}".format(postits))
-        postits = list(set([postit.as_object() for postit in postits]))
-        emit('get_postits_by_session', postits)
+            stickyNotes.extend(StickyNote.get_by_property(canvas.id, prop="canvas"))
+        print("StickyNotes {}".format(stickyNotes))
+        stickyNotes = list(set([stickyNote.as_object() for stickyNote in stickyNotes]))
+        emit('get_stickyNotes_by_session', stickyNotes)
     else:
-        emit('get_postits_by_session', None)
+        emit('get_stickyNotes_by_session', None)
 
 
 @socketio.on('get_latest_canvas_by_session')
@@ -95,14 +95,14 @@ def get_latest_canvas_by_session(sessionId):
     if session is not None:
         canvas = Canvas.get_latest_canvas_by_session(sessionId)
         if (canvas is not None):
-            postits = Postit.get_by_property("canvas", canvas.id)
+            stickyNotes = StickyNote.get_by_property("canvas", canvas.id)
             connections = Connection.get_by_property("canvas", canvas.id)
             print("canvas {}".format(canvas))
-            print("Postits {}".format(postits))
+            print("StickyNotes {}".format(stickyNotes))
 
             data = {
                 "canvas":      canvas.as_object(),
-                "postits":     [postit.as_object() for postit in postits],
+                "stickyNotes":     [stickyNote.as_object() for stickyNote in stickyNotes],
                 "connections": [connection.as_object() for connection in connections]
             }
             emit('get_latest_canvas_by_session', data)

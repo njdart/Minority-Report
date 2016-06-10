@@ -92,23 +92,27 @@ def setCameraProperties(uri, properties):
 @socketio.on('generate_canvas')
 def generate_canvas(id):
     image = Image.get(id=id)
+    if image is None:
+        print("Image.get returned None")
+        return
+    socketio.emit('show_loading')
     from src.model.InstanceConfiguration import InstanceConfiguration
     current_canvas = Session.get(InstanceConfiguration.get(id=image.instanceConfigurationId).sessionId).get_latest_canvas()
     next_canvas_id = uuid.uuid4()
-    postits, old_to_new_postits = image.find_postits(next_canvas_id=next_canvas_id,
+    stickyNotes, old_to_new_stickyNotes = image.find_stickyNotes(next_canvas_id=next_canvas_id,
                                  current_canvas=current_canvas,
                                  save=True)
-    connections = image.find_connections(postits=postits,
-                                         old_to_new_postits=old_to_new_postits,
+    connections = image.find_connections(stickyNotes=stickyNotes,
+                                         old_to_new_stickyNotes=old_to_new_stickyNotes,
                                          current_canvas=current_canvas,
                                          next_canvas_id=next_canvas_id,
                                          save=True)
-    canvases = image.update_canvases(new_postits=postits,
+    canvases = image.update_canvases(new_stickyNotes=stickyNotes,
                                      connections=connections,
                                      current_canvas=current_canvas,
                                      next_canvas_id=next_canvas_id)
     #broadcasting to all connected users regardless of session???
-    #this create_canvas emit does not work as expected - only returns canvas without postits and connections etc.
+    #this create_canvas emit does not work as expected - only returns canvas without stickyNotes and connections etc.
     socketio.emit('create_canvas', [canvas.as_object() for canvas in canvases], broadcast=True)
 
 
@@ -123,7 +127,7 @@ def image_serve(imageId):
     try:
         return send_from_directory(path, file, mimetype='image/jpg')
     except:
-        return send_from_directory(path, "testPostit1.jpg", mimetype="image/jpg")
+        return send_from_directory(path, "testStickyNote1.jpg", mimetype="image/jpg")
 
 
 @app.route('/api/projection/<imageId>')
