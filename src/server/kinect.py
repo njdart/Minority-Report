@@ -9,17 +9,29 @@ from src.server.api.image_api import generate_canvas
 import time
 import uuid
 
+def getInstanceConfigByKinectHost(host):
+    localhosts = ["127.0.0.1", "localhost", "::1"]
+    kinectHost = host
+    if kinectHost in localhosts:
+        kinectHost = "localhost"
+    return InstanceConfiguration.get_config_by_kinect(kinectHost)
+
+@app.route("/canvasDimensions", methods=["POST"])
+def canvasDimensions():
+    config = getInstanceConfigByKinectHost(request.remote_addr)
+    data = request.get_json()
+    if data:
+        data["configID"] = config.id
+        socketio.emit("physical_canvas_dimensions", data, broadcast=True)
+        return "fabulous", 200
+    else:
+        return "invalid request", 500
+
 @app.route("/magicalHandCircles", methods=["POST"])
 def magicalHandCircle():
     data = request.get_json()
     if data:
-        # IP address 127.0.0.1 is localhost
-        localhosts = ["127.0.0.1", "localhost", "::1"]
-        kinectHost = request.remote_addr
-        if kinectHost in localhosts:
-            kinectHost = "localhost"
-
-        config = InstanceConfiguration.get_config_by_kinect(kinectHost)
+        config = getInstanceConfigByKinectHost(request.remote_addr)
         data["configID"] = config.id
         socketio.emit("draw_circle", data, broadcast=True)
         return "yay", 200
@@ -32,12 +44,7 @@ def boardObscured():
     if request.method == "GET":
         return "404 pls post instead kek", 404
 
-    localhosts = ["127.0.0.1", "localhost", "::1"]
-    kinectHost = request.remote_addr
-    if kinectHost in localhosts:
-        kinectHost = "localhost"
-
-    config = InstanceConfiguration.get_config_by_kinect(kinectHost)
+    config = getInstanceConfigByKinectHost(request.remote_addr)
 
     print("/boardObscured, POST")
     print(request.data)

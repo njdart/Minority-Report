@@ -51,9 +51,10 @@ var handColors = {
     }
 };
 
-var STICKYNOTE_SIZE = 115;
+var STICKY_NOTE_SIZE_M = 0.077; // metres
 
-var OFFSET = STICKYNOTE_SIZE/2;
+var stickyNoteSize = 115;
+var stickyNoteOffset = stickyNoteSize/2;
 
 var virtualStickyNoteImages = {};
 
@@ -96,6 +97,8 @@ $(function() {
             socket.on("show_loading", showLoading);
 
             socket.on("draw_circle", drawCircles);
+
+            socket.on("physical_canvas_dimensions", physicalCanvasDimensions);
 
             socket.on('connect', function() {
                 socket.on('get_latest_canvas_by_session', function(canvas) {
@@ -192,6 +195,16 @@ $(function() {
     }
 });
 
+function physicalCanvasDimensions(json) {
+    if (json.configID == localStorage["instanceConfigurationId"])
+    {
+        stickyNoteSize = int((STICKY_NOTE_SIZE_M / json.canvasWidth) * 1920.0);
+        stickyNoteOffset = stickyNoteSize / 2;
+        console.log("received canvas physical size: (" + json.canvasWidth + ", " + json.canvasHeight + ")");
+        console.log("set sticky-note pixel width to: " + stickyNoteSize);
+    }
+}
+
 function drawCircles(handStates) {
     if (allowDrawCircle && handStates.configID == localStorage["instanceConfigurationId"])
     {
@@ -202,7 +215,7 @@ function drawCircles(handStates) {
             {
                 console.log("received hand state, ID " + state.skeletonID + ": left(" + state.leftHandX + ", " + state.leftHandY + ")");
                 hudContext.beginPath();
-                hudContext.arc(state.leftHandX, state.leftHandY, STICKYNOTE_SIZE - 15, 0, 2 * Math.PI, false);
+                hudContext.arc(state.leftHandX, state.leftHandY, stickyNoteSize - 15, 0, 2 * Math.PI, false);
                 hudContext.fillStyle = state.leftFistClosed ? handColors[state.skeletonID].leftFirstClosed : handColors[state.skeletonID].leftFistOpen;
                 hudContext.fill();
                 hudContext.lineWidth = 5;
@@ -214,7 +227,7 @@ function drawCircles(handStates) {
             {
                 console.log("received hand state, ID " + state.skeletonID + ": right(" + state.rightHandX + ", " + state.rightHandY + ")");
                 hudContext.beginPath();
-                hudContext.arc(state.rightHandX, state.rightHandY, STICKYNOTE_SIZE - 15, 0, 2 * Math.PI, false);
+                hudContext.arc(state.rightHandX, state.rightHandY, stickyNoteSize - 15, 0, 2 * Math.PI, false);
                 hudContext.fillStyle = state.rightFistClosed ? handColors[state.skeletonID].rightFistClosed : handColors[state.skeletonID].rightFistOpen;
                 hudContext.fill();
                 hudContext.lineWidth = 5;
@@ -313,8 +326,8 @@ function redrawCanvas() {
             console.log("   connection from " + connection.start + " to " + connection.finish);
             hudContext.strokeStyle = "#0000FF";
             hudContext.beginPath();
-            hudContext.moveTo(stickyNoteIdToCoords[connection.start].x + STICKYNOTE_SIZE/2 - OFFSET, stickyNoteIdToCoords[connection.start].y + STICKYNOTE_SIZE/2 - OFFSET);
-            hudContext.lineTo(stickyNoteIdToCoords[connection.finish].x + STICKYNOTE_SIZE/2 - OFFSET, stickyNoteIdToCoords[connection.finish].y + STICKYNOTE_SIZE/2 - OFFSET);
+            hudContext.moveTo(stickyNoteIdToCoords[connection.start].x + stickyNoteSize/2 - stickyNoteOffset, stickyNoteIdToCoords[connection.start].y + stickyNoteSize/2 - stickyNoteOffset);
+            hudContext.lineTo(stickyNoteIdToCoords[connection.finish].x + stickyNoteSize/2 - stickyNoteOffset, stickyNoteIdToCoords[connection.finish].y + stickyNoteSize/2 - stickyNoteOffset);
             hudContext.closePath();
             hudContext.stroke();
         });
@@ -333,8 +346,8 @@ function redrawCanvas() {
             if (stickyNote.physicalFor == userId) {
                 //stickyNote is physical for this user
                 hudContext.strokeStyle = "#00FF00";
-                hudContext.fillRect(stickyNote.displayPos.x - OFFSET, stickyNote.displayPos.y - OFFSET, STICKYNOTE_SIZE, STICKYNOTE_SIZE);
-                hudContext.strokeRect(stickyNote.displayPos.x - OFFSET, stickyNote.displayPos.y - OFFSET, STICKYNOTE_SIZE, STICKYNOTE_SIZE);
+                hudContext.fillRect(stickyNote.displayPos.x - stickyNoteOffset, stickyNote.displayPos.y - stickyNoteOffset, stickyNoteSize, stickyNoteSize);
+                hudContext.strokeRect(stickyNote.displayPos.x - stickyNoteOffset, stickyNote.displayPos.y - stickyNoteOffset, stickyNoteSize, stickyNoteSize);
             }
             else
             {

@@ -854,6 +854,21 @@ namespace MinorityReport
                             this.plane_C = N[2];
                             this.plane_D = -(N[0] * X[0] + N[1] * X[1] + N[2] * X[2]);
 
+                            // Calculate the dimensions of the physical canvas
+                            double width_metres = U.L2Norm();
+                            double height_metres = V.L2Norm();
+
+                            // Send the dimensions to the server as JSON
+                            StringWriter strWriter = new StringWriter();
+                            JsonTextWriter jsonWriter = new JsonTextWriter(strWriter);
+                            jsonWriter.WriteStartObject();
+                            jsonWriter.WritePropertyName("canvasWidth");
+                            jsonWriter.WriteValue(width_metres);
+                            jsonWriter.WritePropertyName("canvasHeight");
+                            jsonWriter.WriteValue(height_metres);
+                            jsonWriter.WriteEndObject();
+                            this.SendString(strWriter.ToString(), "canvasDimensions");
+                            
                             this.ConfigurationToFile();
                             this.calibrationComplete = true;
                         }
@@ -896,6 +911,19 @@ namespace MinorityReport
         {
             try
             {
+                string payload = JsonConvert.SerializeObject(obj, Formatting.Indented);
+                this.SendString(payload, url);
+            }
+            catch
+            {
+                Console.Write("converting to JSON and sending to {0} failed (RIP)\n", url);
+            }
+        }
+
+        private void SendString(string payload, string url)
+        {
+            try
+            {
                 Task.Run(async () =>
                 {
                     try
@@ -903,7 +931,6 @@ namespace MinorityReport
                         HttpClient client = new HttpClient();
                         string uri = String.Format("http://{0}:{1}/{2}", this.Server, this.Port, url);
 
-                        string payload = JsonConvert.SerializeObject(obj, Formatting.Indented);
                         StringContent content = new StringContent(payload);
                         if (content.Headers.Contains("Content-Type")) content.Headers.Remove("Content-Type");
                         content.Headers.Add("Content-Type", "application/json");
