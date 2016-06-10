@@ -133,7 +133,7 @@ $(function() {
                                    hudContext.drawImage(evt.currentTarget, stickyNote.displayPos.x - evt.currentTarget.width/2, stickyNote.displayPos.y - evt.currentTarget.height/2);
                                }
                                i.src = "/api/stickyNote/" + stickyNote.id;
-                               virtualstickyNoteImages[stickyNote.id] = i;
+                               virtualStickyNoteImages[stickyNote.id] = i;
                            }
                         });
 
@@ -333,8 +333,8 @@ function redrawCanvas() {
             if (stickyNote.physicalFor == userId) {
                 //stickyNote is physical for this user
                 hudContext.strokeStyle = "#00FF00";
-                hudContext.fillRect(stickyNote.displayPos.x - OFFSET, stickyNote.displayPos.y - OFFSET, stickyNote_SIZE, stickyNote_SIZE);
-                hudContext.strokeRect(stickyNote.displayPos.x - OFFSET, stickyNote.displayPos.y - OFFSET, stickyNote_SIZE, stickyNote_SIZE);
+                hudContext.fillRect(stickyNote.displayPos.x - OFFSET, stickyNote.displayPos.y - OFFSET, STICKYNOTE_SIZE, STICKYNOTE_SIZE);
+                hudContext.strokeRect(stickyNote.displayPos.x - OFFSET, stickyNote.displayPos.y - OFFSET, STICKYNOTE_SIZE, STICKYNOTE_SIZE);
             }
             else
             {

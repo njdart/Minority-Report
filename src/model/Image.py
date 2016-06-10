@@ -315,9 +315,10 @@ class Image(SqliteObject):
                         else:
                             cv2.imshow("debug", odes)
                             cv2.waitKey(0)
+                print(good)
                 if odes is not None:
                     if not len(good) == 0:
-                        if max(good) > 8: #len(odes)*0.1:
+                        if max(good) > 12: #len(odes)*0.1:
                             match_idx = numpy.argmax(good)
                             old_to_new_stickyNote = (old_stickyNote_info[old_index][0], new_stickyNote_info[match_idx][0])
                             old_to_new_stickyNotes.append(old_to_new_stickyNote)
@@ -326,20 +327,36 @@ class Image(SqliteObject):
                     else:
                             missing_stickyNotes.append(old_stickyNote)
             for missing_stickyNote in missing_stickyNotes:
-                stickyNote = stickyNote(physicalFor=None,
-                                canvas=next_canvas_id,
-                                topLeftX=missing_stickyNote.topLeftX,
-                                topLeftY=missing_stickyNote.topLeftY,
-                                topRightX=missing_stickyNote.topRightX,
-                                topRightY=missing_stickyNote.topRightY,
-                                bottomRightX=missing_stickyNote.bottomRightX,
-                                bottomRightY=missing_stickyNote.bottomRightY,
-                                bottomLeftX=missing_stickyNote.bottomLeftX,
-                                bottomLeftY=missing_stickyNote.bottomLeftY,
-                                displayPosX=missing_stickyNote.displayPosX,
-                                displayPosY=missing_stickyNote.displayPosY,
-                                colour=missing_stickyNote.colour,
-                                image=missing_stickyNote.image.get_id())
+                if missing_stickyNote.physicalFor == userId:
+                    stickyNote = StickyNote(physicalFor=None,
+                                    canvas=next_canvas_id,
+                                    topLeftX=missing_stickyNote.topLeftX,
+                                    topLeftY=missing_stickyNote.topLeftY,
+                                    topRightX=missing_stickyNote.topRightX,
+                                    topRightY=missing_stickyNote.topRightY,
+                                    bottomRightX=missing_stickyNote.bottomRightX,
+                                    bottomRightY=missing_stickyNote.bottomRightY,
+                                    bottomLeftX=missing_stickyNote.bottomLeftX,
+                                    bottomLeftY=missing_stickyNote.bottomLeftY,
+                                    displayPosX=missing_stickyNote.displayPosX,
+                                    displayPosY=missing_stickyNote.displayPosY,
+                                    colour=missing_stickyNote.colour,
+                                    image=missing_stickyNote.image.get_id())
+                else:
+                    stickyNote = StickyNote(physicalFor=missing_stickyNote.physicalFor,
+                                    canvas=next_canvas_id,
+                                    topLeftX=missing_stickyNote.topLeftX,
+                                    topLeftY=missing_stickyNote.topLeftY,
+                                    topRightX=missing_stickyNote.topRightX,
+                                    topRightY=missing_stickyNote.topRightY,
+                                    bottomRightX=missing_stickyNote.bottomRightX,
+                                    bottomRightY=missing_stickyNote.bottomRightY,
+                                    bottomLeftX=missing_stickyNote.bottomLeftX,
+                                    bottomLeftY=missing_stickyNote.bottomLeftY,
+                                    displayPosX=missing_stickyNote.displayPosX,
+                                    displayPosY=missing_stickyNote.displayPosY,
+                                    colour=missing_stickyNote.colour,
+                                    image=missing_stickyNote.image.get_id())
 
                 old_to_new_stickyNote = (missing_stickyNote.id, stickyNote.id)
                 old_to_new_stickyNotes.append(old_to_new_stickyNote)
@@ -358,7 +375,7 @@ class Image(SqliteObject):
             for index in reversed(rmv_from_old_to_new):
                 del old_to_new_stickyNotes[index]
             found_stickyNotes.remove(del_post[1])
-            stickyNote.get(id=del_post[0]).delete()
+            StickyNote.get(id=del_post[0]).delete()
         return (found_stickyNotes, old_to_new_stickyNotes)
 
     def find_connections(self, stickyNotes, old_to_new_stickyNotes, next_canvas_id, current_canvas, save=True):
@@ -375,23 +392,40 @@ class Image(SqliteObject):
             if cv2.arcLength(line_contour, True) > 100:
                 connectionList = []
 
-                for index in range(0, len(line_contour), 10):
+                for index in range(0, len(line_contour), 5):
                     contained = False
+                    #debugImage = cv2.circle(canvas_image.copy(), (line_contour[index][0][0],line_contour[index][0][1]),4,[0,0,255],thickness=5)
+                    #cv2.imshow("debug", cv2.resize(debugImage,None,fx=0.25, fy=0.25,))
+                    #cv2.waitKey(0)
                     for idx, istickyNote in enumerate(stickyNotes):
                         istickyNotepoints = istickyNote.get_corner_points()
                         rectanglearea = src.model.processing.get_area(istickyNotepoints)
-                        pointarea = src.model.processing.get_area((istickyNotepoints[0], istickyNotepoints[1], line_contour[index][0]))\
-                                    + src.model.processing.get_area((istickyNotepoints[1], istickyNotepoints[2], line_contour[index][0]))\
-                                    + src.model.processing.get_area((istickyNotepoints[2], istickyNotepoints[3], line_contour[index][0]))\
-                                    + src.model.processing.get_area((istickyNotepoints[3], istickyNotepoints[0], line_contour[index][0]))
-                        if pointarea < rectanglearea*1.1:
+                        pointarea = src.model.processing.get_area(((istickyNotepoints[0][0]+7, istickyNotepoints[0][1]+7),
+                                                                   (istickyNotepoints[1][0]-7, istickyNotepoints[1][1]+7),
+                                                                   line_contour[index][0]))\
+                                    + src.model.processing.get_area(((istickyNotepoints[1][0]-7, istickyNotepoints[1][1]+7),
+                                                                     (istickyNotepoints[2][0]-7, istickyNotepoints[2][1]-7),
+                                                                     line_contour[index][0]))\
+                                    + src.model.processing.get_area(((istickyNotepoints[2][0]-7, istickyNotepoints[2][1]-7),
+                                                                     (istickyNotepoints[3][0]+7, istickyNotepoints[3][1]-7),
+                                                                     line_contour[index][0]))\
+                                    + src.model.processing.get_area(((istickyNotepoints[3][0]+7, istickyNotepoints[3][1]-7),
+                                                                     (istickyNotepoints[0][0]+7, istickyNotepoints[0][1]+7),
+                                                                     line_contour[index][0]))
+                        if pointarea < rectanglearea*1.05:
                                 contained = True
-                        if pointarea < rectanglearea*1.25 and not contained:
+                        if pointarea < rectanglearea*1.1 and not contained:
                             if not connectionList:
                                 connectionList.append(istickyNote.get_id())
+                                #debugImage = cv2.circle(canvas_image.copy(), (line_contour[index][0][0],line_contour[index][0][1]),4,[0,255,0],thickness=5)
+                                #cv2.imshow("debug", cv2.resize(debugImage,None,fx=0.25, fy=0.25,))
+                                #cv2.waitKey(0)
 
                             elif istickyNote.get_id() is not connectionList[-1]:
                                 connectionList.append(istickyNote.get_id())
+                                #debugImage = cv2.circle(canvas_image.copy(), (line_contour[index][0][0],line_contour[index][0][1]),4,[0,255,0],thickness=5)
+                                #cv2.imshow("debug", cv2.resize(debugImage,None,fx=0.25, fy=0.25,))
+                                #cv2.waitKey(0)
 
                 if len(connectionList) > 1:
                     # print(connectionList)
