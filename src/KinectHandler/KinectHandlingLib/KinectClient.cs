@@ -44,43 +44,104 @@ namespace MinorityReport
             }
         }
 
-        private class HandTrackingSample
+        private class TrackedHandSample
         {
-            public float X;
-            public float Y;
             public DateTime Timestamp;
+            public Point Position;
+            public HandState State;
 
-            public HandTrackingSample(float x, float y)
+            public TrackedHandSample(double x, double y, HandState state)
             {
-                X = x; Y = y;
+                Position = new Point(x, y);
+                State = state;
                 Timestamp = DateTime.Now;
             }
         }
 
-        private class HandTrackingSamples
+        private class TrackedHand
         {
-            public HandTrackingSample[] samples;
-            public float StdDevX { get { return HandTrackingSamples.StdDev(samples.Select(x => x.X)); } }
-            public float StdDevY { get { return HandTrackingSamples.StdDev(samples.Select(x => x.Y)); } }
-            public int Count { get { return samples.Count(); } }
+            private IList<TrackedHandSample> samples;
+            private int sampleSize;
+            private DateTime lastHandStateChange = DateTime.Now;
+            private HandState prevHandState = HandState.Unknown;
 
-            public HandTrackingSamples(HandTrackingSample[] samples)
+            public bool MaxSamplesCollected
             {
-                this.samples = samples;
+                get
+                {
+                    return samples.Count == sampleSize;
+                }
             }
 
-            private static float StdDev(IEnumerable<float> items)
+            public Point MeanPosition
             {
-                float sum = items.Sum();
-                float mean = sum / items.Count();
-                float dev_sum = (float)items.Sum(x => Math.Pow(x - mean, 2));
-                float dev = dev_sum / items.Count();
-                float sd = (float)Math.Sqrt(dev);
-                return sd;
+                get
+                {
+                    return new Point(
+                        samples.Sum(s => s.Position.X) / samples.Count,
+                        samples.Sum(s => s.Position.Y) / samples.Count
+                    );
+                }
+            }
+
+            public double SecondsSinceHandStateChange
+            {
+                get
+                {
+                    return (DateTime.Now - lastHandStateChange).TotalSeconds;
+                }
+            }
+
+            public double SecondsSinceLastSample
+            {
+                get
+                {
+                    return (DateTime.Now - samples.Last().Timestamp).TotalSeconds;
+                }
+            }
+
+            public HandState LastHandState { get { return prevHandState; } }
+
+            public TrackedHand(int sampleSize = 6)
+            {
+                this.sampleSize = sampleSize;
+                samples = new List<TrackedHandSample>();
+            }
+
+            public void AddSample(double x, double y, HandState state)
+            {
+                if (MaxSamplesCollected)
+                {
+                    samples.RemoveAt(0);
+                }
+                samples.Add(new TrackedHandSample(x, y, state));
+
+                if (state != prevHandState)
+                {
+                    lastHandStateChange = DateTime.Now;
+                    prevHandState = state;
+                }
             }
         }
 
-        private class HandTrackingState
+        private class TrackedPerson
+        {
+            private int skeletonID;
+
+            public TrackedHand LeftHand;
+            public TrackedHand RightHand;
+
+            public int SkeletonID { get { return skeletonID; } }
+
+            public TrackedPerson(int id)
+            {
+                skeletonID = id;
+                LeftHand = new TrackedHand();
+                RightHand = new TrackedHand();
+            }
+        }
+
+        private class TrackedPersonJSON
         {
             public int skeletonID;
 
@@ -96,23 +157,19 @@ namespace MinorityReport
             public bool leftFistClosed = true;
             public bool rightFistClosed = true;
 
-            public HandTrackingState(int skeletonID)
+            public TrackedPersonJSON(int skeletonID)
             {
                 this.skeletonID = skeletonID;
             }
         }
 
-        private class HandTrackingData
+        private class TrackedPeopleJSON
         {
-            public HandTrackingState[] handStates;
+            public IList<TrackedPersonJSON> handStates;
 
-            public HandTrackingData()
+            public TrackedPeopleJSON()
             {
-                handStates = new HandTrackingState[6];
-                for (int i = 0; i < 6; ++i)
-                {
-                    handStates[i] = new HandTrackingState(i);
-                }
+                handStates = new List<TrackedPersonJSON>();
             }
         }
         #endregion
@@ -130,7 +187,6 @@ namespace MinorityReport
 
         private string instanceID;
 
-        private Draw.PointF[] canvasCoords;
         private Matrix<float> perspectiveMatrix = null;
         private double plane_A;
         private double plane_B;
@@ -148,12 +204,8 @@ namespace MinorityReport
         private volatile bool serverCommsHappening = false;
         private volatile bool shuttingDown = false;
         private volatile bool running = false;
-        private volatile bool prevHandsTracked;
 
-        private FileStream handTrackingDebug;
-
-        private IList<IList<HandTrackingSample>> leftHandSamples;
-        private IList<IList<HandTrackingSample>> rightHandSamples;
+        private TrackedPerson[] trackedPeople;
 
         private volatile Object listenerLock = new Object();
         #endregion
@@ -180,12 +232,10 @@ namespace MinorityReport
                 Console.Write("Kinect application is not calibrated.\n");
             }
 
-            this.leftHandSamples = new List<IList<HandTrackingSample>>();
-            this.rightHandSamples = new List<IList<HandTrackingSample>>();
+            this.trackedPeople = new TrackedPerson[6];
             for (int i = 0; i < 6; ++i)
             {
-                this.leftHandSamples.Add(new List<HandTrackingSample>());
-                this.rightHandSamples.Add(new List<HandTrackingSample>());
+                this.trackedPeople[i] = new TrackedPerson(i);
             }
 
             // If this timer elapses, an exception is thrown in Run().
@@ -421,7 +471,7 @@ namespace MinorityReport
                             V[2] = cameraPoints[idx].Z;
 
                             // Get the direct distance between the plane of the canvas and the point.
-                            float dist = this.ShortestDistanceToCanvasPlane(V);
+                            double dist = this.ShortestDistanceToCanvasPlane(V);
 
                             // s.Write("{0}\n", dist);
 
@@ -445,69 +495,75 @@ namespace MinorityReport
                         IList<Body> bodies = new Body[bodyFrame.BodyCount];
                         bodyFrame.GetAndRefreshBodyData(bodies);
 
-                        bool handsTracked = false;
-                        HandTrackingData handData = new HandTrackingData();
-
                         for (int i = 0; i < bodies.Count; ++i)
                         {
                             Body body = bodies[i];
                             Joint handL = body.Joints[JointType.HandLeft];
                             Joint handR = body.Joints[JointType.HandRight];
-                            HandTrackingSample sampleL = this.GetJointProjectedCanvasPosition(handL);
-                            HandTrackingSample sampleR = this.GetJointProjectedCanvasPosition(handR);
 
-                            // The left and right hands are tracked, but data is only sent to the server when at least
-                            // 6 samples have been taken (the rolling average of these samples is sent).
+                            double distThreshold = 1;
 
-                            int sampleSize = 6;
-
-                            if (sampleL != null)
+                            if (handL.TrackingState != TrackingState.NotTracked)
                             {
-                                this.leftHandSamples[i].Add(sampleL);
-                                if (this.leftHandSamples[i].Count > sampleSize)
+                                double dist = this.GetDistanceFromCanvasPlane(handL.Position);
+                                if (dist < distThreshold)
                                 {
-                                    this.leftHandSamples[i].RemoveAt(0);
-                                    handsTracked = true;
+                                    Point pL = this.GetProjectedCanvasCoords(handL.Position);
+                                    // Console.Write("Skeleton {0}, hand L, ({1},\t{2})\n", i, pL.X, pL.Y);
+                                    this.trackedPeople[i].LeftHand.AddSample(pL.X, pL.Y, body.HandLeftState);
                                 }
-
-                                handData.handStates[i].leftHandX = 1920 - (int)(this.leftHandSamples[i].Sum(x => x.X) / sampleSize);
-                                handData.handStates[i].leftHandY = (int)(this.leftHandSamples[i].Sum(x => x.Y) / sampleSize);
-                                handData.handStates[i].leftHandTracked = true;
-                                handData.handStates[i].leftFistClosed = (body.HandLeftState == HandState.Closed);
                             }
 
-                            if (sampleR != null)
+                            if (handR.TrackingState != TrackingState.NotTracked)
                             {
-                                this.rightHandSamples[i].Add(sampleR);
-                                if (this.rightHandSamples[i].Count > sampleSize)
+                                double dist = this.GetDistanceFromCanvasPlane(handR.Position);
+                                if (dist < distThreshold)
                                 {
-                                    this.rightHandSamples[i].RemoveAt(0);
-                                    handsTracked = true;
+                                    Point pR = this.GetProjectedCanvasCoords(handR.Position);
+                                    // Console.Write("Skeleton {0}, hand R, ({1},\t{2})\n", i, pR.X, pR.Y);
+                                    this.trackedPeople[i].RightHand.AddSample(pR.X, pR.Y, body.HandRightState);
                                 }
-
-                                handData.handStates[i].rightHandX = 1920 - (int)(this.rightHandSamples[i].Sum(x => x.X) / sampleSize);
-                                handData.handStates[i].rightHandY = (int)(this.rightHandSamples[i].Sum(x => x.Y) / sampleSize);
-                                handData.handStates[i].rightHandTracked = true;
-                                handData.handStates[i].rightFistClosed = (body.HandRightState == HandState.Closed);
                             }
                         }
 
-                        if (handsTracked)
+                        TrackedPeopleJSON trackedPeopleJson = new TrackedPeopleJSON();
+                        bool peopleTransmitted = false;
+                        foreach (TrackedPerson person in this.trackedPeople)
                         {
-                            this.SendHandData(handData);
+                            TrackedPersonJSON personJson = new TrackedPersonJSON(person.SkeletonID);
+                            bool transmitPerson = false;
+                            double timeThreshold = 0.5; // seconds
+
+                            if (person.LeftHand.MaxSamplesCollected &&
+                                person.LeftHand.SecondsSinceLastSample < timeThreshold)
+                            {
+                                personJson.leftHandX = (int)person.LeftHand.MeanPosition.X;
+                                personJson.leftHandY = (int)person.LeftHand.MeanPosition.Y;
+                                personJson.leftHandTracked = true;
+                                personJson.leftFistClosed = person.LeftHand.LastHandState == HandState.Closed;
+                                transmitPerson = true;
+                            }
+
+                            if (person.LeftHand.MaxSamplesCollected &&
+                                person.LeftHand.SecondsSinceLastSample < timeThreshold)
+                            {
+                                personJson.rightHandX = (int)person.RightHand.MeanPosition.X;
+                                personJson.rightHandY = (int)person.RightHand.MeanPosition.Y;
+                                personJson.rightHandTracked = true;
+                                personJson.rightFistClosed = person.RightHand.LastHandState == HandState.Closed;
+                                transmitPerson = true;
+                            }
+
+                            if (transmitPerson)
+                            {
+                                trackedPeopleJson.handStates.Add(personJson);
+                                peopleTransmitted = true;
+                            }
                         }
 
-                        if (handsTracked != this.prevHandsTracked)
+                        if (peopleTransmitted)
                         {
-                            if (handsTracked)
-                            {
-                                Console.Write("Tracking hand(s)\n");
-                            }
-                            else
-                            {
-                                Console.Write("Stopped tracking hand(s)\n");
-                            }
-                            this.prevHandsTracked = handsTracked;
+                            this.SendSerializedObject(trackedPeopleJson, "magicalHandCircles");
                         }
                     }
                 }
@@ -587,44 +643,42 @@ namespace MinorityReport
         #endregion
 
         #region Private methods
-        private HandTrackingSample GetJointProjectedCanvasPosition(Joint joint)
+        private double GetDistanceFromCanvasPlane(CameraSpacePoint p)
         {
-            if (joint.TrackingState != TrackingState.NotTracked)
-            {
-                CameraSpacePoint pos = joint.Position;
-                Vector<float> V = CreateVector.Dense<float>(3);
-                V[0] = pos.X;
-                V[1] = pos.Y;
-                V[2] = pos.Z;
-                float dist = this.ShortestDistanceToCanvasPlane(V);
-                if (dist < 1)
-                {
-                    // Console.Write("Body {0}'s HandTipRight is {1} centimetres from the whiteboard.\n", i, dist * 100);
-                    // Find the point on the canvas plane nearest to the hand position
-                    double k = -(this.plane_A * pos.X +
-                                 this.plane_B * pos.Y +
-                                 this.plane_C * pos.Z +
-                                 this.plane_D) /
-                                (Math.Pow(this.plane_A, 2) +
-                                 Math.Pow(this.plane_B, 2) +
-                                 Math.Pow(this.plane_C, 2));
-                    V = V + this.GetCanvasPlaneNormal() * (float)k;
+            Vector<float> V = CreateVector.Dense<float>(3);
+            V[0] = p.X;
+            V[1] = p.Y;
+            V[2] = p.Z;
+            return this.ShortestDistanceToCanvasPlane(V);
+        }
 
-                    CameraSpacePoint p;
-                    p.X = V[0];
-                    p.Y = V[1];
-                    p.Z = V[2];
-                    ColorSpacePoint c = this.sensor.CoordinateMapper.MapCameraPointToColorSpace(p);
-                    Vector<float> v = CreateVector.Dense<float>(3);
-                    v[0] = c.X;
-                    v[1] = c.Y;
-                    v[2] = 1;
-                    v = this.TransformToCanvasSpace(v);
+        private Point GetProjectedCanvasCoords(CameraSpacePoint pos)
+        {
+            Vector<float> V = CreateVector.Dense<float>(3);
+            V[0] = pos.X;
+            V[1] = pos.Y;
+            V[2] = pos.Z;
+            double k = -(this.plane_A * pos.X +
+                         this.plane_B * pos.Y +
+                         this.plane_C * pos.Z +
+                         this.plane_D) /
+                        (Math.Pow(this.plane_A, 2) +
+                         Math.Pow(this.plane_B, 2) +
+                         Math.Pow(this.plane_C, 2));
+            V = V + this.GetCanvasPlaneNormal() * (float)k;
 
-                    return new HandTrackingSample(v[0], v[1]);
-                }
-            }
-            return null;
+            CameraSpacePoint p;
+            p.X = V[0];
+            p.Y = V[1];
+            p.Z = V[2];
+            ColorSpacePoint c = this.sensor.CoordinateMapper.MapCameraPointToColorSpace(p);
+            V[0] = c.X;
+            V[1] = c.Y;
+            V[2] = 1;
+            V = this.TransformToCanvasSpace(V);
+
+            // We need to left-right mirror
+            return new Point(1920 - V[0], V[1]);
         }
 
         private void HTTPListenerCallback(IAsyncResult result)
@@ -734,17 +788,17 @@ namespace MinorityReport
                             }
 
                             // Store the sent coordinates
-                            this.canvasCoords = new Draw.PointF[4];
+                            Draw.PointF[] canvasCoords = new Draw.PointF[4];
                             Console.Write("Coordinates got:\n");
                             for (int i = 0; i < postData.points.Count; ++i)
                             {
                                 IList<float> p = postData.points[i];
-                                this.canvasCoords[i] = new Draw.PointF(p[0], p[1]);
-                                Console.Write("[{0}, {1}]\n", this.canvasCoords[i].X, this.canvasCoords[i].Y);
+                                canvasCoords[i] = new Draw.PointF(p[0], p[1]);
+                                Console.Write("[{0}, {1}]\n", canvasCoords[i].X, canvasCoords[i].Y);
                             }
 
                             // Calculate perspective matrix, which maps between color space and canvas space.
-                            this.canvasCoords = ImageProcessing.OrderPoints(this.canvasCoords);
+                            canvasCoords = ImageProcessing.OrderPoints(canvasCoords);
                             Draw.PointF[] outputBounds = new Draw.PointF[4] {
                                     new Draw.PointF(0, 0),
                                     new Draw.PointF(0, 1079),
@@ -754,7 +808,7 @@ namespace MinorityReport
                             outputBounds = ImageProcessing.OrderPoints(outputBounds);
 
                             this.perspectiveMatrix = ImageProcessing.GetPerspectiveTransform(
-                                this.canvasCoords,
+                                canvasCoords,
                                 outputBounds);
 
                             this.ListCanvasPixels();
@@ -770,8 +824,8 @@ namespace MinorityReport
                             Vector<float>[] canvasPoints3D = new Vector<float>[3];
                             for (int i = 0; i < 3; ++i)
                             {
-                                int x = (int)Math.Floor(this.canvasCoords[i].X);
-                                int y = (int)Math.Floor(this.canvasCoords[i].Y);
+                                int x = (int)Math.Floor(canvasCoords[i].X);
+                                int y = (int)Math.Floor(canvasCoords[i].Y);
                                 Console.Write("({0}, {1}, {2})\n",
                                               cameraPoints[x + y * 1920].X,
                                               cameraPoints[x + y * 1920].Y,
@@ -838,9 +892,8 @@ namespace MinorityReport
             }
         }
 
-        private void SendHandData(HandTrackingData data)
+        private void SendSerializedObject<T>(T obj, string url)
         {
-            Console.Write("Sending hand data. {0}\n", DateTime.Now.ToString("o"));
             try
             {
                 Task.Run(async () =>
@@ -848,10 +901,9 @@ namespace MinorityReport
                     try
                     {
                         HttpClient client = new HttpClient();
-                        string uri = String.Format("http://{0}:{1}/magicalHandCircles", this.Server, this.Port);
+                        string uri = String.Format("http://{0}:{1}/{2}", this.Server, this.Port, url);
 
-                        string payload = JsonConvert.SerializeObject(data, Formatting.Indented);
-                        // Console.Write("\n{0}\n", payload);
+                        string payload = JsonConvert.SerializeObject(obj, Formatting.Indented);
                         StringContent content = new StringContent(payload);
                         if (content.Headers.Contains("Content-Type")) content.Headers.Remove("Content-Type");
                         content.Headers.Add("Content-Type", "application/json");
@@ -859,18 +911,18 @@ namespace MinorityReport
                         HttpResponseMessage response = await client.PostAsync(uri, content);
                         if (response.StatusCode != HttpStatusCode.OK)
                         {
-                            Console.Write("magical hand circles response status: {0}\n", response.StatusCode);
+                            Console.Write("{1} response status: {0}\n", response.StatusCode, url);
                         }
                     }
                     catch
                     {
-                        Console.Write("sending magical hand circles failed (RIP) (error within task)\n");
+                        Console.Write("sending to {0} failed (RIP) (error within task)\n", url);
                     }
                 });
             }
             catch
             {
-                Console.Write("sending magical hand circles failed (RIP)\n");
+                Console.Write("sending to {0} failed (RIP)\n", url);
             }
         }
 
@@ -883,14 +935,14 @@ namespace MinorityReport
             return n;
         }
 
-        private float ShortestDistanceToCanvasPlane(Vector<float> vec)
+        private double ShortestDistanceToCanvasPlane(Vector<float> vec)
         {
-            float dist = (float)Math.Abs(
+            double dist = Math.Abs(
                 this.plane_A * vec[0] +
                 this.plane_B * vec[1] +
                 this.plane_C * vec[2] +
                 this.plane_D);
-            dist /= (float)Math.Sqrt(
+            dist /= Math.Sqrt(
                 Math.Pow(this.plane_A, 2) +
                 Math.Pow(this.plane_B, 2) +
                 Math.Pow(this.plane_C, 2));
