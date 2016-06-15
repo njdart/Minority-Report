@@ -59,25 +59,25 @@ We decided to store the whole raw image as a base64 encoded string. Whist this i
         "height": 3120,
             
 
-        // A list of postits in the canvas
-        "postits": [
+        // A list of stickyNotes in the canvas
+        "stickyNotes": [
             {
                 // a colour (could be user defined, friendly colour name or hex)
                 "colour": "red",
     
-                // A UUID for a postit
+                // A UUID for a stickyNote
                 "uuid": "787e2dab-8490-47db-af36-5ce800d902fe",
     
-                // Coordinates the postit was found on the canvas
-                // Top left of postit bounding box relative to top left of the canvas (not image!)
+                // Coordinates the stickyNote was found on the canvas
+                // Top left of stickyNote bounding box relative to top left of the canvas (not image!)
                 "x": 0,
                 "y": 0,
     
-                // The size of the postit bounding box
+                // The size of the stickyNote bounding box
                 "height": 10,
                 "width": 10,
     
-                // If the posit was a physical (Not projected) postit or not, if the postit was
+                // If the stickyNote was a physical (Not projected) stickyNote or not, if the stickyNote was
                 // removed, but not binned then this should be true.
                 "isPhysical": true
             },
@@ -94,10 +94,10 @@ We decided to store the whole raw image as a base64 encoded string. Whist this i
                 "x2": 100,
                 "y2": 100,
     
-                // UUID of the "start" postit
+                // UUID of the "start" stickyNote
                 "from": "787e2dab-8490-47db-af36-5ce800d902fe",
     
-                // UUID of the "end" postit
+                // UUID of the "end" stickyNote
                 "to": "ca389acc-f180-4007-b46d-420f1eeace25",
     
                 // the type of line IE line, arrow, dashed, cardinality

@@ -1,53 +1,90 @@
+CREATE TABLE IF NOT EXISTS session (
+  id                        TEXT PRIMARY KEY,
+  name                      TEXT NOT NULL,
+  description               TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS instanceConfiguration (
+  id                        TEXT PRIMARY KEY,
+  sessionId                 TEXT NOT NULL,
+  userId                    TEXT NOT NULL,
+  topLeftX                  NUMERIC,
+  topLeftY                  NUMERIC,
+  topRightX                 NUMERIC,
+  topRightY                 NUMERIC,
+  bottomRightX              NUMERIC,
+  bottomRightY              NUMERIC,
+  bottomLeftX               NUMERIC,
+  bottomLeftY               NUMERIC,
+  kinectTopLeftX            NUMERIC,
+  kinectTopLeftY            NUMERIC,
+  kinectTopRightX           NUMERIC,
+  kinectTopRightY           NUMERIC,
+  kinectBottomRightX        NUMERIC,
+  kinectBottomRightY        NUMERIC,
+  kinectBottomLeftX         NUMERIC,
+  kinectBottomLeftY         NUMERIC,
+  cameraHost                TEXT NOT NULL,
+  kinectHost                TEXT NOT NULL,
+  cameraPort                INTEGER NOT NULL,
+  kinectPort                INTEGER NOT NULL,
+
+  FOREIGN KEY(sessionId) REFERENCES session(id),
+  FOREIGN KEY(userId) REFERENCES users(id)
+);
+
 CREATE TABLE IF NOT EXISTS users (
-  id       INTEGER PRIMARY KEY autoincrement,
-  username TEXT NOT NULL UNIQUE
+  id                        TEXT PRIMARY KEY,
+  name                      TEXT NOT NULL
 );
 
 CREATE TABLE IF NOT EXISTS images (
-  id                STRING PRIMARY KEY,
-  user              INTEGER NOT NULL,
-  timestamp         STRING NOT NULL,
+  id                        TEXT PRIMARY KEY,
+  timestamp                 TEXT NOT NULL,
+  instanceConfigurationId   TEXT NOT NULL,
 
-  FOREIGN KEY(user) REFERENCES users(id)
+  FOREIGN KEY(instanceConfigurationId) REFERENCES instanceConfiguration(id)
 );
 
 CREATE TABLE IF NOT EXISTS canvases (
-  id                 STRING PRIMARY KEY,
-  image              STRING,
-  derivedFrom        STRING,
-  derivedAt          STRING,
-  canvasTopLeftX     INTEGER,
-  canvasTopLeftY     INTEGER,
-  canvasBottomLeftX  INTEGER,
-  canvasBottomLeftY  INTEGER,
-  canvasTopRightX    INTEGER,
-  canvasTopRightY    INTEGER,
-  canvasBottomRightX INTEGER,
-  canvasBottomRightY INTEGER,
+  id                        TEXT PRIMARY KEY,
+  session                   TEXT NOT NULL,
+  derivedFrom               TEXT,
+  derivedAt                 TEXT NOT NULL,
+  height                    INTEGER NOT NULL,
+  width                     INTEGER NOT NULL,
 
-  FOREIGN KEY(image) REFERENCES images(id)
+  FOREIGN KEY(session) REFERENCES session(id)
 );
 
 CREATE TABLE IF NOT EXISTS connections (
-  id                 STRING PRIMARY KEY,
-  start              STRING NOT NULL,
-  finish             STRING NOT NULL,
-  canvas             string NOT NULL,
-  type               STRING,
+  id                        TEXT PRIMARY KEY,
+  start                     TEXT NOT NULL,
+  finish                    TEXT NOT NULL,
+  canvas                    TEXT NOT NULL,
+  type                      TEXT,
 
-  FOREIGN KEY(start) REFERENCES postits(id),
-  FOREIGN Key(finish) REFERENCES postits(id),
+  FOREIGN KEY(start) REFERENCES stickyNotes(id),
+  FOREIGN Key(finish) REFERENCES stickyNotes(id),
   Foreign Key(canvas) REFERENCES canvases(id)
 );
 
-CREATE TABLE IF NOT EXISTS postits (
-  id     STRING PRIMARY KEY,
-  canvas STRING,
-  height INTEGER NOT NULL,
-  width  INTEGER NOT NULL,
-  realX  INTEGER NOT NULL,
-  realY  INTEGER NOT NULL,
-  colour STRING NOT NULL,
+CREATE TABLE IF NOT EXISTS stickyNotes (
+  id                        TEXT PRIMARY KEY,
+  canvas                    TEXT NOT NULL,
+  physicalFor               TEXT,
+  topLeftX                  INTEGER NOT NULL,
+  topLeftY                  INTEGER NOT NULL,
+  topRightX                 INTEGER NOT NULL,
+  topRightY                 INTEGER NOT NULL,
+  bottomRightX              INTEGER NOT NULL,
+  bottomRightY              INTEGER NOT NULL,
+  bottomLeftX               INTEGER NOT NULL,
+  bottomLeftY               INTEGER NOT NULL,
+  displayPosX               INTEGER NOT NULL,
+  displayPosY               INTEGER NOT NULL,
+  colour                    TEXT NOT NULL,
+  image                     TEXT NOT NULL,
 
-    FOREIGN KEY(canvas) REFERENCES canvases(id)
+  FOREIGN KEY(canvas) REFERENCES canvases(id)
 );

@@ -5,15 +5,20 @@
 
         <link rel="stylesheet" type="text/css" href="static/styles/hud.css" />
 
-        <script src="https://code.jquery.com/jquery-2.2.2.min.js"></script>
-        <script src="https://cdn.socket.io/socket.io-1.4.5.js"></script>
+        <script src="/static/vendor/js/jquery-2.2.2.js"></script>
+        <script src="/static/vendor/js/socket.io-1.4.5.js"></script>
 
-        <script type="text/javascript" src="static/js/hud.js"></script>
+        <script type="text/javascript" src="../static/js/hud.js"></script>
 
     </head>
 
     <body>
-        <canvas id="hudCanvas">
+        <div class="localStorageUnset">
+            <h1 class="localStorageUnset-message">No Session Found in Local Storage</h1>
+        </div>
+        <img src="/static/assets/hourglass.gif" class="loader" style="display: none; position: fixed; top: 42%; left: 47%; z-index: 100; width: 128px;" />
+        <img id="body-detect-indicator" style="display: none; position: fixed; z-index:20; right:0; height:25px; width:25px; background-color: red;" />
+        <canvas id="hudCanvas" class="hudCanvas blackCanvas">
             
         </canvas>
     </body>

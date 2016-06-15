@@ -29,10 +29,13 @@ See issues
  
 ### Definitions
 
-- A ```Frame``` is an image, with an associated canvas, containing postits and lines.
-- A ```Canvas``` is a keystone corrected frame cropped to the projectable area. A canvas may "inherit" from a previous canvas such that a change tree can be built up and branched from.
-- A ```postit``` is either physical, projected or user-defined. A cropped section of a canvas. Containing colour, dimensions, size and location in the canvas.
-- A ```connection``` is between two postits, containing line information such as type.
+- A ```Session``` is a story or unique instance under which white boards, images and stickyNotes belong, a session has a name and a description
+- A ```User``` is a person/location which can manipulate a session
+- An ```Instance Configuration``` is a collection of setup-specific information, such as camera and kinect host/ports, and a definition of where within a series of images the projectable area lies
+- A ```Canvas``` is a point in history along a ```Sessions``` story which relates to a session
+- A ```StickyNote``` is either a physical, projected or user-defined location within a image, after it has undergone an instance configuration transformation and crop
+- An ```Image``` is an image taken by a camera which will have applied to it an instance configuration transformation 
+- A ```Connection``` is between two stickyNotes, containing line information such as type.
  
 ## Structure
 
