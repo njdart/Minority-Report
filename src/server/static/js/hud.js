@@ -57,6 +57,7 @@ var stickyNoteSize = 115;
 var stickyNoteOffset = stickyNoteSize/2;
 
 var virtualStickyNoteImages = {};
+var stickyNotesSelected = {};
 
 $(function() {
     //var hudCanvas = $('.hudCanvas');
@@ -98,11 +99,11 @@ $(function() {
 
             socket.on('draw_circle', drawCircles);
 
-            socket.on('note_selected', noteSelected)
+            socket.on('note_selected', noteSelected);
 
-            socket.on('note_deselected',noteDeselected)
+            socket.on('note_deselected',noteDeselected);
 
-            socket.on('move_sticky_note',noteMoved)
+            socket.on('move_sticky_note',noteMoved);
 
             socket.on("physical_canvas_dimensions", physicalCanvasDimensions);
 
@@ -143,6 +144,7 @@ $(function() {
                                }
                                i.src = "/api/stickyNote/" + stickyNote.id;
                                virtualStickyNoteImages[stickyNote.id] = i;
+                               stickyNotesSelected[stickyNote.id] = false;
                            }
                         });
 
@@ -250,14 +252,33 @@ function drawCircles(handStates) {
 }
 
 function noteSelected(noteID) {
-        console.log("Note selected with ID: " +noteID)
-    }
+    console.log("Note selected with ID: " + noteID);
+    stickyNotesSelected[noteID] = true;
+    clearCanvas();
+    redrawCanvas();
+}
+
 function noteDeselected(noteID) {
-        console.log("Note deselected with ID: " +noteID)
-    }
+    console.log("Note deselected with ID: " + noteID);
+    stickyNotesSelected[noteID] = false;
+    clearCanvas();
+    redrawCanvas();
+}
+
 function noteMoved(noteMoveData) {
-        console.log("Note moved with ID: ")
+    for (var i = 0, len = latestCanvas.stickyNotes.length; i < len; i++)
+    {
+        if (latestCanvas.stickyNotes[i].id == noteMoveData.noteID)
+        {
+            latestCanvas.stickyNotes[i].displayPos.x = noteMoveData.handXPos;
+            latestCanvas.stickyNotes[i].displayPos.y = noteMoveData.handYPos;
+            console.log("Note moved with ID: " + noteMoveData.noteID);
+            break;
+        }
     }
+    clearCanvas();
+    redrawCanvas();
+}
 
 function checkCanvasSize() {
     if($(window).height() != 1080)
@@ -367,7 +388,7 @@ function redrawCanvas() {
             }
             else
             {
-                //virtual for all users
+                //virtual for this user
                 /*stickyNoteImage = new Image();
                 stickyNoteImage.src = "";
                 stickyNoteImage.onload = function(evt){
@@ -394,7 +415,16 @@ function redrawCanvas() {
                 if (stickyNote.physicalFor == null || stickyNote.physicalFor == "None")
                 {
                     //virtual for noone
-                    hudContext.strokeStyle = "#00FF00";
+                    if (stickyNotesSelected[stickyNote.id] == true)
+                    {
+                        //sticky note is selected
+                        hudContext.strokeStyle = "#0000FF";
+                    }
+                    else
+                    {
+                        //sticky note is unselected
+                        hudContext.strokeStyle = "#00FF00";
+                    }
                 }
                 else
                 {
