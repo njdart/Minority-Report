@@ -115,6 +115,8 @@ $(function() {
 
             socket.on('move_sticky_note',noteMoved);
 
+            socket.on('draw_canvas', drawCanvasHandler);
+
             socket.on("physical_canvas_dimensions", physicalCanvasDimensions);
 
             socket.on('connect', function() {
@@ -213,10 +215,16 @@ $(function() {
     }
 });
 
+function drawCanvasHandler() {
+    clearCanvas();
+    redrawCanvas();
+}
+
 function physicalCanvasDimensions(json) {
+    console.log(json);
     if (json.configID == localStorage["instanceConfigurationId"])
     {
-        stickyNoteSize = int((STICKY_NOTE_SIZE_M / json.canvasWidth) * 1920.0);
+        stickyNoteSize = Math.floor((STICKY_NOTE_SIZE_M / json.canvasWidth) * 1920.0);
         stickyNoteOffset = stickyNoteSize / 2;
         console.log("received canvas physical size: (" + json.canvasWidth + ", " + json.canvasHeight + ")");
         console.log("set sticky-note pixel width to: " + stickyNoteSize);
@@ -233,7 +241,7 @@ function drawCircles(handStates) {
             {
                 debugLog("received hand state, ID " + state.skeletonID + ": left(" + state.leftHandX + ", " + state.leftHandY + ")");
                 hudContext.beginPath();
-                hudContext.arc(state.leftHandX, state.leftHandY, stickyNoteSize - 15, 0, 2 * Math.PI, false);
+                hudContext.arc(state.leftHandX, state.leftHandY, 100, 0, 2 * Math.PI, false);
                 hudContext.fillStyle = state.leftFistClosed ? handColors[state.skeletonID].leftFistClosed : handColors[state.skeletonID].leftFistOpen;
                 hudContext.fill();
                 hudContext.lineWidth = 5;
@@ -245,7 +253,7 @@ function drawCircles(handStates) {
             {
                 debugLog("received hand state, ID " + state.skeletonID + ": right(" + state.rightHandX + ", " + state.rightHandY + ")");
                 hudContext.beginPath();
-                hudContext.arc(state.rightHandX, state.rightHandY, stickyNoteSize - 15, 0, 2 * Math.PI, false);
+                hudContext.arc(state.rightHandX, state.rightHandY, 100, 0, 2 * Math.PI, false);
                 hudContext.fillStyle = state.rightFistClosed ? handColors[state.skeletonID].rightFistClosed : handColors[state.skeletonID].rightFistOpen;
                 hudContext.fill();
                 hudContext.lineWidth = 5;

@@ -46,9 +46,16 @@ class StickyNoteSelector():
                     newStickyNoteSelections.append(newStickyNoteSelection)
                     socketio.emit('move_sticky_note', newStickyNoteSelection)
                 else:
-                    StickyNote.get(selectedNote["noteID"]).set_display_pos(selectedNote["handXPos"],
-                                                                           selectedNote["handYPos"])
-                    socketio.emit('note_deselected', {"id":str(selectedNote["noteID"])})
+                    # Released sticky note - update position in database and self.stickyNotes
+                    note = StickyNote.get(selectedNote["noteID"]).set_display_pos(selectedNote["handXPos"],
+                                                                                  selectedNote["handYPos"]).update()
+                    for i, n in enumerate(self.stickyNotes):
+                        if str(n.id) == str(note.id):
+                            print("sticky note {} deselected; old pos: {}, {}".format(n.id, self.stickyNotes[i].displayPosX, self.stickyNotes[i].displayPosY))
+                            self.stickyNotes[i] = note
+                            print("new pos: {}, {}".format(self.stickyNotes[i].displayPosX, self.stickyNotes[i].displayPosY))
+                            break
+                    socketio.emit('note_deselected', str(selectedNote["noteID"]))
             elif closedHand:
                 if newHand["closed"]:
                     overNote = self.handOverNote(newHand["posX"], newHand["posY"])
@@ -61,7 +68,7 @@ class StickyNoteSelector():
                                                           "noteID":overNote.id}
                                 newStickyNoteSelections.append(newStickyNoteSelection)
                                 print('sending selection message')
-                                socketio.emit('note_selected', {"id":str(overNote.id)})
+                                socketio.emit('note_selected', str(overNote.id))
                             else:
                                 # Keep old closed hand
                                 newClosedHand = {"handID":closedHand["handID"],

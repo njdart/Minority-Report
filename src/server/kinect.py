@@ -20,6 +20,7 @@ def getInstanceConfigByKinectHost(host):
 
 @app.route("/canvasDimensions", methods=["POST"])
 def canvasDimensions():
+    print("Received physical canvas dimensions from Kinect")
     config = getInstanceConfigByKinectHost(request.remote_addr)
     data = request.get_json()
     if data:

@@ -1,7 +1,7 @@
 $(function() {
     var table = $('.instanceConfigsTable');
     var instanceConfigurationsLists = $('.instanceConfigsList');
-    var calibrationOverlay = $('.calibrationOverlay')
+    var calibrationOverlay = $('.calibrationOverlay');
     // var coordUnpackRegexp = /^\(?\s*([0-9]{1,5})[,.:\- ]+([0-9]{1,5})\s*\)?$/g;
     var coordUnpackRegexp = /^\s*\(?\s*([0-9e.\-+]+)\s*,\s*([0-9e.\-+]+)\s*\)?/;
     //coordUnpackRegexp.compile();
@@ -311,7 +311,7 @@ $(function() {
     });
 
     socket.on('calibrate_instance_configuration', function(instanceConfiguration) {
-        calibrationOverlay.css('visibility', 'hidden')
+        calibrationOverlay.css('visibility', 'hidden');
         updateInstanceConfigRow(instanceConfiguration);
     });
 

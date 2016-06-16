@@ -165,6 +165,7 @@ class StickyNote(SqliteObject):
     def set_display_pos(self, newXpos, newYpos):
         self.displayPosX = newXpos
         self.displayPosY = newYpos
+        return self
 
     def get_stickyNote_image(self):
         from src.model.Image import Image

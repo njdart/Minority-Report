@@ -3,6 +3,7 @@ from src.model import (ToggleKinectEnable, GetKinectEnable)
 from src.model.InstanceConfiguration import InstanceConfiguration
 from src.server import socketio
 from time import sleep
+import threading
 
 
 @socketio.on('create_instance_configuration')
@@ -152,15 +153,14 @@ def update_instanceConfig_coords(id, data):
     config.kinectBottomLeftY = data["kinectBottomLeft"]["y"]
     config.update()
 
-def asyncCalibrate(instanceConfigId):
-    import threading
-    def func(id):
-        print("Waiting for cameras to adjust...")
-        sleep(0.5)
-        ic = InstanceConfiguration.get(id=id).calibrate().update()
-        print('Calibrated')
-        socketio.emit('blank_canvas_black', id, broadcast=True)
-    threading.Thread(target=func, args=(instanceConfigId,)).start()
+def calibrate(id):
+    print("Waiting for cameras to adjust...")
+    sleep(0.5)
+    ic = InstanceConfiguration.get(id=id).calibrate().update()
+    socketio.emit('blank_canvas_black', id, broadcast=True)
+    socketio.emit('calibrate_instance_configuration', ic.as_object(), broadcast=True)
+    socketio.emit('draw_canvas', broadcast=True)
+    print('Calibrated')
 
 @socketio.on('calibrate_instance_configuration')
 def calibrate_instance_configuration(instanceConfigId):
@@ -169,10 +169,7 @@ def calibrate_instance_configuration(instanceConfigId):
     """
     print('Calibrating instance configuration {}'.format(instanceConfigId))
     emit('blank_canvas_white', instanceConfigId, broadcast=True)
-    asyncCalibrate(instanceConfigId)
-    # print('Calibrated')
-    # emit('calibrate_instance_configuration', ic.as_object())
-    # emit('blank_canvas_black', instanceConfigId, broadcast=True)
+    threading.Thread(target=calibrate, args=(instanceConfigId,)).start()
 
 @socketio.on('purge_instance_configurations')
 def purge_instance_configurations():
