@@ -23,13 +23,14 @@ class StickyNoteSelector():
     def handOverNote(self, handPosX, handPosY):
         for note in self.stickyNotes:
             distance = math.sqrt(((note.displayPosX-handPosX) ** 2) + ((note.displayPosY-handPosY) ** 2))
-            if distance < self.hoverThresh and note.physicalFor == "None":
-                return note
+            if distance < self.hoverThresh:
+                if note.physicalFor == "None" or note.physicalFor == None:
+                    return note
         return None
 
     def update(self, new_hands):
         from src.model.StickyNote import StickyNote
-        from flask.ext.socketio import emit
+        from src.server import (app, socketio)
         newStickyNoteSelections = []
         newClosedHands = []
         for newHand in new_hands:
@@ -43,11 +44,11 @@ class StickyNoteSelector():
                                               "handYPos":newHand["posY"],
                                               "noteID":selectedNote["noteID"]}
                     newStickyNoteSelections.append(newStickyNoteSelection)
-                    emit('move_sticky_note', newStickyNoteSelection)
+                    socketio.emit('move_sticky_note', newStickyNoteSelection)
                 else:
                     StickyNote.get(selectedNote["noteID"]).set_display_pos(selectedNote["handXPos"],
                                                                            selectedNote["handYPos"])
-                    emit('note_deselected', selectedNote["noteID"])
+                    socketio.emit('note_deselected', selectedNote["noteID"])
             elif closedHand:
                 if newHand["closed"]:
                     overNote = self.handOverNote(newHand["posX"], newHand["posY"])
@@ -59,7 +60,7 @@ class StickyNoteSelector():
                                                           "handYPos":newHand["posY"],
                                                           "noteID":overNote.id}
                                 newStickyNoteSelections.append(newStickyNoteSelection)
-                                emit('note_selected', selectedNote["noteID"])
+                                socketio.emit('note_selected', selectedNote["noteID"])
                             else:
                                 # Keep old closed hand
                                 newClosedHand = {"handID":closedHand["handID"],

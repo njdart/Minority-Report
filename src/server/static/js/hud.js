@@ -80,23 +80,29 @@ $(function() {
                checkCanvasSize();
             });
 
-            socket.on("body_detected", function(configId){
+            socket.on('body_detected', function(configId){
                 if(configId == localStorage["instanceConfigurationId"])
                 {
                     $("#body-detect-indicator").show();
                 }
             });
 
-            socket.on("body_not_detected", function(configId){
+            socket.on('body_not_detected', function(configId){
                 if(configId == localStorage["instanceConfigurationId"])
                 {
                     $("#body-detect-indicator").hide();
                 }
             });
 
-            socket.on("show_loading", showLoading);
+            socket.on('show_loading', showLoading);
 
-            socket.on("draw_circle", drawCircles);
+            socket.on('draw_circle', drawCircles);
+
+            socket.on('note_selected', noteSelected)
+
+            socket.on('note_deselected',noteDeselected)
+
+            socket.on('move_sticky_note',noteMoved)
 
             socket.on("physical_canvas_dimensions", physicalCanvasDimensions);
 
@@ -242,6 +248,16 @@ function drawCircles(handStates) {
         console.log("received hand states, but ignoring");
     }
 }
+
+function noteSelected(noteID) {
+        console.log("Note selected with ID: " +noteID)
+    }
+function noteDeselected(noteID) {
+        console.log("Note deselected with ID: " +noteID)
+    }
+function noteMoved(noteMoveData) {
+        console.log("Note moved with ID: ")
+    }
 
 function checkCanvasSize() {
     if($(window).height() != 1080)
