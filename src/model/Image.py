@@ -2,16 +2,10 @@ import os
 import uuid
 import cv2
 import numpy
-<<<<<<< HEAD
-from src.model.SqliteObject import SqliteObject
-from src.model.User import User
-
-=======
 import requests
 import src.model.processing
 import datetime
 from src.model.SqliteObject import SqliteObject
->>>>>>> master
 
 class Image(SqliteObject):
 

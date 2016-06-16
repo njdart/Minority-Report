@@ -1,15 +1,3 @@
-<<<<<<< HEAD
-class SqliteObject(object):
-    def __init__(self, properties, table, id=None, databaseHandler=None):
-        self.properties = properties
-        self.table = table
-        self.databaseHandler = databaseHandler
-        self.id = id
-
-    @staticmethod
-    def from_database_tuple(tuple, databaseHandler):
-        raise NotImplementedError('Abstract SQL Object cannot be made from a tuple')
-=======
 from src.server import databaseHandler
 import uuid
 
@@ -23,15 +11,11 @@ class SqliteObject(object):
 
         self.id = id if id is not None else uuid.uuid4()
         self.database = database
->>>>>>> master
 
     def get_id(self):
         return self.id
 
     def as_object(self):
-<<<<<<< HEAD
-        raise NotImplementedError('Abstract SQL Object cannot be represented as an object')
-=======
         props = {}
         for prop in self.properties:
             if hasattr(self, prop):
@@ -65,15 +49,11 @@ class SqliteObject(object):
             found.append(cls(**props))
 
         return found
->>>>>>> master
 
-    def update(self):
-        if not self.databaseHandler:
-            raise Exception('No Database Provided to Update in')
+    @classmethod
+    def get(cls, id, database=None):
+        query = 'SELECT * FROM {} WHERE id=\'{}\';'.format(cls.table, id)
 
-<<<<<<< HEAD
-        set = []
-=======
         print('Using SELECT query {}'.format(query))
 
         if database:
@@ -129,32 +109,44 @@ class SqliteObject(object):
     def update(self, database=None):
 
         props = []
->>>>>>> master
         for property in self.properties:
             if property == 'id':
                 continue
 
-            set.append('{}=\'{}\''.format(property, getattr(self, property)))
+            props.append('{}=\'{}\''.format(property, getattr(self, property)))
 
-        query = 'UPDATE {} SET {} WHERE id=?;'.format(self.table, ','.join(set))
+        query = 'UPDATE {} SET {} WHERE id=?;'.format(self.table, ','.join(props))
 
         print('Using UPDATE query \'{}\''.format(query))
-        c = self.databaseHandler.database.cursor()
+
+        if self.database:
+            db = self.database
+        elif database:
+            db = database
+        else:
+            db = databaseHandler().get_database()
+
+        c = db.cursor()
         c.execute(query, (self.id,))
-        self.databaseHandler.database.commit()
+        db.commit()
         return self
 
-    def delete(self):
-        if not self.databaseHandler:
-            raise Exception('No Database Provided to Delete in')
+    def delete(self, database=None):
 
         query = 'DELETE FROM {} WHERE id=?;'.format(self.table)
 
         print('Using DELETE query \'{}\''.format(query))
 
-        c = self.databaseHandler.database.cursor()
+        if self.database:
+            db = self.database
+        elif database:
+            db = database
+        else:
+            db = databaseHandler().get_database()
+
+        c = db.cursor()
         c.execute(query, (self.id,))
-        self.databaseHandler.database.commit()
+        db.commit()
 
         return True
 
@@ -174,9 +166,7 @@ class SqliteObject(object):
 
         return True
 
-    def create(self, databaseHandler=None):
-        if not databaseHandler and not self.databaseHandler:
-            raise Exception('No Database Provided to create in')
+    def create(self, database=None):
 
         properties = [str(p) for p in self.properties if getattr(self, p) != None]
 
@@ -200,16 +190,20 @@ class SqliteObject(object):
 
         print('Using CREATE query \'{}\''.format(query))
 
-        c = self.databaseHandler.database.cursor()
+        if self.database:
+            db = self.database
+        elif database:
+            db = database
+        else:
+            db = databaseHandler().get_database()
+
+        c = db.cursor()
         c.execute(query)
-        self.databaseHandler.database.commit()
+        db.commit()
         if not self.id:
             self.id = c.lastrowid
 
         return self
-<<<<<<< HEAD
-=======
 
     def __str__(self):
         return self.table + " row object with id " + str(self.get_id())
->>>>>>> master

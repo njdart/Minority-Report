@@ -28,11 +28,7 @@ class Model:
         self.simpleBounds = []
         self.canvasBounds = []
         self.raw_image = []
-<<<<<<< HEAD
-        self.activePostits = []
-=======
         self.activeStickyNotes = []
->>>>>>> master
 
         self.stickyNoteConnections = []
 
@@ -64,17 +60,6 @@ class Model:
     def run_auto_calibrate(self, show_debug=False):
         self.canvasBounds = self.find_canvas(self.calibImage, show_debug)
 
-<<<<<<< HEAD
-    # Returns position of postits and relationships of current graph
-    def get_abstract_graph(self):
-        positions = []
-        ids = []
-        for postit in self.activePostits:
-            positions.append(postit.location)
-            ids.append(postit.ID)
-
-        postit = {
-=======
     # Returns position of stickyNotes and relationships of current graph
     def get_abstract_graph(self):
         positions = []
@@ -84,18 +69,12 @@ class Model:
             ids.append(stickyNote.ID)
 
         stickyNote = {
->>>>>>> master
             "position": positions,
             "ID": ids
         }
         graph = {
-<<<<<<< HEAD
-            "connections": self.postitConnections,
-            "postit": postit
-=======
             "connections": self.stickyNoteConnections,
             "stickyNote": stickyNote
->>>>>>> master
         }
         return graph
 
@@ -112,20 +91,6 @@ class Model:
         zf = zipfile.ZipFile(filename + '.zip', mode='w')
         for canv in self.canvasList:
             cv2.imwrite(str(canv.ID) + ".png", canv.rawImage)
-<<<<<<< HEAD
-            postits = []
-            connections = []
-            for canv_postit in canv.postits:
-                postit = {
-                    "colour": canv_postit.colour,
-                    "uuid": str(canv_postit.ID),
-                    "x": canv_postit.location[0],
-                    "y": canv_postit.location[1],
-                    "height": canv_postit.size[1],
-                    "width": canv_postit.size[0],
-                    "isPhysical": canv_postit.physical,
-                    "lastCanvasID": str(canv_postit.last_canvas_ID)
-=======
             stickyNotes = []
             connections = []
             for canv_stickyNote in canv.stickyNotes:
@@ -138,7 +103,6 @@ class Model:
                     "width": canv_stickyNote.size[0],
                     "isPhysical": canv_stickyNote.physical,
                     "lastCanvasID": str(canv_stickyNote.last_canvas_ID)
->>>>>>> master
                 }
                 stickyNotes.append(stickyNote)
             for cxn in canv.connections:
@@ -172,11 +136,7 @@ class Model:
                 },
                 "width": canv.rawImage.shape[1],
                 "height": canv.rawImage.shape[0],
-<<<<<<< HEAD
-                "postits": postits,
-=======
                 "stickyNotes": stickyNotes,
->>>>>>> master
                 "connections": connections
             }
 
@@ -200,19 +160,6 @@ class Model:
             data_bounds = [dataCanvas["canvas"]["top-left"]["x"], dataCanvas["canvas"]["top-left"]["y"],
                            dataCanvas["canvas"]["bottom-right"]["x"] - dataCanvas["canvas"]["top-left"]["x"],
                            dataCanvas["canvas"]["bottom-right"]["y"] - dataCanvas["canvas"]["top-left"]["y"]]
-<<<<<<< HEAD
-            data_postits = []
-            for dataPostit in dataCanvas["postits"]:
-                postit = Postit(dataPostit["uuid"],
-                                dataPostit["x"],
-                                dataPostit["y"],
-                                dataPostit["width"],
-                                dataPostit["height"],
-                                dataPostit["colour"],
-                                dataPostit["isPhysical"],
-                                dataPostit["lastCanvasID"])
-                data_postits.append(postit)
-=======
             data_stickyNotes = []
             for dataStickyNote in dataCanvas["stickyNotes"]:
                 stickyNote = StickyNote(dataStickyNote["uuid"],
@@ -224,7 +171,6 @@ class Model:
                                 dataStickyNote["isPhysical"],
                                 dataStickyNote["lastCanvasID"])
                 data_stickyNotes.append(stickyNote)
->>>>>>> master
             dataConnections = []
             for dataLine in dataCanvas["connections"]:
                 cxn = [dataLine["from"], dataLine["to"]]
@@ -234,11 +180,7 @@ class Model:
                             dataCanvas["derivedAt"],
                             data_board_image,
                             data_bounds,
-<<<<<<< HEAD
-                            data_postits,
-=======
                             data_stickyNotes,
->>>>>>> master
                             dataConnections,
                             dataCanvas["derivedFrom"])
             self.canvasList.append(canvas)
@@ -393,16 +335,6 @@ class Model:
 
     # Compare current graph with previous graph
     def compare_prev(self, newGraph):
-<<<<<<< HEAD
-        postit_ids = self.update_postits(new_postits=newGraph["postits"])
-        self.update_lines(postit_ids=postit_ids, lines=newGraph["lines"])
-
-    # Compare a new list of postits to the list of known active postits
-    def update_postits(self, new_postits):
-        postit_ids = []
-        active_postits_found = []
-        newUniquePostits = []
-=======
         stickyNote_ids = self.update_stickyNotes(new_stickyNotes=newGraph["stickyNotes"])
         self.update_lines(stickyNote_ids=stickyNote_ids, lines=newGraph["lines"])
 
@@ -411,7 +343,6 @@ class Model:
         stickyNote_ids = []
         active_stickyNotes_found = []
         newUniqueStickyNotes = []
->>>>>>> master
         # Initiate ORB detector
         orb = cv2.ORB_create(scaleFactor=1.2,
                              nlevels=8,
@@ -421,18 +352,6 @@ class Model:
                              scoreType=cv2.ORB_HARRIS_SCORE,
                              patchSize=31)
 
-<<<<<<< HEAD
-
-        for o, newPostit in enumerate(new_postits):
-            maxidx = -1
-            good = np.zeros(len(self.activePostits), dtype=np.int)
-
-            nim = binarize(newPostit["image"].copy())
-            IDs = []
-            potential_matches = []
-            for p, oldPostit in enumerate(self.activePostits):
-                oim = binarize(oldPostit.get_postit_image(self.get_prev_canvas_image(oldPostit.get_canvas())).copy())
-=======
         for o, newStickyNote in enumerate(new_StickyNotes):
             maxidx = -1
             good = np.zeros(len(self.activeStickyNotes), dtype=np.int)
@@ -442,7 +361,6 @@ class Model:
 
             for p, oldStickyNote in enumerate(self.activeStickyNotes):
                 oim = binarize(oldStickyNote.get_stickyNote_image(self.get_prev_canvas_image(oldStickyNote.get_canvas())).copy())
->>>>>>> master
                 # Find the keypoints and descriptors with ORB
                 kp1, des1 = orb.detectAndCompute(oim, None)
                 kp2, des2 = orb.detectAndCompute(nim, None)
@@ -452,118 +370,16 @@ class Model:
                 if len(kp1) > 0 and len(kp2) > 0:
                     # Match descriptors
                     matches = bf.knnMatch(des2, des1, k=2)
-<<<<<<< HEAD
-                    IDs.append(oldPostit.get_id())
-=======
                     IDs.append(oldStickyNote.get_id())
->>>>>>> master
                     for m, n in matches:
                         if m.distance < (0.75*n.distance):
                             good[p] += 1
                 else:
-<<<<<<< HEAD
-=======
                     print("oops")
->>>>>>> master
                     cv2.imshow("debug", oim)
                     cv2.waitKey(0)
 
             print(good)
-<<<<<<< HEAD
-            for index, n in enumerate(good):
-                if n > 11:
-                    potential_matches.append(index)
-
-            if len(potential_matches) == 1:
-               maxidx = np.argmax(good)
-            elif len(potential_matches) > 1:
-                maxidx = np.argmax(good)
-                potential_matches.remove(maxidx)
-
-                for index in potential_matches:
-                    ID = self.activePostits[index].id
-                    self.activePostits.remove(self.activePostits[index])
-                    delcxns = []
-                    for cxn in self.postitConnections:
-                        if ID in cxn:
-                            delcxns.append(cxn)
-                    for delcxn in delcxns:
-                        self.postitConnections.remove(delcxn)
-
-            # print(len(goodMatches))
-            if maxidx == -1:
-                # Create new entry on list of active postits and then add ID to list
-                new_id = uuid.uuid4()
-                created_postit = Postit(x=newPostit["position"][0],
-                                        y=newPostit["position"][1],
-                                        width=newPostit["position"][2],
-                                        height=newPostit["position"][3],
-                                        pnt1X=newPostit["points"][0][0],
-                                        pnt1Y=newPostit["points"][0][1],
-                                        pnt2X=newPostit["points"][1][0],
-                                        pnt2Y=newPostit["points"][1][1],
-                                        pnt3X=newPostit["points"][2][0],
-                                        pnt3Y=newPostit["points"][2][1],
-                                        pnt4X=newPostit["points"][3][0],
-                                        pnt4Y=newPostit["points"][3][1],
-                                        colour=newPostit["colour"],
-                                        id=new_id,
-                                        canvas=self.new_id
-                                        )
-                newUniquePostits.append(created_postit)
-                postit_ids.append(new_id)
-                active_postits_found.append(new_id)
-            else:
-                # Return ID of Matched postits
-                updating_postit = self.activePostits.pop(maxidx)
-                postit_ids.append(updating_postit.get_id())
-                active_postits_found.append(updating_postit.get_id())
-                updating_postit.update_postit(x=newPostit["position"][0],
-                                              y=newPostit["position"][1],
-                                              width=newPostit["position"][2],
-                                              height=newPostit["position"][3],
-                                              pnt1X=newPostit["points"][0][0],
-                                              pnt1Y=newPostit["points"][0][1],
-                                              pnt2X=newPostit["points"][1][0],
-                                              pnt2Y=newPostit["points"][1][1],
-                                              pnt3X=newPostit["points"][2][0],
-                                              pnt3Y=newPostit["points"][2][1],
-                                              pnt4X=newPostit["points"][3][0],
-                                              pnt4Y=newPostit["points"][3][1],
-                                              colour=newPostit["colour"],
-                                              canvas=self.new_id,
-                                              physical=True
-                                              )
-                self.activePostits.insert(maxidx, updating_postit)
-
-        for p, oldPostit in enumerate(self.activePostits):
-            if oldPostit.get_id() not in active_postits_found:
-                oldPostit.set_physical(False)
-        self.activePostits.extend(newUniquePostits)
-
-        return postit_ids
-
-    # Compare lines found with know list of connections
-    def update_lines(self, postit_ids, lines):
-        for cxn in lines:
-            if "postitIdStart" in cxn.keys():
-                start = cxn["postitIdStart"]
-            else:
-                start = postit_ids[cxn["postitIdx"][0]]
-            if "postitIdEnd" in cxn.keys():
-                end = cxn["postitIdEnd"]
-            else:
-                end = postit_ids[cxn["postitIdx"][1]]
-            connection = [start, end]
-            # print(connection)
-            if connection not in self.postitConnections:
-                self.postitConnections.append(connection)
-
-    # Change settings used in graph extraction
-    def image_settings(self, mipa, mapa, lento, sig, mico, maco, poth):
-        self.minPostitArea = mipa
-        self.maxPostitArea = mapa
-=======
             try:
                 if max(good) > 20:
                     maxidx = np.argmax(good)
@@ -643,7 +459,6 @@ class Model:
     def image_settings(self, mipa, mapa, lento, sig, mico, maco, poth):
         self.minStickyNoteArea = mipa
         self.maxStickyNoteArea = mapa
->>>>>>> master
         self.lenTolerence = lento
         self.maxColourThresh = maco
         self.minColourThresh = mico
@@ -663,21 +478,6 @@ class Model:
         return smooth_img
 
     def delete_binned(self, x1=0, y1=0, x2=200, y2=200):
-<<<<<<< HEAD
-        del_postits = []
-        for postit in self.activePostits:
-            post_pos = postit.get_position()
-            if x1 < post_pos[0] < x2 and y1 < post_pos[1] < y2:
-                del_postits.append(postit)
-        for del_postit in del_postits:
-            delcxns = []
-            for cxn in self.postitConnections:
-                if cxn[0] == del_postit.get_id() or cxn[1] == del_postit.get_id():
-                    delcxns.append(cxn)
-            for delcxn in delcxns:
-                self.postitConnections.remove(delcxn)
-            self.activePostits.remove(del_postit)
-=======
         del_stickyNotes = []
         for stickyNote in self.activeStickyNotes:
             post_pos = stickyNote.get_position()
@@ -691,22 +491,14 @@ class Model:
             for delcxn in delcxns:
                 self.stickyNoteConnections.remove(delcxn)
             self.activeStickyNotes.remove(del_stickyNote)
->>>>>>> master
 
     # Main update loop using the current settings to extract data from current rawImage
     def update(self):
         canvas_image = self.get_canvas_image()
-<<<<<<< HEAD
-        extractor = GraphExtractor(image=canvas_image, previous_postits=self.activePostits)
-        graph = extractor.extract_graph(show_debug=self.debug,
-                                        min_postit_area=self.minPostitArea,
-                                        max_postit_area=self.maxPostitArea,
-=======
         extractor = GraphExtractor(image=canvas_image, previous_stickyNotes=self.activeStickyNotes)
         graph = extractor.extract_graph(show_debug=self.debug,
                                         min_stickyNote_area=self.minStickyNoteArea,
                                         max_stickyNote_area=self.maxStickyNoteArea,
->>>>>>> master
                                         len_tolerence=self.lenTolerence,
                                         min_colour_thresh=self.minColourThresh,
                                         max_colour_thresh=self.maxColourThresh)
@@ -716,13 +508,8 @@ class Model:
         new_canvas = Canvas(image=self.raw_image,
                             canvasBounds=self.canvasBounds,
                             id=self.new_id,
-<<<<<<< HEAD
-                            postits=self.activePostits,
-                            connections=self.postitConnections,
-=======
                             stickyNotes=self.activeStickyNotes,
                             connections=self.stickyNoteConnections,
->>>>>>> master
                             derivedFrom=self.prevCanvasID,
                             derivedAt=self.snapshot_time
                             )
@@ -730,11 +517,7 @@ class Model:
         self.prevCanvasID = self.new_id
         self.canvasList.append(new_canvas)
 
-<<<<<<< HEAD
-    # For testing construct the current canvas into a visual display for projecting back on to physical postits
-=======
     # For testing construct the current canvas into a visual display for projecting back on to physical stickyNotes
->>>>>>> master
     def display(self, canvas=-1):
         if len(self.canvasList):
             last_canvas = self.canvasList[canvas]
@@ -747,58 +530,6 @@ class Model:
             cv2.line(disp_image, (200, 200), (0, 200), [150, 150, 150], thickness=4)
 
             for line in last_canvas.connections:
-<<<<<<< HEAD
-                start_point = (int(last_canvas.get_postit(line[0]).get_position()[0] +
-                                   (last_canvas.get_postit(line[0]).get_size()[0]) / 2),
-                               int(last_canvas.get_postit(line[0]).get_position()[1] +
-                                   (last_canvas.get_postit(line[0]).get_size()[1]) / 2))
-                end_point = (int(last_canvas.get_postit(line[1]).get_position()[0] +
-                                 (last_canvas.get_postit(line[1]).get_size()[0]) / 2),
-                             int(last_canvas.get_postit(line[1]).get_position()[1] +
-                                 (last_canvas.get_postit(line[1]).get_size()[1]) / 2))
-                cv2.line(disp_image, start_point, end_point, [255, 0, 0], thickness=4)
-
-            for postit in last_canvas.postits:
-                for canvas in self.canvasList:
-                    if canvas.get_id() == postit.get_canvas():
-                        postitImage = postit.get_postit_image(
-                            self.four_point_transform(image=canvas.image, pts=self.canvasBounds)
-                        )
-                x1 = postit.get_position()[0]
-                y1 = postit.get_position()[1]
-                x2 = postit.get_position()[0] + postit.get_size()[0]
-                y2 = postit.get_position()[1] + postit.get_size()[1]
-                if postit.physical == 1:
-                    cv2.rectangle(disp_image, (x1, y1), (x2, y2), (0, 0, 0), thickness=cv2.FILLED)
-                    cv2.rectangle(disp_image, (x1, y1), (x2, y2), (0, 255, 0), thickness=4)
-                elif postit.physical == 0:
-                    cv2.rectangle(disp_image,
-                                  (x1, y1),
-                                  (x1 + postitImage.shape[1], y1 + postitImage.shape[0]),
-                                  (0, 0, 0),
-                                  thickness=cv2.FILLED)
-
-                    postitImage = binarize(postitImage)
-
-                    if postit.colour == "ORANGE":
-                        postitImage[np.where((postitImage > [0, 0, 0]).all(axis=2))] = [26, 160, 255]
-                    elif postit.colour == "YELLOW":
-                        postitImage[np.where((postitImage > [0, 0, 0]).all(axis=2))] = [93, 255, 237]
-                    elif postit.colour == "BLUE":
-                        postitImage[np.where((postitImage > [0, 0, 0]).all(axis=2))] = [255, 200, 41]
-                    elif postit.colour == "MAGENTA":
-                        postitImage[np.where((postitImage > [0, 0, 0]).all(axis=2))] = [182, 90, 255]
-                    #cv2.imwrite("test.png",postitImageTest)
-                    #print(pytesseract.image_to_string(Image.open("test.png")))
-
-
-                    # cv2.imshow("debugC", postitImage)
-                    # cv2.waitKey(0)
-                    disp_image[y1:y1 + postitImage.shape[0], x1:x1 + postitImage.shape[1]] = postitImage
-                    cv2.rectangle(disp_image,
-                                  (x1, y1),
-                                  (x1 + postitImage.shape[1], y1 + postitImage.shape[0]),
-=======
                 start_point = (int(last_canvas.get_stickyNote(line[0]).get_position()[0] +
                                    (last_canvas.get_stickyNote(line[0]).get_size()[0]) / 2),
                                int(last_canvas.get_stickyNote(line[0]).get_position()[1] +
@@ -849,16 +580,11 @@ class Model:
                     cv2.rectangle(disp_image,
                                   (x1, y1),
                                   (x1 + stickyNoteImage.shape[1], y1 + stickyNoteImage.shape[0]),
->>>>>>> master
                                   (0, 200, 200),
                                   thickness=4)
 
             r = 1920 / disp_image.shape[1]
             dim = (1920, int(disp_image.shape[0] * r))
-<<<<<<< HEAD
-
-=======
->>>>>>> master
 
             # perform the actual resizing of the image and show it
             disp_image = cv2.resize(disp_image, dim, interpolation=cv2.INTER_AREA)
@@ -867,34 +593,20 @@ class Model:
 
     # ======================================================== #
 
-<<<<<<< HEAD
-    def move_postit(self, ID, new_x, new_y):
-        # Get postit
-        last_canvas = self.canvasList[-1]
-        postit = last_canvas.get_postit(ID)
-        # Change location
-        postit.set_position(new_x, new_y)
-=======
     def move_stickyNote(self, ID, new_x, new_y):
         # Get stickyNote
         last_canvas = self.canvasList[-1]
         stickyNote = last_canvas.get_stickyNote(ID)
         # Change location
         stickyNote.set_position(new_x, new_y)
->>>>>>> master
         # Create new canvas
         self.new_id = uuid.uuid4()
         self.delete_binned()
         new_canvas = Canvas(image=self.raw_image,
                             canvasBounds=self.canvasBounds,
                             id=self.new_id,
-<<<<<<< HEAD
-                            postits=self.activePostits,
-                            connections=self.postitConnections,
-=======
                             stickyNotes=self.activestickyNotes,
                             connections=self.stickyNoteConnections,
->>>>>>> master
                             derivedFrom=self.prevCanvasID,
                             derivedAt=self.snapshot_time
                             )
@@ -962,11 +674,7 @@ if __name__ == "__main__":
     #     image = cv2.imread('/home/jjs/projects/Minority-Report/src/testImg/' + str(idx) + '.png')
     #     boardModel.new_raw_image(image=image, time=datetime.datetime.now(), update=1)
     #     boardModel.display()
-<<<<<<< HEAD
-    # boardModel.move_postit(boardModel.canvasList[-1].postits[0].id, 500, 500)
-=======
     # boardModel.move_stickyNote(boardModel.canvasList[-1].stickyNotes[0].id, 500, 500)
->>>>>>> master
     # boardModel.display()
 
     boardModel = Model()
