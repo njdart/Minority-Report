@@ -42,13 +42,13 @@ class StickyNoteSelector():
                     newStickyNoteSelection = {"handID":selectedNote["handID"],
                                               "handXPos":newHand["posX"],
                                               "handYPos":newHand["posY"],
-                                              "noteID":selectedNote["noteID"]}
+                                              "noteID":str(selectedNote["noteID"])}
                     newStickyNoteSelections.append(newStickyNoteSelection)
                     socketio.emit('move_sticky_note', newStickyNoteSelection)
                 else:
                     StickyNote.get(selectedNote["noteID"]).set_display_pos(selectedNote["handXPos"],
                                                                            selectedNote["handYPos"])
-                    socketio.emit('note_deselected', selectedNote["noteID"])
+                    socketio.emit('note_deselected', {"id":str(selectedNote["noteID"])})
             elif closedHand:
                 if newHand["closed"]:
                     overNote = self.handOverNote(newHand["posX"], newHand["posY"])
@@ -60,7 +60,8 @@ class StickyNoteSelector():
                                                           "handYPos":newHand["posY"],
                                                           "noteID":overNote.id}
                                 newStickyNoteSelections.append(newStickyNoteSelection)
-                                socketio.emit('note_selected', selectedNote["noteID"])
+                                print('sending selection message')
+                                socketio.emit('note_selected', {"id":str(overNote.id)})
                             else:
                                 # Keep old closed hand
                                 newClosedHand = {"handID":closedHand["handID"],

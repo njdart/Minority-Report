@@ -44,14 +44,14 @@ def magicalHandCircle():
                         "closed":state["leftFistClosed"],
                         "posX":state["leftHandX"],
                         "posY":state["leftHandY"],
-                        "timestamp":state["timestamp"]}
+                        "timestamp":data["timestamp"]}
                 hands.append(hand)
             if state["rightHandTracked"]:
                 hand = {"id":str(state["skeletonID"])+"R",
                         "closed":state["rightFistClosed"],
                         "posX":state["rightHandX"],
                         "posY":state["rightHandY"],
-                        "timestamp":state["timestamp"]}
+                        "timestamp":data["timestamp"]}
                 hands.append(hand)
         selector.update(hands)
         return "yay", 200
