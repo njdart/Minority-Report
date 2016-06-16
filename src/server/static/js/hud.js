@@ -59,6 +59,16 @@ var stickyNoteOffset = stickyNoteSize/2;
 var virtualStickyNoteImages = {};
 var stickyNotesSelected = {};
 
+var FULL_DEBUG_LOGS = false;
+
+function debugLog(msg)
+{
+    if (FULL_DEBUG_LOGS)
+    {
+        console.log(msg);
+    }
+}
+
 $(function() {
     //var hudCanvas = $('.hudCanvas');
     var splash = $('.localStorageUnset');
@@ -109,12 +119,12 @@ $(function() {
 
             socket.on('connect', function() {
                 socket.on('get_latest_canvas_by_session', function(canvas) {
-                    console.log("HUD initial canvas received");
+                    console.log("canvas received");
                     if(canvas == null){
                         console.log("(Received canvas is empty, not calling resizeCanvas() and redrawCanvas())");
                     }
                     else {
-                        console.log(canvas);
+                        debugLog(canvas);
                         latestCanvas = canvas;
 
                         //clear virtual stickyNote local cache
@@ -127,7 +137,7 @@ $(function() {
                                var i = new Image();
                                i.onload = function(evt)
                                {
-                                   console.log("       EXPERIMENTAL: drawing virtual " + evt.currentTarget.height + "x" + evt.currentTarget.width + " stickyNote at (" + stickyNote.displayPos.x + "," + stickyNote.displayPos.y + ")");
+                                   debugLog("       EXPERIMENTAL: drawing virtual " + evt.currentTarget.height + "x" + evt.currentTarget.width + " stickyNote at (" + stickyNote.displayPos.x + "," + stickyNote.displayPos.y + ")");
                                    if (stickyNote.physicalFor == null || stickyNote.physicalFor == "None")
                                    {
                                        //virtual for noone
@@ -221,10 +231,10 @@ function drawCircles(handStates) {
         $.each(handStates.handStates, function (index, state) {
             if (state.leftHandTracked)
             {
-                console.log("received hand state, ID " + state.skeletonID + ": left(" + state.leftHandX + ", " + state.leftHandY + ")");
+                debugLog("received hand state, ID " + state.skeletonID + ": left(" + state.leftHandX + ", " + state.leftHandY + ")");
                 hudContext.beginPath();
                 hudContext.arc(state.leftHandX, state.leftHandY, stickyNoteSize - 15, 0, 2 * Math.PI, false);
-                hudContext.fillStyle = state.leftFistClosed ? handColors[state.skeletonID].leftFirstClosed : handColors[state.skeletonID].leftFistOpen;
+                hudContext.fillStyle = state.leftFistClosed ? handColors[state.skeletonID].leftFistClosed : handColors[state.skeletonID].leftFistOpen;
                 hudContext.fill();
                 hudContext.lineWidth = 5;
                 hudContext.strokeStyle = '#003300';
@@ -233,7 +243,7 @@ function drawCircles(handStates) {
             }
             if (state.rightHandTracked)
             {
-                console.log("received hand state, ID " + state.skeletonID + ": right(" + state.rightHandX + ", " + state.rightHandY + ")");
+                debugLog("received hand state, ID " + state.skeletonID + ": right(" + state.rightHandX + ", " + state.rightHandY + ")");
                 hudContext.beginPath();
                 hudContext.arc(state.rightHandX, state.rightHandY, stickyNoteSize - 15, 0, 2 * Math.PI, false);
                 hudContext.fillStyle = state.rightFistClosed ? handColors[state.skeletonID].rightFistClosed : handColors[state.skeletonID].rightFistOpen;
@@ -247,7 +257,7 @@ function drawCircles(handStates) {
     }
     else
     {
-        console.log("received hand states, but ignoring");
+        debugLog("received hand states, but ignoring");
     }
 }
 
@@ -272,7 +282,7 @@ function noteMoved(noteMoveData) {
         {
             latestCanvas.stickyNotes[i].displayPos.x = noteMoveData.handXPos;
             latestCanvas.stickyNotes[i].displayPos.y = noteMoveData.handYPos;
-            console.log("Note moved with ID: " + noteMoveData.noteID);
+            debugLog("Note moved with ID: " + noteMoveData.noteID);
             break;
         }
     }
@@ -301,20 +311,20 @@ function checkCanvasSize() {
 }
 
 function resizeCanvas() {
-    console.log("resizeCanvas(): resizing canvas");
+    debugLog("resizeCanvas(): resizing canvas");
     hudContext.canvas.height = $(window).height();
     hudContext.canvas.width = $(window).width();
     redrawCanvas(); //should probably be somewhere else, but this works...
 }
 
 function clearCanvas(){
-    console.log("clearCanvas(): clearing canvas");
+    debugLog("clearCanvas(): clearing canvas");
     hudContext.clearRect(0, 0, hudContext.canvas.width, hudContext.canvas.height);
 }
 
 function drawCanvasBin()
 {
-    console.log("drawCanvasBin(): drawing bin area");
+    debugLog("drawCanvasBin(): drawing bin area");
     hudContext.fillStyle = "#333333";
     hudContext.fillRect(0,0,205,205);
     hudContext.fillStyle = "#000000";
@@ -327,7 +337,7 @@ function drawCanvasBin()
 function redrawCanvas() {
     hudContext.strokeWidth = 10;
     hudContext.lineWidth = 10;
-    console.log("redrawCanvas(): redrawing canvas");
+    debugLog("redrawCanvas(): redrawing canvas");
     hideLoading();
     drawCanvasBin();
 
@@ -343,7 +353,7 @@ function redrawCanvas() {
     }
     else
     {
-        console.log("redrawCanvas(): mapping " + latestCanvas.stickyNotes.length + " stickyNote ids to coords");
+        debugLog("redrawCanvas(): mapping " + latestCanvas.stickyNotes.length + " stickyNote ids to coords");
         stickyNoteIdToCoords = {};
         $.each(latestCanvas.stickyNotes, function(index, stickyNote)
         {
@@ -353,14 +363,14 @@ function redrawCanvas() {
 
     if(latestCanvas.connections == undefined || latestCanvas.connections == null)
     {
-        console.log("redrawCanvas(): No connections on canvas");
+        debugLog("redrawCanvas(): No connections on canvas");
     }
     else
     {
-        console.log("redrawCanvas(): drawing " + latestCanvas.connections.length + " connections");
+        debugLog("redrawCanvas(): drawing " + latestCanvas.connections.length + " connections");
         $.each(latestCanvas.connections, function(index, connection)
         {
-            console.log("   connection from " + connection.start + " to " + connection.finish);
+            debugLog("   connection from " + connection.start + " to " + connection.finish);
             hudContext.strokeStyle = "#0000FF";
             hudContext.beginPath();
             hudContext.moveTo(stickyNoteIdToCoords[connection.start].x + stickyNoteSize/2 - stickyNoteOffset, stickyNoteIdToCoords[connection.start].y + stickyNoteSize/2 - stickyNoteOffset);
@@ -370,15 +380,11 @@ function redrawCanvas() {
         });
     }
 
-    if(latestCanvas.stickyNotes == undefined || latestCanvas.stickyNotes == null)
+    if(latestCanvas.stickyNotes != undefined && latestCanvas.stickyNotes != null)
     {
-        console.log("redrawCanvas(): No stickyNotes on canvas");
-    }
-    else
-    {
-        console.log("redrawCanvas(): drawing " + latestCanvas.stickyNotes.length + " stickyNotes");
+        debugLog("redrawCanvas(): drawing " + latestCanvas.stickyNotes.length + " stickyNotes");
         $.each(latestCanvas.stickyNotes, function (index, stickyNote) {
-            console.log("   stickyNote at (" + stickyNote.displayPos.x + "," + stickyNote.displayPos.y + ")");
+            debugLog("   stickyNote at (" + stickyNote.displayPos.x + "," + stickyNote.displayPos.y + ")");
             hudContext.fillStyle = "#000000";
             if (stickyNote.physicalFor == userId) {
                 //stickyNote is physical for this user
@@ -411,7 +417,7 @@ function redrawCanvas() {
                 //stickyNoteImage.src = "data:image/jpg;base64," + localStorage.getItem(stickyNote.id);
 
                 var currentTarget = virtualStickyNoteImages[stickyNote.id];
-                console.log("       drawing virtual " + currentTarget.height + "x" + currentTarget.width + " stickyNote at (" + stickyNote.displayPos.x + "," + stickyNote.displayPos.y + ")");
+                debugLog("       drawing virtual " + currentTarget.height + "x" + currentTarget.width + " stickyNote at (" + stickyNote.displayPos.x + "," + stickyNote.displayPos.y + ")");
                 if (stickyNote.physicalFor == null || stickyNote.physicalFor == "None")
                 {
                     //virtual for noone
@@ -441,7 +447,7 @@ function redrawCanvas() {
 }
 
 var drawImageOnCanvas = function(image, x, y) {
-    console.log("drawImageOnCanvas(): drawing image with size " + image.height + "x" + image.width + " to canvas at (" + x + "," + y + ")");
+    debugLog("drawImageOnCanvas(): drawing image with size " + image.height + "x" + image.width + " to canvas at (" + x + "," + y + ")");
     hudContext.drawImage(image, x, y);
 }
 
