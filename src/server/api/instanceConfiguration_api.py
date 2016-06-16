@@ -159,7 +159,7 @@ def calibrate_instance_configuration(instanceConfigId):
     """
     print('Calibrating instance configuration {}'.format(instanceConfigId))
     emit('blank_canvas_white', instanceConfigId, broadcast=True)
-    sleep(0.5)
+    sleep(1)
     ic = InstanceConfiguration.get(id=instanceConfigId).calibrate().update()
     print('Calibrated')
     emit('calibrate_instance_configuration', ic.as_object())

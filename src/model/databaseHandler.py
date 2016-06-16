@@ -8,7 +8,7 @@ class ModelDatabase(object):
     extracted stickyNotes
     """
 
-    def __init__(self, file='./database.sqlite'):
+    def __init__(self, file='/tmp/database.sqlite'):
         """
         Construct the database, applying the schema in schema.sql, to the desired database name
         """
