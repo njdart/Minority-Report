@@ -167,9 +167,15 @@ namespace MinorityReport
         {
             public IList<TrackedPersonJSON> handStates;
 
+            /// <summary>
+            /// Seconds since 0:00:00 UTC on January 1, 0001
+            /// </summary>
+            public long timestamp;
+
             public TrackedPeopleJSON()
             {
                 handStates = new List<TrackedPersonJSON>();
+                timestamp = DateTime.Now.Ticks / 10000000;
             }
         }
         #endregion
@@ -857,6 +863,7 @@ namespace MinorityReport
                             // Calculate the dimensions of the physical canvas
                             double width_metres = U.L2Norm();
                             double height_metres = V.L2Norm();
+                            Console.Write("Canvas dimensions (metres): ({0}, {1})\n", width_metres, height_metres);
 
                             // Send the dimensions to the server as JSON
                             StringWriter strWriter = new StringWriter();
@@ -867,7 +874,9 @@ namespace MinorityReport
                             jsonWriter.WritePropertyName("canvasHeight");
                             jsonWriter.WriteValue(height_metres);
                             jsonWriter.WriteEndObject();
-                            this.SendString(strWriter.ToString(), "canvasDimensions");
+                            string output = strWriter.ToString();
+                            Console.Write("Canvas dimensions: {0}", output);
+                            this.SendString(output, "canvasDimensions");
                             
                             this.ConfigurationToFile();
                             this.calibrationComplete = true;
