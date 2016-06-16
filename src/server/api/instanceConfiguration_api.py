@@ -156,10 +156,10 @@ def asyncCalibrate(instanceConfigId):
     import threading
     def func(id):
         print("Waiting for cameras to adjust...")
-        sleep(2)
+        sleep(0.5)
         ic = InstanceConfiguration.get(id=id).calibrate().update()
         print('Calibrated')
-        socketio.emit('blank_canvas_black', instanceConfigId, broadcast=True)
+        socketio.emit('blank_canvas_black', id, broadcast=True)
     threading.Thread(target=func, args=(instanceConfigId,)).start()
 
 @socketio.on('calibrate_instance_configuration')
