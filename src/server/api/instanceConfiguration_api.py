@@ -152,6 +152,16 @@ def update_instanceConfig_coords(id, data):
     config.kinectBottomLeftY = data["kinectBottomLeft"]["y"]
     config.update()
 
+def asyncCalibrate(instanceConfigId):
+    import threading
+    def func(id):
+        print("Waiting for cameras to adjust...")
+        sleep(2)
+        ic = InstanceConfiguration.get(id=id).calibrate().update()
+        print('Calibrated')
+        socketio.emit('blank_canvas_black', instanceConfigId, broadcast=True)
+    threading.Thread(target=func, args=(instanceConfigId,)).start()
+
 @socketio.on('calibrate_instance_configuration')
 def calibrate_instance_configuration(instanceConfigId):
     """
@@ -159,11 +169,10 @@ def calibrate_instance_configuration(instanceConfigId):
     """
     print('Calibrating instance configuration {}'.format(instanceConfigId))
     emit('blank_canvas_white', instanceConfigId, broadcast=True)
-    sleep(1)
-    ic = InstanceConfiguration.get(id=instanceConfigId).calibrate().update()
-    print('Calibrated')
-    emit('calibrate_instance_configuration', ic.as_object())
-    emit('blank_canvas_black', instanceConfigId, broadcast=True)
+    asyncCalibrate(instanceConfigId)
+    # print('Calibrated')
+    # emit('calibrate_instance_configuration', ic.as_object())
+    # emit('blank_canvas_black', instanceConfigId, broadcast=True)
 
 @socketio.on('purge_instance_configurations')
 def purge_instance_configurations():

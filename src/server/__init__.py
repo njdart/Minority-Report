@@ -13,9 +13,10 @@ log.setLevel(logging.WARNING)
 
 
 def databaseHandler():
-    if not hasattr(g, "databaseHandler"):
-        g.databaseHandler = ModelDatabase
-    return g.databaseHandler()
+    #if not hasattr(g, "databaseHandler"):
+    #    g.databaseHandler = ModelDatabase
+    #return g.databaseHandler()
+    return ModelDatabase()
 
 import src.server.ui
 import src.server.kinect

@@ -1,9 +1,13 @@
 #!/usr/bin/env python3
 
+
 import sys
 from src.controller import MinorityReportController
 
 if __name__ == "__main__":
+
+    from gevent import monkey
+    monkey.patch_all()
 
     help_text = """
     ## MINORITY REPORT ##
