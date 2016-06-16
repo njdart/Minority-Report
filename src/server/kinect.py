@@ -6,9 +6,11 @@ from src.model.InstanceConfiguration import InstanceConfiguration
 from src.model.Session import Session
 from src.server import (app, socketio)
 from src.server.api.image_api import generate_canvas
+from src.server.sticky_note_selection import StickyNoteSelector
 import time
 import uuid
 
+selector = StickyNoteSelector()
 def getInstanceConfigByKinectHost(host):
     localhosts = ["127.0.0.1", "localhost", "::1"]
     kinectHost = host
@@ -29,11 +31,29 @@ def canvasDimensions():
 
 @app.route("/magicalHandCircles", methods=["POST"])
 def magicalHandCircle():
+    global selector
     data = request.get_json()
     if data:
         config = getInstanceConfigByKinectHost(request.remote_addr)
         data["configID"] = config.id
         socketio.emit("draw_circle", data, broadcast=True)
+        hands = []
+        for state in data["handStates"]:
+            if state["leftHandTracked"]:
+                hand = {"id":str(state["skeletonID"])+"L",
+                        "closed":state["leftFistClosed"],
+                        "posX":state["leftHandX"],
+                        "posY":state["leftHandY"],
+                        "timestamp":data["timestamp"]}
+                hands.append(hand)
+            if state["rightHandTracked"]:
+                hand = {"id":str(state["skeletonID"])+"R",
+                        "closed":state["rightFistClosed"],
+                        "posX":state["rightHandX"],
+                        "posY":state["rightHandY"],
+                        "timestamp":data["timestamp"]}
+                hands.append(hand)
+        selector.update(hands)
         return "yay", 200
     else:
         return "invalid request", 500
@@ -41,6 +61,7 @@ def magicalHandCircle():
 
 @app.route('/boardObscured', methods=['GET', 'POST'])
 def boardObscured():
+    global selector
     if request.method == "GET":
         return "404 pls post instead kek", 404
 
@@ -85,6 +106,7 @@ def boardObscured():
     stickyNotes, old_to_new_stickyNotes = image.find_stickyNotes(next_canvas_id=next_canvas_id,
                                  current_canvas=current_canvas,
                                  save=True)
+    selector.updateNotes(stickyNotes)
     connections = image.find_connections(stickyNotes=stickyNotes,
                                          old_to_new_stickyNotes=old_to_new_stickyNotes,
                                          current_canvas=current_canvas,

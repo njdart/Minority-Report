@@ -91,6 +91,7 @@ def setCameraProperties(uri, properties):
 
 @socketio.on('generate_canvas')
 def generate_canvas(id):
+    from src.server.sticky_note_selection import StickyNoteSelector
     image = Image.get(id=id)
     if image is None:
         print("Image.get returned None")
