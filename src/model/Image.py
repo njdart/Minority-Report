@@ -406,21 +406,21 @@ class Image(SqliteObject):
                         istickyNotepoints = istickyNote.get_corner_points()
                         rectanglearea = src.model.processing.get_area(istickyNotepoints)
                         scaled_contour_point = (line_contour[index][0][0]*line_ratio, line_contour[index][0][1]*line_ratio)
-                        pointarea = src.model.processing.get_area(((istickyNotepoints[0][0]*postit_ratio[idx], istickyNotepoints[0][1]*postit_ratio[idx]),
-                                                                   (istickyNotepoints[1][0]*postit_ratio[idx], istickyNotepoints[1][1]*postit_ratio[idx]),
+                        pointarea = src.model.processing.get_area((((istickyNotepoints[0][0]+7)*postit_ratio[idx], (istickyNotepoints[0][1]+7)*postit_ratio[idx]),
+                                                                   ((istickyNotepoints[1][0]-7)*postit_ratio[idx], (istickyNotepoints[1][1]+7)*postit_ratio[idx]),
                                                                    scaled_contour_point))\
-                                    + src.model.processing.get_area(((istickyNotepoints[1][0]*postit_ratio[idx], istickyNotepoints[1][1]*postit_ratio[idx]),
-                                                                     (istickyNotepoints[2][0]*postit_ratio[idx], istickyNotepoints[2][1]*postit_ratio[idx]),
+                                    + src.model.processing.get_area((((istickyNotepoints[1][0]-7)*postit_ratio[idx], (istickyNotepoints[1][1]+7)*postit_ratio[idx]),
+                                                                     ((istickyNotepoints[2][0]-7)*postit_ratio[idx], (istickyNotepoints[2][1]-7)*postit_ratio[idx]),
                                                                      scaled_contour_point))\
-                                    + src.model.processing.get_area(((istickyNotepoints[2][0]*postit_ratio[idx], istickyNotepoints[2][1]*postit_ratio[idx]),
-                                                                     (istickyNotepoints[3][0]*postit_ratio[idx], istickyNotepoints[3][1]*postit_ratio[idx]),
+                                    + src.model.processing.get_area((((istickyNotepoints[2][0]-7)*postit_ratio[idx], (istickyNotepoints[2][1]-7)*postit_ratio[idx]),
+                                                                     ((istickyNotepoints[3][0]+7)*postit_ratio[idx], (istickyNotepoints[3][1]-7)*postit_ratio[idx]),
                                                                      scaled_contour_point))\
-                                    + src.model.processing.get_area(((istickyNotepoints[3][0]*postit_ratio[idx], istickyNotepoints[3][1]*postit_ratio[idx]),
-                                                                     (istickyNotepoints[0][0]*postit_ratio[idx], istickyNotepoints[0][1]*postit_ratio[idx]),
+                                    + src.model.processing.get_area((((istickyNotepoints[3][0]+7)*postit_ratio[idx], (istickyNotepoints[3][1]-7)*postit_ratio[idx]),
+                                                                     ((istickyNotepoints[0][0]+7)*postit_ratio[idx], (istickyNotepoints[0][1]+7)*postit_ratio[idx]),
                                                                      scaled_contour_point))
-                        if pointarea < rectanglearea*1.05:
+                        if pointarea < rectanglearea*1.025:
                                 contained = True
-                        if pointarea < rectanglearea*1.1 and not contained:
+                        if pointarea < rectanglearea*1.05 and not contained:
                             if not connectionList:
                                 connectionList.append(istickyNote.get_id())
                                 #debugImage = cv2.circle(canvas_image.copy(), (line_contour[index][0][0],line_contour[index][0][1]),4,[0,255,0],thickness=5)

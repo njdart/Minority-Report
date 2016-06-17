@@ -158,7 +158,7 @@ def calibrate(id):
     sleep(0.5)
     ic = InstanceConfiguration.get(id=id).calibrate().update()
     socketio.emit('blank_canvas_black', id, broadcast=True)
-    socketio.emit('calibrate_instance_configuration', ic.as_object(), broadcast=True)
+    # socketio.emit('calibrate_instance_configuration', ic.as_object(), broadcast=True)
     socketio.emit('draw_canvas', broadcast=True)
     print('Calibrated')
 
