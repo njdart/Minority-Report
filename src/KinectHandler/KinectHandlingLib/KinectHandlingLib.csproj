@@ -54,18 +54,15 @@
     <StartupObject />
   </PropertyGroup>
   <PropertyGroup>
-    <ManifestCertificateThumbprint>9379B68C60328C2572B17421B259E33B0E9CE85D</ManifestCertificateThumbprint>
-  </PropertyGroup>
-  <PropertyGroup>
-    <ManifestKeyFile>KinectClient_TemporaryKey.pfx</ManifestKeyFile>
-  </PropertyGroup>
-  <PropertyGroup>
     <GenerateManifests>true</GenerateManifests>
   </PropertyGroup>
   <PropertyGroup>
-    <SignManifests>true</SignManifests>
+    <SignManifests>false</SignManifests>
   </PropertyGroup>
   <PropertyGroup />
+  <PropertyGroup>
+    <SignAssembly>false</SignAssembly>
+  </PropertyGroup>
   <ItemGroup>
     <Reference Include="MathNet.Numerics, Version=3.11.1.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\packages\MathNet.Numerics.3.11.1\lib\net40\MathNet.Numerics.dll</HintPath>
