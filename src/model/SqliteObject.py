@@ -30,7 +30,7 @@ class SqliteObject(object):
     def get_all(cls, database=None):
         query = 'SELECT * FROM {};'.format(cls.table)
 
-        print('Using SELECT query {}'.format(query))
+        # print('Using SELECT query {}'.format(query))
 
         if database:
             c = database.cursor()
@@ -54,7 +54,7 @@ class SqliteObject(object):
     def get(cls, id, database=None):
         query = 'SELECT * FROM {} WHERE id=\'{}\';'.format(cls.table, id)
 
-        print('Using SELECT query {}'.format(query))
+        # print('Using SELECT query {}'.format(query))
 
         if database:
             c = database.cursor()
@@ -83,7 +83,7 @@ class SqliteObject(object):
         """
         query = "SELECT * FROM {} WHERE {}='{}';".format(cls.table, prop, value)
 
-        print('Using SELECT query {}'.format(query))
+        # print('Using SELECT query {}'.format(query))
 
         if database:
             c = database.cursor()
@@ -117,7 +117,7 @@ class SqliteObject(object):
 
         query = 'UPDATE {} SET {} WHERE id=?;'.format(self.table, ','.join(props))
 
-        print('Using UPDATE query \'{}\''.format(query))
+        # print('Using UPDATE query \'{}\''.format(query))
 
         if self.database:
             db = self.database
@@ -135,7 +135,7 @@ class SqliteObject(object):
 
         query = 'DELETE FROM {} WHERE id=?;'.format(self.table)
 
-        print('Using DELETE query \'{}\''.format(query))
+        # print('Using DELETE query \'{}\''.format(query))
 
         if self.database:
             db = self.database
@@ -154,7 +154,7 @@ class SqliteObject(object):
     def delete_all(cls, database=None):
         query = 'DELETE FROM {};'.format(cls.table)
 
-        print('Using DELETE query \'{}\''.format(query))
+        # print('Using DELETE query \'{}\''.format(query))
 
         if not database:
             database = databaseHandler().get_database()
@@ -188,7 +188,7 @@ class SqliteObject(object):
                                                           ','.join(properties),
                                                           ','.join(values))
 
-        print('Using CREATE query \'{}\''.format(query))
+        # print('Using CREATE query \'{}\''.format(query))
 
         if self.database:
             db = self.database

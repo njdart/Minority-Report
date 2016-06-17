@@ -9,7 +9,7 @@ socketio = SocketIO(app, async_mode="gevent")
 # Prevent the spam of death
 import logging
 log = logging.getLogger('werkzeug')
-log.setLevel(logging.WARNING)
+log.setLevel(logging.ERROR)
 
 
 def databaseHandler():
@@ -28,7 +28,7 @@ import src.server.api.canvas_api
 import src.server.api.stickyNote_api
 
 def run_server():
-    socketio.run(app, host="0.0.0.0", port=8088, debug=True)
+    socketio.run(app, host="0.0.0.0", port=8088, debug=False)
 
 if __name__ == '__main__':
     run_server()
