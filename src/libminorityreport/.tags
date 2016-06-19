@@ -1,0 +1,20 @@
+!_TAG_FILE_FORMAT	2	/extended format; --format=1 will not append ;" to lines/
+!_TAG_FILE_SORTED	1	/0=unsorted, 1=sorted, 2=foldcase/
+!_TAG_PROGRAM_AUTHOR	Darren Hiebert	/dhiebert@users.sourceforge.net/
+!_TAG_PROGRAM_NAME	Exuberant Ctags	//
+!_TAG_PROGRAM_URL	http://ctags.sourceforge.net	/official site/
+!_TAG_PROGRAM_VERSION	5.8	//
+GraphExtractor	GraphExtractor.h	/^    GraphExtractor() {}$/;"	f	class:GraphExtractor
+GraphExtractor	GraphExtractor.h	/^class GraphExtractor$/;"	c
+MINORITYREPORT_GRAPHEXTRACTOR_INC	GraphExtractor.h	2;"	d
+MINORITYREPORT_POINT_H	Point.h	2;"	d
+MINORITYREPORT_STICKYNOTE_INC	StickyNote.h	2;"	d
+Point	Point.h	/^    Point(double x, double y) : _x(x), _y(y) {}$/;"	f	class:Point
+Point	Point.h	/^class Point$/;"	c
+StickyNote	StickyNote.h	/^class StickyNote$/;"	c
+X	Point.h	/^    double X() { return _x; }$/;"	f	class:Point
+Y	Point.h	/^    double Y() { return _Y; }$/;"	f	class:Point
+_x	Point.h	/^    double _x;$/;"	m	class:Point
+_y	Point.h	/^    double _y;$/;"	m	class:Point
+~GraphExtractor	GraphExtractor.h	/^    ~GraphExtractor() {}$/;"	f	class:GraphExtractor
+~Point	Point.h	/^    ~Point() {}$/;"	f	class:Point

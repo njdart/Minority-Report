@@ -1,5 +1,4 @@
 import os
-import uuid
 import cv2
 import numpy
 import requests
