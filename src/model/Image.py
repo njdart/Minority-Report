@@ -449,12 +449,19 @@ class Image(SqliteObject):
                                         + src.model.processing.get_area(((noteXs[idx] - stickyNotesizes[idx][0]/2, noteYs[idx]+stickyNotesizes[idx][1]/2),
                                                                          (noteXs[idx] - stickyNotesizes[idx][0]/2, noteYs[idx]-stickyNotesizes[idx][1]/2),
                                                                          scaled_contour_point))
-                            if rectanglearea*1.5 > pointarea:
-                                print(rectanglearea)
-                                print(pointarea)
-                                # debugImage = cv2.circle(canvas_image.copy(), (line_contour[index][0][0],line_contour[index][0][1]),4,[0,255,0],thickness=5)
-                                # cv2.imshow("debug", cv2.resize(debugImage,None,fx=0.5, fy=0.5,))
-                                # cv2.waitKey(0)
+                            # if rectanglearea*2  > pointarea:
+                            #     print(rectanglearea)
+                            #     print(pointarea)
+                            #     debugImage = cv2.circle(canvas_image.copy(), (noteXs[idx] - int(stickyNotesizes[idx][0]/2), noteYs[idx] - int(stickyNotesizes[idx][1]/2)),4,[0,255,0],thickness=5)
+                            #     debugImage = cv2.circle(debugImage, (noteXs[idx] + int(stickyNotesizes[idx][0]/2), noteYs[idx] - int(stickyNotesizes[idx][1]/2)), 4, [0, 255, 0],
+                            #                             thickness=5)
+                            #     debugImage = cv2.circle(debugImage, (noteXs[idx] + int(stickyNotesizes[idx][0]/2), noteYs[idx] + int(stickyNotesizes[idx][1]/2)), 4, [0, 255, 0],
+                            #                             thickness=5)
+                            #     debugImage = cv2.circle(debugImage, (noteXs[idx] - int(stickyNotesizes[idx][0]/2), noteYs[idx]+int(stickyNotesizes[idx][1]/2)), 4, [0, 255, 0],
+                            #                             thickness=5)
+                            #     debugImage = cv2.circle(debugImage, (int(scaled_contour_point[0]),int(scaled_contour_point[1])), 4, [0, 0, 255], thickness=5)
+                            #     cv2.imshow("debug", cv2.resize(debugImage,None,fx=0.5, fy=0.5,))
+                            #     cv2.waitKey(0)
                            
                         if pointarea < rectanglearea*1.10:
                             contained = True
