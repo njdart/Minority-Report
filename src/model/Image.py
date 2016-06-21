@@ -405,6 +405,7 @@ class Image(SqliteObject):
             noteXs.append(noteX)
             noteY = istickyNote.displayPosY
             noteYs.append(noteY)
+
         for line_contour in line_contours:
             debug_img = canvas_image.copy()
             if cv2.arcLength(line_contour, True) > 100:
@@ -416,13 +417,14 @@ class Image(SqliteObject):
                     #cv2.imwrite(str(index) + "debug.png", cv2.resize(debugImage,None,fx=0.25, fy=0.25,))
 
                     for idx, istickyNote in enumerate(stickyNotes):
-                        rectanglearea = src.model.processing.get_area((((stickyNotepoints[idx][0][0])*postit_ratio[idx], (stickyNotepoints[idx][0][1])*postit_ratio[idx]),
-                                                                       ((stickyNotepoints[idx][1][0])*postit_ratio[idx], (stickyNotepoints[idx][1][1])*postit_ratio[idx]),
-                                                                       ((stickyNotepoints[idx][2][0])*postit_ratio[idx], (stickyNotepoints[idx][2][1])*postit_ratio[idx]),
-                                                                       ((stickyNotepoints[idx][3][0])*postit_ratio[idx], (stickyNotepoints[idx][3][1])*postit_ratio[idx])
-                                                                       ))
                         scaled_contour_point = (line_contour[index][0][0]*line_ratio, line_contour[index][0][1]*line_ratio)
                         if not istickyNote.physicalFor in ["None", None]:
+                            rectanglearea = src.model.processing.get_area((((stickyNotepoints[idx][0][0])*postit_ratio[idx], (stickyNotepoints[idx][0][1])*postit_ratio[idx]),
+                                                                           ((stickyNotepoints[idx][1][0])*postit_ratio[idx], (stickyNotepoints[idx][1][1])*postit_ratio[idx]),
+                                                                           ((stickyNotepoints[idx][2][0])*postit_ratio[idx], (stickyNotepoints[idx][2][1])*postit_ratio[idx]),
+                                                                           ((stickyNotepoints[idx][3][0])*postit_ratio[idx], (stickyNotepoints[idx][3][1])*postit_ratio[idx])
+                                                                           ))
+
                             pointarea = src.model.processing.get_area((((stickyNotepoints[idx][0][0])*postit_ratio[idx], (stickyNotepoints[idx][0][1])*postit_ratio[idx]),
                                                                        ((stickyNotepoints[idx][1][0])*postit_ratio[idx], (stickyNotepoints[idx][1][1])*postit_ratio[idx]),
                                                                        scaled_contour_point))\
@@ -437,6 +439,12 @@ class Image(SqliteObject):
                                                                          scaled_contour_point))
                         else:
                             # print("physicalFor: {}".format(istickyNote.physicalFor))
+                            rectanglearea = src.model.processing.get_area(((noteXs[idx] - stickyNotesizes[idx][0]/2, noteYs[idx] - stickyNotesizes[idx][1]/2),
+                                                                           (noteXs[idx] + stickyNotesizes[idx][0]/2, noteYs[idx] - stickyNotesizes[idx][1]/2),
+                                                                           (noteXs[idx] + stickyNotesizes[idx][0]/2, noteYs[idx] + stickyNotesizes[idx][1]/2),
+                                                                           (noteXs[idx] - stickyNotesizes[idx][0]/2, noteYs[idx] + stickyNotesizes[idx][1]/2)
+                                                                         ))
+
                             pointarea = src.model.processing.get_area(((noteXs[idx] - stickyNotesizes[idx][0]/2, noteYs[idx] - stickyNotesizes[idx][1]/2),
                                                                        (noteXs[idx] + stickyNotesizes[idx][0]/2, noteYs[idx] - stickyNotesizes[idx][1]/2),
                                                                        scaled_contour_point))\
