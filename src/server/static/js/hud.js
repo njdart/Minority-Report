@@ -53,8 +53,13 @@ var handColors = {
 
 var STICKY_NOTE_SIZE_M = 0.077; // metres
 
-var stickyNoteSize = 115;
-var stickyNoteOffset = stickyNoteSize/2;
+if (localStorage["stickyNoteSize"] == undefined)
+{
+    localStorage.setItem("stickyNoteSize", 115);
+    localStorage.setItem("stickyNoteOffset", localStorage["stickyNoteSize"] / 2);
+}
+var stickyNoteSize = localStorage["stickyNoteSize"];
+var stickyNoteOffset = localStorage["stickyNoteOffset"];
 
 var virtualStickyNoteImages = {};
 var stickyNotesSelected = {};
@@ -226,8 +231,13 @@ function physicalCanvasDimensions(json) {
     {
         stickyNoteSize = Math.floor((STICKY_NOTE_SIZE_M / json.canvasWidth) * 1920.0);
         stickyNoteOffset = stickyNoteSize / 2;
+        localStorage["stickyNoteSize"] = stickyNoteSize;
+        localStorage["stickyNoteOffset"] = stickyNoteOffset;
         console.log("received canvas physical size: (" + json.canvasWidth + ", " + json.canvasHeight + ")");
         console.log("set sticky-note pixel width to: " + stickyNoteSize);
+        console.log("redrawing");
+        clearCanvas();
+        redrawCanvas();
     }
 }
 
@@ -452,11 +462,6 @@ function redrawCanvas() {
 
         });
     }
-}
-
-var drawImageOnCanvas = function(image, x, y) {
-    debugLog("drawImageOnCanvas(): drawing image with size " + image.height + "x" + image.width + " to canvas at (" + x + "," + y + ")");
-    hudContext.drawImage(image, x, y);
 }
 
 function setCanvasBlack() {

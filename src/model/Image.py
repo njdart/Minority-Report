@@ -59,6 +59,7 @@ class Image(SqliteObject):
     def create(self, database=None):
         super(Image, self).create(database=database)
         print('Writing Image to file', self.get_image_path())
+        print(self.image.shape)
         cv2.imwrite(self.get_image_path(), self.image)
         return self
 
@@ -389,9 +390,21 @@ class Image(SqliteObject):
         (_, line_contours, _) = cv2.findContours(edged.copy(), cv2.RETR_TREE, cv2.CHAIN_APPROX_NONE)
         line_ratio = (1920.0/canvas_image.shape[1])
         postit_ratio=[]
+        stickyNotepoints = []
+        stickyNotesizes = []
+        noteXs = []
+        noteYs = []
         for idx, istickyNote in enumerate(stickyNotes):
             postit_canvas_image = istickyNote.get_image()
             postit_ratio.append(1920.0/postit_canvas_image.get_image_projection().shape[1])
+            stickyNotepoint = istickyNote.get_corner_points()
+            stickyNotepoints.append(stickyNotepoint)
+            stickyNotesize = istickyNote.get_image_keystoned().shape
+            stickyNotesizes.append(stickyNotesize)
+            noteX = istickyNote.displayPosX
+            noteXs.append(noteX)
+            noteY = istickyNote.displayPosY
+            noteYs.append(noteY)
         for line_contour in line_contours:
             debug_img = canvas_image.copy()
             if cv2.arcLength(line_contour, True) > 100:
@@ -403,43 +416,45 @@ class Image(SqliteObject):
                     #cv2.imwrite(str(index) + "debug.png", cv2.resize(debugImage,None,fx=0.25, fy=0.25,))
 
                     for idx, istickyNote in enumerate(stickyNotes):
-                        istickyNotepoints = istickyNote.get_corner_points()
-                        rectanglearea = src.model.processing.get_area((((istickyNotepoints[0][0])*postit_ratio[idx], (istickyNotepoints[0][1])*postit_ratio[idx]),
-                                                                       ((istickyNotepoints[1][0])*postit_ratio[idx], (istickyNotepoints[1][1])*postit_ratio[idx]),
-                                                                       ((istickyNotepoints[2][0])*postit_ratio[idx], (istickyNotepoints[2][1])*postit_ratio[idx]),
-                                                                       ((istickyNotepoints[3][0])*postit_ratio[idx], (istickyNotepoints[3][1])*postit_ratio[idx])
+                        rectanglearea = src.model.processing.get_area((((stickyNotepoints[idx][0][0])*postit_ratio[idx], (stickyNotepoints[idx][0][1])*postit_ratio[idx]),
+                                                                       ((stickyNotepoints[idx][1][0])*postit_ratio[idx], (stickyNotepoints[idx][1][1])*postit_ratio[idx]),
+                                                                       ((stickyNotepoints[idx][2][0])*postit_ratio[idx], (stickyNotepoints[idx][2][1])*postit_ratio[idx]),
+                                                                       ((stickyNotepoints[idx][3][0])*postit_ratio[idx], (stickyNotepoints[idx][3][1])*postit_ratio[idx])
                                                                        ))
                         scaled_contour_point = (line_contour[index][0][0]*line_ratio, line_contour[index][0][1]*line_ratio)
                         if not istickyNote.physicalFor in ["None", None]:
-                            pointarea = src.model.processing.get_area((((istickyNotepoints[0][0])*postit_ratio[idx], (istickyNotepoints[0][1])*postit_ratio[idx]),
-                                                                       ((istickyNotepoints[1][0])*postit_ratio[idx], (istickyNotepoints[1][1])*postit_ratio[idx]),
+                            pointarea = src.model.processing.get_area((((stickyNotepoints[idx][0][0])*postit_ratio[idx], (stickyNotepoints[idx][0][1])*postit_ratio[idx]),
+                                                                       ((stickyNotepoints[idx][1][0])*postit_ratio[idx], (stickyNotepoints[idx][1][1])*postit_ratio[idx]),
                                                                        scaled_contour_point))\
-                                        + src.model.processing.get_area((((istickyNotepoints[1][0])*postit_ratio[idx], (istickyNotepoints[1][1])*postit_ratio[idx]),
-                                                                         ((istickyNotepoints[2][0])*postit_ratio[idx], (istickyNotepoints[2][1])*postit_ratio[idx]),
+                                        + src.model.processing.get_area((((stickyNotepoints[idx][1][0])*postit_ratio[idx], (stickyNotepoints[idx][1][1])*postit_ratio[idx]),
+                                                                         ((stickyNotepoints[idx][2][0])*postit_ratio[idx], (stickyNotepoints[idx][2][1])*postit_ratio[idx]),
                                                                          scaled_contour_point))\
-                                        + src.model.processing.get_area((((istickyNotepoints[2][0])*postit_ratio[idx], (istickyNotepoints[2][1])*postit_ratio[idx]),
-                                                                         ((istickyNotepoints[3][0])*postit_ratio[idx], (istickyNotepoints[3][1])*postit_ratio[idx]),
+                                        + src.model.processing.get_area((((stickyNotepoints[idx][2][0])*postit_ratio[idx], (stickyNotepoints[idx][2][1])*postit_ratio[idx]),
+                                                                         ((stickyNotepoints[idx][3][0])*postit_ratio[idx], (stickyNotepoints[idx][3][1])*postit_ratio[idx]),
                                                                          scaled_contour_point))\
-                                        + src.model.processing.get_area((((istickyNotepoints[3][0])*postit_ratio[idx], (istickyNotepoints[3][1])*postit_ratio[idx]),
-                                                                         ((istickyNotepoints[0][0])*postit_ratio[idx], (istickyNotepoints[0][1])*postit_ratio[idx]),
+                                        + src.model.processing.get_area((((stickyNotepoints[idx][3][0])*postit_ratio[idx], (stickyNotepoints[idx][3][1])*postit_ratio[idx]),
+                                                                         ((stickyNotepoints[idx][0][0])*postit_ratio[idx], (stickyNotepoints[idx][0][1])*postit_ratio[idx]),
                                                                          scaled_contour_point))
                         else:
                             # print("physicalFor: {}".format(istickyNote.physicalFor))
-                            stickyNotesize = istickyNote.get_image_keystoned().shape
-                            noteX = istickyNote.displayPosX
-                            noteY = istickyNote.displayPosY
-                            pointarea = src.model.processing.get_area(((noteX - stickyNotesize[0]/2, noteY - stickyNotesize[1]/2),
-                                                                       (noteX + stickyNotesize[0]/2, noteY - stickyNotesize[1]/2),
+                            pointarea = src.model.processing.get_area(((noteXs[idx] - stickyNotesizes[idx][0]/2, noteYs[idx] - stickyNotesizes[idx][1]/2),
+                                                                       (noteXs[idx] + stickyNotesizes[idx][0]/2, noteYs[idx] - stickyNotesizes[idx][1]/2),
                                                                        scaled_contour_point))\
-                                        + src.model.processing.get_area(((noteX + stickyNotesize[0]/2, noteY - stickyNotesize[1]/2),
-                                                                         (noteX + stickyNotesize[0]/2, noteY + stickyNotesize[1]/2),
+                                        + src.model.processing.get_area(((noteXs[idx] + stickyNotesizes[idx][0]/2, noteYs[idx] - stickyNotesizes[idx][1]/2),
+                                                                         (noteXs[idx] + stickyNotesizes[idx][0]/2, noteYs[idx] + stickyNotesizes[idx][1]/2),
                                                                          scaled_contour_point)) \
-                                        + src.model.processing.get_area(((noteX + stickyNotesize[0]/2, noteY+stickyNotesize[1]/2),
-                                                                         (noteX - stickyNotesize[0]/2, noteY+stickyNotesize[1]/2),
+                                        + src.model.processing.get_area(((noteXs[idx] + stickyNotesizes[idx][0]/2, noteYs[idx]+stickyNotesizes[idx][1]/2),
+                                                                         (noteXs[idx] - stickyNotesizes[idx][0]/2, noteYs[idx]+stickyNotesizes[idx][1]/2),
                                                                          scaled_contour_point)) \
-                                        + src.model.processing.get_area(((noteX - stickyNotesize[0]/2, noteY+stickyNotesize[1]/2),
-                                                                         (noteX - stickyNotesize[0]/2, noteY-stickyNotesize[1]/2),
+                                        + src.model.processing.get_area(((noteXs[idx] - stickyNotesizes[idx][0]/2, noteYs[idx]+stickyNotesizes[idx][1]/2),
+                                                                         (noteXs[idx] - stickyNotesizes[idx][0]/2, noteYs[idx]-stickyNotesizes[idx][1]/2),
                                                                          scaled_contour_point))
+                            if rectanglearea*1.5 > pointarea:
+                                print(rectanglearea)
+                                print(pointarea)
+                                # debugImage = cv2.circle(canvas_image.copy(), (line_contour[index][0][0],line_contour[index][0][1]),4,[0,255,0],thickness=5)
+                                # cv2.imshow("debug", cv2.resize(debugImage,None,fx=0.5, fy=0.5,))
+                                # cv2.waitKey(0)
                            
                         if pointarea < rectanglearea*1.10:
                             contained = True
