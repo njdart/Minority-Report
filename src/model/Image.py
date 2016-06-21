@@ -192,6 +192,7 @@ class Image(SqliteObject):
             box = cv2.boxPoints(cv2.minAreaRect(c))
             box = numpy.int0(box)
             # Check the area of the stickyNotes to see if they fit within the expected range
+            # print(cv2.contourArea(box))
             if (cv2.contourArea(box) > min_stickyNote_area) and (cv2.contourArea(box) < max_stickyNote_area):
                 # print(cv2.contourArea(box))
                 length = numpy.math.hypot(box[0, 0] - box[1, 0], box[0, 1] - box[1, 1])
@@ -318,7 +319,7 @@ class Image(SqliteObject):
                 print(good)
                 if odes is not None:
                     if not len(good) == 0:
-                        if max(good) > 12: #len(odes)*0.1:
+                        if max(good) > 15: #len(odes)*0.1:
                             match_idx = numpy.argmax(good)
                             old_to_new_stickyNote = (old_stickyNote_info[old_index][0], new_stickyNote_info[match_idx][0])
                             old_to_new_stickyNotes.append(old_to_new_stickyNote)
@@ -384,8 +385,7 @@ class Image(SqliteObject):
         found_connections = []
         canvas_image = self.get_image_projection()
         edged = src.model.processing.edge(canvas_image)
-        # cv2.imwrite("debug/lines-"+str(next_canvas_id)+".png",
-        #             cv2.resize(edged, None, fx=0.5, fy=0.5, interpolation=cv2.INTER_AREA))
+        # cv2.imwrite("debug/lines-"+str(next_canvas_id)+".png", edged)
         (_, line_contours, _) = cv2.findContours(edged.copy(), cv2.RETR_TREE, cv2.CHAIN_APPROX_NONE)
         line_ratio = (1920.0/canvas_image.shape[1])
         postit_ratio=[]
@@ -404,20 +404,24 @@ class Image(SqliteObject):
 
                     for idx, istickyNote in enumerate(stickyNotes):
                         istickyNotepoints = istickyNote.get_corner_points()
-                        rectanglearea = src.model.processing.get_area(istickyNotepoints)
+                        rectanglearea = src.model.processing.get_area((((istickyNotepoints[0][0])*postit_ratio[idx], (istickyNotepoints[0][1])*postit_ratio[idx]),
+                                                                       ((istickyNotepoints[1][0])*postit_ratio[idx], (istickyNotepoints[1][1])*postit_ratio[idx]),
+                                                                       ((istickyNotepoints[2][0])*postit_ratio[idx], (istickyNotepoints[2][1])*postit_ratio[idx]),
+                                                                       ((istickyNotepoints[3][0])*postit_ratio[idx], (istickyNotepoints[3][1])*postit_ratio[idx])
+                                                                       ))
                         scaled_contour_point = (line_contour[index][0][0]*line_ratio, line_contour[index][0][1]*line_ratio)
                         if not istickyNote.physicalFor in ["None", None]:
-                            pointarea = src.model.processing.get_area((((istickyNotepoints[0][0]+7)*postit_ratio[idx], (istickyNotepoints[0][1]+7)*postit_ratio[idx]),
-                                                                       ((istickyNotepoints[1][0]-7)*postit_ratio[idx], (istickyNotepoints[1][1]+7)*postit_ratio[idx]),
+                            pointarea = src.model.processing.get_area((((istickyNotepoints[0][0])*postit_ratio[idx], (istickyNotepoints[0][1])*postit_ratio[idx]),
+                                                                       ((istickyNotepoints[1][0])*postit_ratio[idx], (istickyNotepoints[1][1])*postit_ratio[idx]),
                                                                        scaled_contour_point))\
-                                        + src.model.processing.get_area((((istickyNotepoints[1][0]-7)*postit_ratio[idx], (istickyNotepoints[1][1]+7)*postit_ratio[idx]),
-                                                                         ((istickyNotepoints[2][0]-7)*postit_ratio[idx], (istickyNotepoints[2][1]-7)*postit_ratio[idx]),
+                                        + src.model.processing.get_area((((istickyNotepoints[1][0])*postit_ratio[idx], (istickyNotepoints[1][1])*postit_ratio[idx]),
+                                                                         ((istickyNotepoints[2][0])*postit_ratio[idx], (istickyNotepoints[2][1])*postit_ratio[idx]),
                                                                          scaled_contour_point))\
-                                        + src.model.processing.get_area((((istickyNotepoints[2][0]-7)*postit_ratio[idx], (istickyNotepoints[2][1]-7)*postit_ratio[idx]),
-                                                                         ((istickyNotepoints[3][0]+7)*postit_ratio[idx], (istickyNotepoints[3][1]-7)*postit_ratio[idx]),
+                                        + src.model.processing.get_area((((istickyNotepoints[2][0])*postit_ratio[idx], (istickyNotepoints[2][1])*postit_ratio[idx]),
+                                                                         ((istickyNotepoints[3][0])*postit_ratio[idx], (istickyNotepoints[3][1])*postit_ratio[idx]),
                                                                          scaled_contour_point))\
-                                        + src.model.processing.get_area((((istickyNotepoints[3][0]+7)*postit_ratio[idx], (istickyNotepoints[3][1]-7)*postit_ratio[idx]),
-                                                                         ((istickyNotepoints[0][0]+7)*postit_ratio[idx], (istickyNotepoints[0][1]+7)*postit_ratio[idx]),
+                                        + src.model.processing.get_area((((istickyNotepoints[3][0])*postit_ratio[idx], (istickyNotepoints[3][1])*postit_ratio[idx]),
+                                                                         ((istickyNotepoints[0][0])*postit_ratio[idx], (istickyNotepoints[0][1])*postit_ratio[idx]),
                                                                          scaled_contour_point))
                         else:
                             # print("physicalFor: {}".format(istickyNote.physicalFor))
@@ -437,21 +441,31 @@ class Image(SqliteObject):
                                                                          (noteX - stickyNotesize[0]/2, noteY-stickyNotesize[1]/2),
                                                                          scaled_contour_point))
                            
-                        if pointarea < rectanglearea*1.05:
+                        if pointarea < rectanglearea*1.10:
                             contained = True
 
-                        if pointarea < rectanglearea*1.1 and not contained:
+                        if pointarea < rectanglearea*1.20 and not contained:
                             if not connectionList:
                                 connectionList.append(istickyNote.get_id())
-                                #debugImage = cv2.circle(canvas_image.copy(), (line_contour[index][0][0],line_contour[index][0][1]),4,[0,255,0],thickness=5)
-                                #cv2.imshow("debug", cv2.resize(debugImage,None,fx=0.25, fy=0.25,))
-                                #cv2.waitKey(0)
+                                # debugImage = cv2.circle(canvas_image.copy(), (line_contour[index][0][0],line_contour[index][0][1]),4,[0,255,0],thickness=5)
+                                # cv2.imshow("debug", cv2.resize(debugImage,None,fx=0.5, fy=0.5,))
+                                # cv2.waitKey(0)
 
                             elif istickyNote.get_id() is not connectionList[-1]:
                                 connectionList.append(istickyNote.get_id())
-                                #debugImage = cv2.circle(canvas_image.copy(), (line_contour[index][0][0],line_contour[index][0][1]),4,[0,255,0],thickness=5)
-                                #cv2.imshow("debug", cv2.resize(debugImage,None,fx=0.25, fy=0.25,))
-                                #cv2.waitKey(0)
+                                # debugImage = cv2.circle(canvas_image.copy(), (line_contour[index][0][0],line_contour[index][0][1]),4,[0,255,0],thickness=5)
+                                # cv2.imshow("debug", cv2.resize(debugImage,None,fx=0.5, fy=0.5,))
+                                # cv2.waitKey(0)
+                            #else:
+                            #    debugImage = cv2.circle(canvas_image.copy(),
+                            #                            (line_contour[index][0][0], line_contour[index][0][1]), 4,
+                            #                            [255, 0, 0], thickness=5)
+                            #cv2.imshow("debug", cv2.resize(debugImage, None, fx=0.5, fy=0.5, ))
+                            #cv2.waitKey(0)
+                        #else:
+                            #debugImage = cv2.circle(canvas_image.copy(),                               (line_contour[index][0][0], line_contour[index][0][1]), 4,                                                    [0, 0, 255], thickness=5)
+                            #cv2.imshow("debug", cv2.resize(debugImage, None, fx=0.5, fy=0.5, ))
+                            #cv2.waitKey(0)
 
                 if len(connectionList) > 1:
                     print(connectionList)

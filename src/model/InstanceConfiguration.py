@@ -159,14 +159,20 @@ class InstanceConfiguration(SqliteObject):
         if calib_image == None:
             print("Camera calibration failed")
             self.calibSuccess = False
+        else:
+            print(calib_image.get_image_array().shape)
+            cv2.imwrite("debug/raw-camera.jpg",
+                        cv2.resize(calib_image.get_image_array(),
+                                   None, fx=0.25, fy=0.25, interpolation=cv2.INTER_AREA))
 
         kinect_calib_image = Image.from_uri(self.id, kinectCalibUri)
         if kinect_calib_image == None:
             print("Kinect calibration failed")
             self.calibSuccess = False
-
-        cv2.imwrite("debug/raw-camera.jpg", cv2.resize(calib_image.get_image_array(), None, fx=0.25, fy=0.25, interpolation=cv2.INTER_AREA))
-        cv2.imwrite("debug/raw-kinect.jpg", cv2.resize(kinect_calib_image.get_image_array(), None, fx=0.25, fy=0.25, interpolation=cv2.INTER_AREA))
+        else:
+            cv2.imwrite("debug/raw-kinect.jpg",
+                        cv2.resize(kinect_calib_image.get_image_array(),
+                                   None, fx=0.25, fy=0.25, interpolation=cv2.INTER_AREA))
 
         def getcanvascoords(img, name):
             # Binarize imgage, find the largest white area and then get the coordinates.

@@ -64,7 +64,7 @@ def autoExtractCanvas(image_id):
 def get_image(instanceConfigurationId, uri):
     print('Getting image from URI ', uri)
     emit('blank_canvas_black', instanceConfigurationId, broadcast=True)
-    sleep(0.5)
+    sleep(1)
     image = Image.from_uri(uri=uri, instanceConfigurationId=instanceConfigurationId)
 
     if image is None:
