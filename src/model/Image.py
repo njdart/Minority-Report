@@ -394,7 +394,12 @@ class Image(SqliteObject):
         stickyNotesizes = []
         noteXs = []
         noteYs = []
+        rectangleAreas = []
+        scaledCorners = []
+
         for idx, istickyNote in enumerate(stickyNotes):
+
+            # Store positional data of the sticky notes.
             postit_canvas_image = istickyNote.get_image()
             postit_ratio.append(1920.0/postit_canvas_image.get_image_projection().shape[1])
             stickyNotepoint = istickyNote.get_corner_points()
@@ -406,11 +411,43 @@ class Image(SqliteObject):
             noteY = istickyNote.displayPosY
             noteYs.append(noteY)
 
+            # Pre-calculate the areas of the sticky notes, and scaled corners of the notes.
+            if not istickyNote.physicalFor in ["None", None]:
+                rectangleAreas.append(src.model.processing.get_area((((stickyNotepoints[idx][0][0]) * postit_ratio[idx],
+                                                                      (stickyNotepoints[idx][0][1]) * postit_ratio[
+                                                                          idx]),
+                                                                     ((stickyNotepoints[idx][1][0]) * postit_ratio[idx],
+                                                                      (stickyNotepoints[idx][1][1]) * postit_ratio[
+                                                                          idx]),
+                                                                     ((stickyNotepoints[idx][2][0]) * postit_ratio[idx],
+                                                                      (stickyNotepoints[idx][2][1]) * postit_ratio[
+                                                                          idx]),
+                                                                     ((stickyNotepoints[idx][3][0]) * postit_ratio[idx],
+                                                                      (stickyNotepoints[idx][3][1]) * postit_ratio[idx])
+                                                                     )))
+                scaledCorners.append([])
+                scaledCorners[idx].append(((stickyNotepoints[idx][0][0])*postit_ratio[idx], (stickyNotepoints[idx][0][1])*postit_ratio[idx]))
+                scaledCorners[idx].append(((stickyNotepoints[idx][1][0])*postit_ratio[idx], (stickyNotepoints[idx][1][1])*postit_ratio[idx]))
+                scaledCorners[idx].append(((stickyNotepoints[idx][2][0])*postit_ratio[idx], (stickyNotepoints[idx][2][1])*postit_ratio[idx]))
+                scaledCorners[idx].append(((stickyNotepoints[idx][3][0])*postit_ratio[idx], (stickyNotepoints[idx][3][1])*postit_ratio[idx]))
+
+            else:
+                rectangleAreas.append(src.model.processing.get_area(
+                    ((noteXs[idx] - stickyNotesizes[idx][0] / 2, noteYs[idx] - stickyNotesizes[idx][1] / 2),
+                     (noteXs[idx] + stickyNotesizes[idx][0] / 2, noteYs[idx] - stickyNotesizes[idx][1] / 2),
+                     (noteXs[idx] + stickyNotesizes[idx][0] / 2, noteYs[idx] + stickyNotesizes[idx][1] / 2),
+                     (noteXs[idx] - stickyNotesizes[idx][0] / 2, noteYs[idx] + stickyNotesizes[idx][1] / 2)
+                     )))
+                scaledCorners.append([])
+                scaledCorners[idx].append((noteXs[idx] - stickyNotesizes[idx][0]/2, noteYs[idx] - stickyNotesizes[idx][1]/2))
+                scaledCorners[idx].append((noteXs[idx] + stickyNotesizes[idx][0]/2, noteYs[idx] - stickyNotesizes[idx][1]/2))
+                scaledCorners[idx].append((noteXs[idx] + stickyNotesizes[idx][0]/2, noteYs[idx] + stickyNotesizes[idx][1]/2))
+                scaledCorners[idx].append((noteXs[idx] - stickyNotesizes[idx][0]/2, noteYs[idx] + stickyNotesizes[idx][1]/2))
+
         for line_contour in line_contours:
             debug_img = canvas_image.copy()
             if cv2.arcLength(line_contour, True) > 100:
                 connectionList = []
-
                 for index in range(0, len(line_contour), 10):
                     contained = False
                     #debugImage = cv2.circle(canvas_image.copy(), (line_contour[index][0][0],line_contour[index][0][1]),4,[0,0,255],thickness=5)
@@ -418,59 +455,29 @@ class Image(SqliteObject):
 
                     for idx, istickyNote in enumerate(stickyNotes):
                         scaled_contour_point = (line_contour[index][0][0]*line_ratio, line_contour[index][0][1]*line_ratio)
-                        if not istickyNote.physicalFor in ["None", None]:
-                            rectanglearea = src.model.processing.get_area((((stickyNotepoints[idx][0][0])*postit_ratio[idx], (stickyNotepoints[idx][0][1])*postit_ratio[idx]),
-                                                                           ((stickyNotepoints[idx][1][0])*postit_ratio[idx], (stickyNotepoints[idx][1][1])*postit_ratio[idx]),
-                                                                           ((stickyNotepoints[idx][2][0])*postit_ratio[idx], (stickyNotepoints[idx][2][1])*postit_ratio[idx]),
-                                                                           ((stickyNotepoints[idx][3][0])*postit_ratio[idx], (stickyNotepoints[idx][3][1])*postit_ratio[idx])
-                                                                           ))
+                        pointarea = src.model.processing.get_area(
+                                        (scaledCorners[idx][0], scaledCorners[idx][1], scaled_contour_point)) + \
+                                    src.model.processing.get_area(
+                                        (scaledCorners[idx][1], scaledCorners[idx][2], scaled_contour_point)) + \
+                                    src.model.processing.get_area(
+                                        (scaledCorners[idx][2], scaledCorners[idx][3], scaled_contour_point)) + \
+                                    src.model.processing.get_area(
+                                        (scaledCorners[idx][3], scaledCorners[idx][0], scaled_contour_point))
+                        # if rectanglearea*2  > pointarea:
+                        #     print(rectanglearea)
+                        #     print(pointarea)
+                        #     debugImage = cv2.circle(canvas_image.copy(), (noteXs[idx] - int(stickyNotesizes[idx][0]/2), noteYs[idx] - int(stickyNotesizes[idx][1]/2)),4,[0,255,0],thickness=5)
+                        #     debugImage = cv2.circle(debugImage, (noteXs[idx] + int(stickyNotesizes[idx][0]/2), noteYs[idx] - int(stickyNotesizes[idx][1]/2)), 4, [0, 255, 0],
+                        #                             thickness=5)
+                        #     debugImage = cv2.circle(debugImage, (noteXs[idx] + int(stickyNotesizes[idx][0]/2), noteYs[idx] + int(stickyNotesizes[idx][1]/2)), 4, [0, 255, 0],
+                        #                             thickness=5)
+                        #     debugImage = cv2.circle(debugImage, (noteXs[idx] - int(stickyNotesizes[idx][0]/2), noteYs[idx]+int(stickyNotesizes[idx][1]/2)), 4, [0, 255, 0],
+                        #                             thickness=5)
+                        #     debugImage = cv2.circle(debugImage, (int(scaled_contour_point[0]),int(scaled_contour_point[1])), 4, [0, 0, 255], thickness=5)
+                        #     cv2.imshow("debug", cv2.resize(debugImage,None,fx=0.5, fy=0.5,))
+                        #     cv2.waitKey(0)
 
-                            pointarea = src.model.processing.get_area((((stickyNotepoints[idx][0][0])*postit_ratio[idx], (stickyNotepoints[idx][0][1])*postit_ratio[idx]),
-                                                                       ((stickyNotepoints[idx][1][0])*postit_ratio[idx], (stickyNotepoints[idx][1][1])*postit_ratio[idx]),
-                                                                       scaled_contour_point))\
-                                        + src.model.processing.get_area((((stickyNotepoints[idx][1][0])*postit_ratio[idx], (stickyNotepoints[idx][1][1])*postit_ratio[idx]),
-                                                                         ((stickyNotepoints[idx][2][0])*postit_ratio[idx], (stickyNotepoints[idx][2][1])*postit_ratio[idx]),
-                                                                         scaled_contour_point))\
-                                        + src.model.processing.get_area((((stickyNotepoints[idx][2][0])*postit_ratio[idx], (stickyNotepoints[idx][2][1])*postit_ratio[idx]),
-                                                                         ((stickyNotepoints[idx][3][0])*postit_ratio[idx], (stickyNotepoints[idx][3][1])*postit_ratio[idx]),
-                                                                         scaled_contour_point))\
-                                        + src.model.processing.get_area((((stickyNotepoints[idx][3][0])*postit_ratio[idx], (stickyNotepoints[idx][3][1])*postit_ratio[idx]),
-                                                                         ((stickyNotepoints[idx][0][0])*postit_ratio[idx], (stickyNotepoints[idx][0][1])*postit_ratio[idx]),
-                                                                         scaled_contour_point))
-                        else:
-                            # print("physicalFor: {}".format(istickyNote.physicalFor))
-                            rectanglearea = src.model.processing.get_area(((noteXs[idx] - stickyNotesizes[idx][0]/2, noteYs[idx] - stickyNotesizes[idx][1]/2),
-                                                                           (noteXs[idx] + stickyNotesizes[idx][0]/2, noteYs[idx] - stickyNotesizes[idx][1]/2),
-                                                                           (noteXs[idx] + stickyNotesizes[idx][0]/2, noteYs[idx] + stickyNotesizes[idx][1]/2),
-                                                                           (noteXs[idx] - stickyNotesizes[idx][0]/2, noteYs[idx] + stickyNotesizes[idx][1]/2)
-                                                                         ))
-
-                            pointarea = src.model.processing.get_area(((noteXs[idx] - stickyNotesizes[idx][0]/2, noteYs[idx] - stickyNotesizes[idx][1]/2),
-                                                                       (noteXs[idx] + stickyNotesizes[idx][0]/2, noteYs[idx] - stickyNotesizes[idx][1]/2),
-                                                                       scaled_contour_point))\
-                                        + src.model.processing.get_area(((noteXs[idx] + stickyNotesizes[idx][0]/2, noteYs[idx] - stickyNotesizes[idx][1]/2),
-                                                                         (noteXs[idx] + stickyNotesizes[idx][0]/2, noteYs[idx] + stickyNotesizes[idx][1]/2),
-                                                                         scaled_contour_point)) \
-                                        + src.model.processing.get_area(((noteXs[idx] + stickyNotesizes[idx][0]/2, noteYs[idx]+stickyNotesizes[idx][1]/2),
-                                                                         (noteXs[idx] - stickyNotesizes[idx][0]/2, noteYs[idx]+stickyNotesizes[idx][1]/2),
-                                                                         scaled_contour_point)) \
-                                        + src.model.processing.get_area(((noteXs[idx] - stickyNotesizes[idx][0]/2, noteYs[idx]+stickyNotesizes[idx][1]/2),
-                                                                         (noteXs[idx] - stickyNotesizes[idx][0]/2, noteYs[idx]-stickyNotesizes[idx][1]/2),
-                                                                         scaled_contour_point))
-                            # if rectanglearea*2  > pointarea:
-                            #     print(rectanglearea)
-                            #     print(pointarea)
-                            #     debugImage = cv2.circle(canvas_image.copy(), (noteXs[idx] - int(stickyNotesizes[idx][0]/2), noteYs[idx] - int(stickyNotesizes[idx][1]/2)),4,[0,255,0],thickness=5)
-                            #     debugImage = cv2.circle(debugImage, (noteXs[idx] + int(stickyNotesizes[idx][0]/2), noteYs[idx] - int(stickyNotesizes[idx][1]/2)), 4, [0, 255, 0],
-                            #                             thickness=5)
-                            #     debugImage = cv2.circle(debugImage, (noteXs[idx] + int(stickyNotesizes[idx][0]/2), noteYs[idx] + int(stickyNotesizes[idx][1]/2)), 4, [0, 255, 0],
-                            #                             thickness=5)
-                            #     debugImage = cv2.circle(debugImage, (noteXs[idx] - int(stickyNotesizes[idx][0]/2), noteYs[idx]+int(stickyNotesizes[idx][1]/2)), 4, [0, 255, 0],
-                            #                             thickness=5)
-                            #     debugImage = cv2.circle(debugImage, (int(scaled_contour_point[0]),int(scaled_contour_point[1])), 4, [0, 0, 255], thickness=5)
-                            #     cv2.imshow("debug", cv2.resize(debugImage,None,fx=0.5, fy=0.5,))
-                            #     cv2.waitKey(0)
-                           
+                        rectanglearea = rectangleAreas[idx]
                         if pointarea < rectanglearea*1.10:
                             contained = True
 
