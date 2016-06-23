@@ -65,7 +65,10 @@ class Image(SqliteObject):
 
     def delete(self, database=None):
         super(Image, self).delete(database=database)
-        os.remove(self.get_image_path())
+        try:
+            os.remove(self.get_image_path())
+        except:
+            pass
         return self
 
     def get_image_path(self):
@@ -140,7 +143,7 @@ class Image(SqliteObject):
                      next_canvas_id,
                      current_canvas=None,
                      save=True,
-                     min_stickyNote_area=6000,
+                     min_stickyNote_area=11000,
                      max_stickyNote_area=40000,
                      len_tolerence=0.15,
                      min_colour_thresh=64,
@@ -195,12 +198,12 @@ class Image(SqliteObject):
             # Check the area of the stickyNotes to see if they fit within the expected range
             # print(cv2.contourArea(box))
             if (cv2.contourArea(box) > min_stickyNote_area) and (cv2.contourArea(box) < max_stickyNote_area):
-                # print(cv2.contourArea(box))
+                print(cv2.contourArea(box))
                 length = numpy.math.hypot(box[0, 0] - box[1, 0], box[0, 1] - box[1, 1])
                 height = numpy.math.hypot(box[2, 0] - box[1, 0], box[2, 1] - box[1, 1])
                 # Check to see how similar the lengths are as a measure of squareness
                 if length * (2 - len_tolerence) < length + height < length * (2 + len_tolerence):
-                    # print("len : "+str(length))
+                    print("len : "+str(length))
                     rectangle = cv2.boundingRect(c)
                     flat_contour = c.flatten()
                     # Create arrays for finding the corners of the stickyNotes
@@ -263,7 +266,9 @@ class Image(SqliteObject):
             red_average = red_total / count
             green_average = green_total / count
             blue_average = blue_total / count
-
+            print("RedAvg: "+str(red_average))
+            print("GreenAvg: " + str(green_average))
+            print("BlueAvg: " + str(blue_average))
             guessed_colour = src.model.processing.guess_colour(red_average, green_average, blue_average)
             # Only if a stickyNote colour valid create a stickyNote
             if guessed_colour is not None:
@@ -396,6 +401,7 @@ class Image(SqliteObject):
         noteYs = []
         rectangleAreas = []
         scaledCorners = []
+        noteIDs = []
 
         for idx, istickyNote in enumerate(stickyNotes):
 
@@ -410,6 +416,8 @@ class Image(SqliteObject):
             noteXs.append(noteX)
             noteY = istickyNote.displayPosY
             noteYs.append(noteY)
+            noteID = istickyNote.get_id()
+            noteIDs.append(noteID)
 
             # Pre-calculate the areas of the sticky notes, and scaled corners of the notes.
             if not istickyNote.physicalFor in ["None", None]:
@@ -483,13 +491,13 @@ class Image(SqliteObject):
 
                         if pointarea < rectanglearea*1.20 and not contained:
                             if not connectionList:
-                                connectionList.append(istickyNote.get_id())
+                                connectionList.append(noteIDs[idx])
                                 # debugImage = cv2.circle(canvas_image.copy(), (line_contour[index][0][0],line_contour[index][0][1]),4,[0,255,0],thickness=5)
                                 # cv2.imshow("debug", cv2.resize(debugImage,None,fx=0.5, fy=0.5,))
                                 # cv2.waitKey(0)
 
-                            elif istickyNote.get_id() is not connectionList[-1]:
-                                connectionList.append(istickyNote.get_id())
+                            elif noteIDs[idx] is not connectionList[-1]:
+                                connectionList.append(noteIDs[idx])
                                 # debugImage = cv2.circle(canvas_image.copy(), (line_contour[index][0][0],line_contour[index][0][1]),4,[0,255,0],thickness=5)
                                 # cv2.imshow("debug", cv2.resize(debugImage,None,fx=0.5, fy=0.5,))
                                 # cv2.waitKey(0)

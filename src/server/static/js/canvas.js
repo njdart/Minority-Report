@@ -1,4 +1,4 @@
-var testJson = `[
+var testJson = [
 {
 	"canvas":{
 		"bottom-left":{

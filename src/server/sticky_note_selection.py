@@ -21,8 +21,10 @@ class StickyNoteSelector():
         self.stickyNotes = newNotes
 
     def handOverNote(self, handPosX, handPosY):
+        print("handOverNote")
         for note in self.stickyNotes:
             distance = math.sqrt(((note.displayPosX-handPosX) ** 2) + ((note.displayPosY-handPosY) ** 2))
+            print("{} pixels from {}".format(distance, note.id))
             if distance < self.hoverThresh:
                 if note.physicalFor == "None" or note.physicalFor == None:
                     return note

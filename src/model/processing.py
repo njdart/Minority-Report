@@ -103,9 +103,9 @@ def guess_colour(r, g, b):
     colour_thresholds = {
         "ORANGE": {
             "min_rg": 20,
-            "max_rg": 90,
+            "max_rg": 110,
             "min_rb": 60,
-            "max_rb": 160,
+            "max_rb": 180,
             "min_gb": 25,
             "max_gb": 100
         },
@@ -113,9 +113,9 @@ def guess_colour(r, g, b):
             "min_rg": -30,
             "max_rg": 15,
             "min_rb": 35,
-            "max_rb": 140,
+            "max_rb": 150,
             "min_gb": 40,
-            "max_gb": 140
+            "max_gb": 150
         },
         "BLUE": {
             "min_rg": -110,
