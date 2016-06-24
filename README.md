@@ -1,13 +1,12 @@
 # Minority Report
 
-## About
+## Rationale
 
-This project started as a Year in Industry/gap year project whilst working at [Cambridge Consultants](http://www.cambridgeconsultants.com/). The aim of the project was to reproduce some of the human-computer interactions displayed in the film of the same name. A key problem of many development environments is transferring information from a lo-fidelity physical world where we all interact to a hi-fidelity digital world where many of us work.
+This project started as a Year in Industry/gap year project whilst working at [Cambridge Consultants](http://www.cambridgeconsultants.com/). The aim of the project was to reproduce some of the human-computer interactions displayed in the film of the same name. A large amount of work done for technical (and non-technical) projects takes the form of sessions, discussions, planning and problem discovery on whiteboards. Whilst great for getting information out of our heads and disseminated, and providing a versatile medium for displaying and discussing problems, they can often get neglected or overlooked primarly due to their lack of easy replication.
+
+This project aims to build a *proof-of-concept* demonstration of how a whiteboard could be captured, stored and manipulated with simple equiptment and a interactions. 
 
 ### The Problem
-
-> Fidelity
-> The degree of exactness with which something is copied or reproduced; Adherence to fact or detail.
 
 We live in a physical word where we can see, touch and interact with the things around us. However, more and more design and planning is performed digitally, allowing us to save copies, branch, merge and distribute at the click of a button. This is beneficial for spreading information and asking the what-if questions while avoiding messy, unorganised data, but leads to a disconnect; interacting with the work can become difficult.
 
