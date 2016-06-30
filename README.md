@@ -2,9 +2,9 @@
 
 ## Rationale
 
-This project started as a Year in Industry/gap year project whilst working at [Cambridge Consultants](http://www.cambridgeconsultants.com/). The aim of the project was to reproduce some of the human-computer interactions displayed in the film of the same name. A large amount of work done for technical (and non-technical) projects takes the form of sessions, discussions, planning and problem discovery on whiteboards. Whilst great for getting information out of our heads and disseminated, and providing a versatile medium for displaying and discussing problems, they can often get neglected or overlooked primarly due to their lack of easy replication.
+This project started as a Year in Industry/gap year project whilst working at [Cambridge Consultants](http://www.cambridgeconsultants.com/). The aim of the project was to reproduce some of the human-computer interactions displayed in the film of the same name. A large amount of work done for technical (and non-technical) projects takes the form of sessions, discussions, planning and problem discovery on whiteboards. Whilst great for getting information out of our heads and disseminated, and providing a versatile medium for displaying and discussing problems, they can often get neglected or overlooked primarily due to their lack of easy replication.
 
-This project aims to build a *proof-of-concept* demonstration of how a whiteboard could be captured, stored and manipulated with simple equiptment and a interactions. 
+This project aims to build a *proof-of-concept* demonstration of how a whiteboard could be captured, stored and manipulated with simple equipment and a interactions. 
 
 ### The Problem
 
@@ -38,13 +38,70 @@ See issues
  
 ## Structure
 
-### Camera
+### Inputs
 
-### Server
+#### Camera
 
-### Client
+Hosts images taken by the camera, which are used to capture the sticky notes and their connections.
 
-### Kinect
+#### Kinect
 
-### Model
+Hosts images from the Kinect camera, alerts server when board is obstructed and sends data on the location of human hands.
 
+#### Server
+
+
+
+#### Model
+
+
+
+#### HUD
+
+
+
+## How To Use
+
+### Equipment
+
+- A smartphone capable of 4k image capture
+- A 1080p projector 
+- A computer able to connect to the projector to display the HUD
+- Microsoft Kinect 2
+- Computer capable of using the Kinect
+- Computer capable of running the server
+- Whiteboard
+- High saturation sticky-note
+- Black board marker
+- Tripod with grip to hold phone
+
+### Setup
+
+- Set projector facing whiteboard
+- Set camera and Kinect to also face the whiteboard such that the projectable area can be seen by both 
+- Run the Kinect client on the Kinect computer, with the Kinect attatched
+- Run simple HTTP camera on phone
+- Run minority_report.py on the server computer
+- Go to [server IP]:8088/debug in a web browser
+- Create a User and Session
+- Create Instance Configuration with User, Session, Camera and Kinect host
+- Go to [Server IP]:8080 on HUD computer and login as user to the session
+- Select HUD and then make the window fullscreen on the projector
+- From the debug screen select calibrate next to the instance configuration
+- The system should now be ready for capturing the whiteboard
+
+### Interactions
+
+- A red square appears in the top right corner of the HUD when the Kinect can see an obstruction in front of the board
+- When the obstruction is cleared the HUD will blank allowing the camera to take a clear picture of the board
+- Sticky notes and connections can be added by the user at any time, but will only be capture when the user moves aside
+- Connections are digitally indicated as a blue line
+- Sticky notes:
+    * A green box projected around them when they are physically on the board for the current user
+    * A digital representation with a red border is projected when the note is physical on the board of another user connected to the same session
+    * A digital representation with a green border is projected then the note in not physical for any user
+- A sticky note when move on the board should automatically have its connections move 
+- A stcky note that has been removed or falls off the board will be replaced by a digital representation.
+- The Kinect can track the user's hands, diplaying them as circles
+- By closing your hand while over a purely digital note, the note can be selected and moved around
+- The area in the top left corner is a recycling bin, a sticky note placed here, physically or digitally, will be removed 
